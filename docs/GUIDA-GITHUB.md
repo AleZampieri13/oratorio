@@ -165,9 +165,9 @@ Poi, con calma, sistemate il codice: in GitHub Desktop → **History** → tasto
 
 È una pagina che apre insieme tutti i «telefoni» (casse, cucina, uscita, bar, camerieri) e fa girare una serata intera su un **database finto**, controllando che i conti tornino, che i numeri non si ripetano, che nessuna portata resti bloccata, eccetera.
 
-- Si trova in `test/serata.html`. Prima di usarla va aggiornata la copia di prova con `test/genera-prova.ps1`.
-- Va aperta da un piccolo server sul computer (Claude lo avvia da solo).
-- Parametri utili: `serata.html?auto=1&ordini=200&casse=4&camerieri=21&file=7`.
+- **Per lanciarla:** doppio clic su `test\AVVIA-SERATA-SIMULATA.bat`. Si apre il browser: in alto scegli quanti ordini, casse, camerieri e file, poi **Avvia la serata**.
+- «Serata n.» cambia la sequenza casuale: con lo stesso numero la serata si ripete identica (utile per rifare la stessa prova dopo una correzione).
+- Si apre anche una finestra «Server prova»: chiudila quando hai finito.
 - Prima di ogni versione nuova è meglio farla girare: se dice «0 non ok», si può pubblicare.
 
 Non prova la rete vera, i telefoni veri e due persone che premono nello stesso istante. Per quello, prima di una serata importante, conviene una prova con 2 o 3 telefoni.

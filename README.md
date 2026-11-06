@@ -37,10 +37,10 @@ Dentro `app/`: `index.html` (schermate), `css/app.css` (aspetto), `js/config.js`
 
 ## Provare senza toccare i dati veri
 
-1. `test/genera-prova.ps1` crea in `test/` una copia dell'app che usa un database finto nel browser.
-2. Avvia un server nella cartella `test` (es. `py -m http.server 5501 --directory test`) e apri:
-   - `http://localhost:5501/` → l'app di prova (ogni scheda del browser è un telefono diverso)
-   - `http://localhost:5501/serata.html?auto=1` → **serata simulata**: tutti i telefoni lavorano da soli e alla fine compare l'elenco dei controlli.
-     Parametri: `ordini=200&casse=4&camerieri=21&file=7&seme=123`
+**Doppio clic su `test/AVVIA-SERATA-SIMULATA.bat`.** Prepara la copia di prova (database finto nel browser), accende il server di prova (finestra «Server prova», chiudila per spegnerlo) e apre:
+- `http://localhost:5520/serata.html` → **serata simulata**: in alto scegli ordini, casse, camerieri, file e «Serata n.» (stesso numero = stessa serata), poi «Avvia la serata». Alla fine compare l'elenco dei controlli.
+- `http://localhost:5520/` → l'app di prova a mano (ogni scheda del browser è un telefono diverso).
+
+Serve Python (già installato su questo computer). Il server è `test/server.py`; la copia di prova la crea `test/genera-prova.ps1`.
 
 La serata simulata non prova la rete vera né i telefoni veri: prima di una serata importante, fate anche una prova con qualche telefono.

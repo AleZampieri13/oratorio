@@ -260,7 +260,7 @@ async function specialAfterCreate(o,S){
     const m=txt(o.cassa,"#x-msg");check(/Incassa altri 2,00/.test(m),`Modifica prima che il cameriere lo prenda: +1 Bibita sul n. ${o.n} → «Incassa altri 2,00 €»`,m);
     if(/Incassa altri/.test(m)){L[o.cassa][o.pay]=r2(L[o.cassa][o.pay]+2)}
     await click(o.cassa,"#x-close");queueFor[o.waiter].push(o.n)}
-  else if(k>=5&&!S.undo){S.undo=true;
+  else if(k>=5&&!S.undo&&o.asp!=="subito"){S.undo=true;
     if(o.waiter)queueFor[o.waiter]=queueFor[o.waiter].filter(x=>x!==o.n);
     const b=await waitFor(()=>q(o.cassa,"#c-undo"),2000,"pulsante annulla").catch(()=>null);
     if(b){await click(o.cassa,b);await click(o.cassa,"#c-undo");await waitFor(()=>db().annullati&&db().annullati[o.n],2000).catch(()=>null);
