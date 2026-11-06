@@ -1,0 +1,15 @@
+# Netlify pubblica solo la cartella app/ (niente build: sono file pronti)
+[build]
+  publish = "app"
+
+# sw.js e index.html non vanno tenuti in memoria a lungo dal browser,
+# così i telefoni vedono subito le versioni nuove
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"

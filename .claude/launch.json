@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ordini-prova",
+      "runtimeExecutable": "py",
+      "runtimeArgs": ["-m", "http.server", "5501", "--bind", "127.0.0.1", "--directory", "test"],
+      "port": 5501
+    }
+  ]
+}

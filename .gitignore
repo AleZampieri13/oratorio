@@ -1,0 +1,10 @@
+# file generati: si rifanno con test/genera-prova.ps1
+test/index.html
+test/js/
+test/css/
+test/*.png
+test/manifest.webmanifest
+# pacchetti e file di sistema
+*.zip
+.DS_Store
+Thumbs.db

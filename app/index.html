@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0e6a53">
+<title>Ordini Oratorio</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Ordini">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Ordini Oratorio</h1>
+      <div class="right">
+        <span class="conn" id="conn"><i></i><span id="conn-t">Avvio…</span></span>
+        <span class="who" id="who" hidden><span id="who-t"></span><button class="btn" id="logout">Esci</button></span>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist" id="tabs" hidden></nav>
+  </header>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <!-- CONFIGURAZIONE FIREBASE -->
+  <section id="v-config" class="gate" hidden>
+    <div class="panel">
+      <h2>Collega l'app al database</h2>
+      <p class="hint">Si fa una volta sola, dal primo dispositivo. Gli altri si collegheranno con un link o un QR.</p>
+      <ol class="steps">
+        <li>Apri <b>console.firebase.google.com</b> con un account Google e crea un nuovo progetto (Google Analytics non serve).</li>
+        <li>In <b>Authentication</b> premi «Inizia» e attiva il metodo di accesso <b>Anonimo</b>.</li>
+        <li>In <b>Realtime Database</b> premi «Crea database», scegli una posizione in Europa e la modalità bloccata. Poi nella scheda <b>Regole</b> incolla queste e pubblica:
+          <pre class="rules">{
+  "rules": {
+    "ev": { ".read": "auth != null", ".write": "auth != null" }
+  }
+}</pre></li>
+        <li>In <b>Impostazioni progetto</b> → «Le tue app» aggiungi un'app <b>Web</b> (icona &lt;/&gt;). Copia tutto il blocco <code>firebaseConfig</code> e incollalo qui sotto. Deve contenere <code>databaseURL</code>.</li>
+      </ol>
+      <label class="label" for="cfg-text">Configurazione Firebase</label>
+      <textarea id="cfg-text" style="min-height:160px;font-family:ui-monospace,Consolas,monospace;font-size:.85rem" placeholder='const firebaseConfig = { apiKey: "...", databaseURL: "...", ... };'></textarea>
+      <button class="btn primary big" id="cfg-go">Collega</button>
+      <div class="msg err" id="cfg-msg"></div>
+    </div>
+  </section>
+
+  <!-- PRIMO AVVIO -->
+  <section id="v-setup" class="gate" hidden>
+    <div class="panel">
+      <h2>Primo avvio: crea il master</h2>
+      <p class="hint">Il master vede tutte le schede, aggiunge le persone, importa le prenotazioni e prepara l'evento.</p>
+      <div class="stack"><label class="label" for="s-nome">Nome</label><input type="text" id="s-nome" placeholder="Es. Alessandro"></div>
+      <div class="stack"><label class="label" for="s-pin">PIN (da 4 a 6 cifre)</label><input type="password" id="s-pin" inputmode="numeric" autocomplete="off"></div>
+      <div class="stack"><label class="label" for="s-pin2">Ripeti il PIN</label><input type="password" id="s-pin2" inputmode="numeric" autocomplete="off"></div>
+      <button class="btn primary big" id="s-go">Crea e accedi</button>
+      <div class="msg err" id="s-msg"></div>
+    </div>
+  </section>
+
+  <!-- ACCESSO -->
+  <section id="v-login" class="gate" hidden>
+    <div class="sub ver" style="order:99">Versione 32</div>
+    <div class="stack">
+      <div class="panel">
+        <h2>Chi sei?</h2>
+        <div class="names" id="l-names"></div>
+        <div class="stack pinbox" id="l-pinbox" hidden>
+          <label class="label" for="l-pin" id="l-pinlabel">PIN</label>
+          <input type="password" id="l-pin" inputmode="numeric" autocomplete="off">
+          <button class="btn primary big" id="l-go">Entra</button>
+        </div>
+        <div class="msg err" id="l-msg"></div>
+      </div>
+      <div class="panel">
+        <h2>Sei un cameriere?</h2>
+        <p class="hint">Inquadra con la fotocamera il QR d'iscrizione che ti mostra il capo camerieri. Se non funziona, scrivi qui il codice sotto il QR.</p>
+        <div class="row">
+          <input type="text" id="l-code" autocomplete="off" autocapitalize="characters" placeholder="Codice, es. K7RM2P" style="text-transform:uppercase;letter-spacing:.1em">
+          <button class="btn primary" id="l-code-go">Entra</button>
+        </div>
+        <div class="msg err" id="l-code-msg"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ISCRIZIONE CAMERIERE -->
+  <section id="v-join" class="gate" hidden>
+    <div class="panel">
+      <h2>Chi sei?</h2>
+      <div class="stack" id="j-list"></div>
+      <div class="msg err" id="j-msg"></div>
+      <button class="btn small" id="j-pin" style="margin-top:12px">Accesso con PIN</button>
+    </div>
+  </section>
+
+  <!-- CASSA -->
+  <section id="p-cassa" hidden>
+    <div class="grid2">
+      <div class="panel">
+        <div class="cbig"><label class="label" for="c-num">Biglietto</label><input type="number" id="c-num" inputmode="numeric" min="1" class="ticketnum"><span class="label" id="c-prencount"></span></div>
+        <div class="donebox" id="c-last-wrap" hidden><div id="c-last"></div></div>
+        <div class="stack" id="c-searchbox">
+          <input type="search" id="c-search" placeholder="Cerca prenotazione" autocomplete="off" aria-label="Cerca prenotazione">
+          <div class="results" id="c-results" hidden></div>
+        </div>
+        <div class="sel" id="c-sel" hidden><span id="c-sel-t"></span><button class="btn small" id="c-sel-x">Togli</button></div>
+        <input type="text" id="c-nome" placeholder="Nominativo *" aria-label="Nominativo (obbligatorio)" required>
+        <div id="c-steppers"></div>
+        <details class="singles" id="c-sing-box" hidden><summary>Portate singole</summary><div id="c-sing"></div></details>
+        <div class="stack" id="c-extra-box" hidden><span class="label">Bevande ed extra</span><div id="c-extra"></div></div>
+        <div class="stock" id="c-stock" hidden></div>
+        <textarea id="c-note" placeholder="Note per la cucina (allergie, intolleranze…)" aria-label="Note per la cucina"></textarea>
+        <label class="check"><input type="checkbox" id="c-asp"> Da asporto</label>
+        <div class="payrow" id="c-asp-row" hidden><span class="label">In cucina</span><span class="seg big" id="c-aspmode"><button data-m="subito">Subito</button><button data-m="cameriere">Lo chiama un cameriere</button></span></div>
+        <label class="check" id="c-paid-row" hidden><input type="checkbox" id="c-paid"></label>
+        <div class="paybox" id="c-paybox" hidden>
+          <div class="totline" id="c-total"></div>
+          <div class="payrow" id="c-pay-row"><span class="seg big" id="c-pay"><button data-pay="contanti">Contanti</button><button data-pay="pos">POS</button></span></div>
+          <div class="payrow" id="c-cash"><label class="label" for="c-ric">Ricevuto</label>
+            <span class="row" style="flex-wrap:nowrap"><input type="text" id="c-ric" inputmode="decimal" class="pricein" placeholder="0,00 €"><span class="resto" id="c-resto"></span></span></div>
+          <div class="payrow"><label class="label" for="c-off">Offerta</label>
+            <span class="row" style="flex-wrap:nowrap"><button class="btn small" id="c-off-resto" hidden>Il resto è un'offerta</button><input type="text" id="c-off" inputmode="decimal" class="pricein" placeholder="0,00 €"></span></div>
+        </div>
+        <button class="btn primary big" id="c-create">Crea ordine</button>
+        <div class="msg" id="c-msg"></div>
+      </div>
+      <div class="stack">
+        <div class="panel edit-panel" id="x-panel" hidden>
+          <div class="panel-head"><h2 id="x-title">Modifica ordine</h2><button class="btn small" id="x-close">Chiudi</button></div>
+          <div class="note" id="x-lockmsg" hidden></div>
+          <div class="stack" id="x-fix" hidden></div>
+          <div class="stack" id="x-body">
+          <div class="stack"><label class="label" for="x-nome">Nominativo</label><input type="text" id="x-nome"></div>
+          <div id="x-steppers"></div>
+          <details class="singles" id="x-sing-box" hidden><summary>Portate singole</summary><div id="x-sing"></div></details>
+          <label class="check"><input type="checkbox" id="x-paid"> Menù già pagato in anticipo</label>
+          <div class="stack" id="x-extra-box" hidden><span class="label">Bevande ed extra</span><div id="x-extra"></div></div>
+          <div class="totline" id="x-total" hidden></div>
+          <div class="payrow"><label class="label" for="x-off">Offerta</label><input type="text" id="x-off" inputmode="decimal" class="pricein" placeholder="0,00 €"></div>
+          <div class="payrow" id="x-pay-row" hidden><span class="label">Pagamento</span><span class="seg big" id="x-pay"><button data-pay="contanti">Contanti</button><button data-pay="pos">POS</button></span></div>
+          <div class="stack"><label class="label" for="x-note">Note per la cucina</label><textarea id="x-note"></textarea></div>
+          <button class="btn primary big" id="x-save">Salva modifiche</button>
+          </div>
+          <div class="row" id="x-del-row"><button class="btn danger" id="x-del">Annulla ordine</button></div>
+          <div class="row" id="x-confirm-row" hidden>
+            <span style="font-weight:700">Annullare l'ordine?</span>
+            <button class="btn danger solid" id="x-del-yes">Sì, annulla</button>
+            <button class="btn" id="x-del-no">No</button>
+          </div>
+          <div class="msg" id="x-msg"></div>
+        </div>
+        <div class="panel" id="c-asp-panel" hidden>
+          <h2>Asporto da consegnare</h2>
+          <div class="list" id="c-asplist"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Ordini</h2><button class="btn small" id="d-toggle">+ Offerta</button></div>
+          <div class="stack" id="d-panel" hidden>
+            <div class="row"><input type="text" id="d-amt" inputmode="decimal" placeholder="Offerta €" class="pricein">
+              <span class="seg big" id="d-pay"><button data-pay="contanti">Contanti</button><button data-pay="pos">POS</button></span>
+              <button class="btn primary" id="d-go">Registra</button></div>
+            <div class="msg" id="d-msg"></div>
+          </div>
+          <div class="mineline" id="c-mine-panel" hidden><span id="c-mine"></span><span id="c-mine-n" hidden></span><span id="c-fondo-ro" hidden></span>
+            <span id="c-fondo-row" hidden><input type="text" id="c-fondo"><button id="c-fondo-save">Salva</button></span><span id="c-attesi" hidden></span></div>
+          <div class="row"><input type="number" id="c-opennum" inputmode="numeric" min="1" placeholder="N. da modificare" aria-label="Numero dell'ordine da modificare"><button class="btn" id="c-open">Apri</button></div>
+          <div class="list" id="c-recent"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CAMERIERI -->
+  <section id="p-camerieri" hidden>
+    <div class="wcol">
+      <div class="panel">
+        <h2>Nuovo cliente</h2>
+        <div class="row">
+          <input type="number" id="w-num" inputmode="numeric" min="1" placeholder="N. sul biglietto" class="bignum" aria-label="Numero sul biglietto">
+          <button class="btn primary" id="w-open">Cerca</button>
+        </div>
+        <div class="msg err" id="w-msg"></div>
+        <div class="stack" id="w-prev" hidden></div>
+      </div>
+      <div class="stack">
+        <div class="panel-head" style="padding:0 4px"><span class="stack" style="gap:2px"><h2 id="w-tt">I miei clienti</h2><span class="sub" id="w-tt-sub"></span></span>
+          <span class="seg" id="w-filter" hidden><button data-f="mie">Miei</button><button data-f="tutte">Tutti</button></span></div>
+        <div class="note" id="w-nofila" hidden>Nessuna fila assegnata.</div>
+        <div class="stack" id="w-tables"></div>
+      </div>
+      <button class="btn small" id="w-sound" aria-pressed="true" style="align-self:center">Avviso sonoro: acceso</button>
+    </div>
+  </section>
+
+  <!-- CUCINA -->
+  <section id="p-cucina" hidden>
+    <div class="kreps" id="k-reps" hidden></div>
+    <div class="ksum" id="k-sum"></div>
+    <div class="kfilt" id="k-filt" hidden></div>
+    <div class="section-head">
+      <h2>Da preparare</h2>
+      <button class="btn" id="k-sound" aria-pressed="false">Suono: spento</button>
+    </div>
+    <div class="kq" id="k-queue"></div>
+    <div class="section-head"><h2>Pronte, in attesa del cameriere</h2></div>
+    <div class="panel"><div class="list" id="k-ready"></div></div>
+    <details class="panel bstock" id="k-stock-box"><summary>Porzioni</summary>
+      <div id="k-stock"></div>
+      <div class="msg" id="k-stock-msg"></div>
+    </details>
+  </section>
+
+  <!-- USCITA PIATTI -->
+  <section id="p-uscita" hidden>
+    <div class="kreps" id="o-file"></div>
+    <div class="section-head"><h2>Pronti da consegnare</h2><button class="btn" id="o-sound" aria-pressed="false">Suono: spento</button></div>
+    <div class="kq" id="o-ready"></div>
+    <div class="section-head"><h2>In preparazione</h2></div>
+    <div class="panel"><div class="list" id="o-wip"></div></div>
+  </section>
+
+  <!-- PERSONE -->
+  <section id="p-persone" hidden>
+    <div class="grid2">
+      <div class="panel">
+        <h2 id="u-title">Persone</h2>
+        <div class="list" id="u-list"></div>
+      </div>
+      <div class="stack">
+        <div class="panel">
+          <h2>Aggiungi camerieri</h2>
+          <textarea id="u-wnames" rows="4" placeholder="Un nome per riga"></textarea>
+          <div class="row"><select id="u-wfila" aria-label="Fila" style="width:auto"></select><button class="btn primary" id="u-wadd">Aggiungi</button></div>
+          <div class="msg" id="u-wmsg"></div>
+        </div>
+        <div class="panel">
+          <h2>Ingresso camerieri</h2>
+          <div class="sub" id="u-joinstate"></div>
+          <div class="row"><button class="btn primary" id="u-joinqr">Mostra QR</button><button class="btn" id="u-close">Chiudi ingressi</button><button class="btn" id="u-newjoin">Nuovo QR</button></div>
+        </div>
+        <div class="panel">
+          <h2>File</h2>
+
+          <div id="u-file"></div>
+          <div class="row"><input type="text" id="u-newfila" placeholder="Es. Fila 5"><button class="btn" id="u-addfila">Aggiungi fila</button></div>
+          <div class="msg" id="u-fmsg"></div>
+        </div>
+        <div class="panel" id="u-addpanel">
+          <h2>Aggiungi persona</h2>
+          <div class="stack"><label class="label" for="u-nome">Nome</label><input type="text" id="u-nome" placeholder="Es. Cassa 1"></div>
+          <div class="stack"><span class="label">Ruoli (anche più di uno)</span>
+            <div class="grp" id="u-ruoli"><button data-r="cassa" aria-pressed="false">Cassa</button><button data-r="cucina" aria-pressed="false">Cucina</button><button data-r="bar" aria-pressed="false">Bar</button><button data-r="uscita" aria-pressed="false">Uscita piatti</button><button data-r="capo" aria-pressed="false">Capo camerieri</button><button data-r="master" aria-pressed="false">Master</button><button data-r="cameriere" aria-pressed="false">Cameriere</button></div></div>
+          <div class="stack" id="u-reprow" hidden><span class="label">Reparto cucina (nessuno = vede tutto)</span><div class="grp" id="u-reps"></div></div>
+          <div class="stack" id="u-filarow" hidden><label class="label" for="u-pfila">Fila</label><select id="u-pfila"></select></div>
+          <div class="stack" id="u-pinrow"><label class="label" for="u-pin">PIN (da 4 a 6 cifre)</label><input type="password" id="u-pin" inputmode="numeric" autocomplete="off"></div>
+          <button class="btn primary big" id="u-add">Aggiungi</button>
+        </div>
+        <div class="msg" id="u-msg"></div>
+        <div class="sub ver">Versione 32</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BAR -->
+  <section id="p-bar" hidden>
+    <div class="panel">
+      <h2>Al banco</h2>
+      <input type="number" id="b-num" inputmode="numeric" min="1" placeholder="N. sul biglietto" class="bignum" aria-label="Numero sul biglietto">
+      <div class="bgive" id="b-give" hidden></div>
+    </div>
+    <div class="bsum" id="b-sum"></div>
+    <div class="section-head">
+      <h2>Da preparare</h2>
+      <button class="btn" id="b-sound" aria-pressed="false">Suono: spento</button>
+    </div>
+    <div class="kq" id="b-queue"></div>
+    <div class="section-head"><h2>Pronte</h2></div>
+    <div class="panel"><div class="list" id="b-ready"></div></div>
+    <details class="panel bstock" id="b-stock-box"><summary>Scorte</summary>
+      <div id="b-stock"></div>
+      <div class="msg" id="b-stock-msg"></div>
+    </details>
+  </section>
+
+  <!-- LISTINO (master e cassa) -->
+  <section id="p-listino" hidden>
+    <div class="grid2">
+      <div class="stack">
+        <div class="panel">
+          <h2>Menù</h2>
+          <p class="hint">Ogni menù ha un prezzo e le portate che comprende: tocca una portata per toglierla o rimetterla. I prezzi si salvano da soli appena esci dal campo e valgono per gli ordini successivi.</p>
+          <div id="l-var"></div>
+          <button class="btn" id="l-saveprices">Salva prezzi menù</button>
+          <span class="label">Componi un nuovo menù</span>
+          <div class="row"><input type="text" id="l-newvar" placeholder="Es. Menù senza secondo"><input type="text" id="l-newprice" inputmode="decimal" placeholder="€" class="pricein"></div>
+          <div class="chips" id="l-newports"></div>
+          <button class="btn primary" id="l-addvar">Aggiungi menù</button>
+          <div class="msg" id="l-vmsg"></div>
+        </div>
+        <div class="panel">
+          <h2>Portate e prezzi singoli</h2>
+          <p class="hint">Il prezzo singolo serve per vendere la portata da sola, anche da asporto. Lascia vuoto se non si vende singola. Con ↑ ↓ scegli l'ordine suggerito ai camerieri: possono comunque chiamare le portate nell'ordine che vogliono.</p>
+          <div id="l-port"></div>
+          <button class="btn" id="l-saveport">Salva prezzi portate</button>
+          <span class="label">Aggiungi portata</span>
+          <div class="row"><input type="text" id="l-newport" placeholder="Es. Contorno"><button class="btn" id="l-addport">Aggiungi</button></div>
+          <div class="msg" id="l-pmsg"></div>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="panel">
+          <h2>Bevande ed extra</h2>
+          <p class="hint">Si aggiungono a qualsiasi ordine in cassa.</p>
+          <div id="l-extra"></div>
+          <button class="btn" id="l-saveextra">Salva prezzi extra</button>
+          <span class="label">Aggiungi extra</span>
+          <div class="row"><input type="text" id="l-newextra" placeholder="Es. Acqua 1 l"><input type="text" id="l-newextraprice" inputmode="decimal" placeholder="€" class="pricein"><button class="btn" id="l-addextra">Aggiungi</button></div>
+          <div class="msg" id="l-xmsg"></div>
+        </div>
+        <div class="panel">
+          <h2>Reparti cucina</h2>
+          <p class="hint">Ogni cuoco con un reparto vede solo le chiamate del suo reparto. Tocca le portate che il reparto prepara e, se vuoi, scrivi il piatto (es. «Patatine»). Una portata con più reparti diventa pronta quando hanno finito tutti.</p>
+          <div id="l-rep"></div>
+          <span class="label">Aggiungi reparto</span>
+          <div class="row"><input type="text" id="l-newrep" placeholder="Es. Fritto"><button class="btn" id="l-addrep">Aggiungi</button></div>
+          <div class="msg" id="l-rmsg"></div>
+        </div>
+        <div class="panel">
+          <h2>Registro modifiche</h2>
+          <div class="list" id="l-log"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EVENTO -->
+  <section id="p-evento" hidden>
+    <div class="grid2">
+      <div class="stack">
+        <div class="panel">
+          <div class="panel-head"><h2>Riepilogo</h2><button class="btn small" id="e-export">Scarica Excel</button></div>
+          <div class="stats" id="e-stats"></div>
+          <div class="tablebox" id="e-table"></div>
+          <div class="msg" id="e-export-msg"></div>
+        </div>
+        <div class="panel">
+          <h2>Tempi della cucina</h2>
+          <p class="hint">Preparazione: da quando il cameriere chiama a quando la cucina (o il reparto) segna pronto. Attesa: da pronto a consegnato, cioè quanto il piatto resta sul bancone.</p>
+          <div class="tablebox" id="e-times"></div>
+        </div>
+        <div class="panel">
+          <h2>Chiusura cassa</h2>
+          <p class="hint">Una scheda per ogni cassa. A fine serata conta i contanti di ogni cassetto e scrivili in «Contati»: l'app ti dice se tornano. Le restituzioni sono già tolte.</p>
+          <div class="stack" id="e-close"></div>
+          <div id="e-close-tot"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Prenotazioni</h2><span class="label" id="e-prencount"></span></div>
+          <div class="file" id="i-drop">
+            <span style="font-weight:700">Importa l'Excel delle prenotazioni</span>
+            <span class="hint">File .xlsx, .xls o .csv. Puoi ricaricarlo aggiornato: le prenotazioni con lo stesso nominativo vengono aggiornate, non duplicate.</span>
+            <input type="file" id="i-file" accept=".xlsx,.xls,.csv,.ods">
+          </div>
+          <div class="stack" id="i-map-wrap" hidden>
+            <p class="hint" id="i-info"></p>
+            <div class="map" id="i-map"></div>
+            <p class="hint" id="i-basehint"></p>
+            <span class="label">Anteprima</span>
+            <div class="tablebox" id="i-preview"></div>
+            <label class="check"><input type="checkbox" id="i-prune"> Togli le prenotazioni che non sono più nel file (solo quelle non ancora arrivate)</label>
+            <div class="row"><button class="btn primary" id="i-go">Importa</button><button class="btn" id="i-cancel">Annulla</button></div>
+          </div>
+          <div class="msg" id="i-msg"></div>
+          <input type="search" id="e-psearch" placeholder="Cerca tra le prenotazioni">
+          <div class="list" id="e-plist"></div>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="panel">
+          <h2>Collega altri dispositivi</h2>
+          <p class="hint">Apri questo link (o inquadra il QR) su cassa, cucina e telefoni dei responsabili. I camerieri invece entrano con il QR d'iscrizione dalla scheda Persone.</p>
+          <button class="btn" id="e-showlink">Mostra link e QR</button>
+        </div>
+        <div class="panel">
+          <h2>Nuovo evento</h2>
+          <p class="hint">Mette la serata in corso tra le «Serate passate» (ordini, incassi, prenotazioni, offerte, registro) e riparte dal numero 1. Persone, PIN e listino restano.</p>
+          <div class="stack"><label class="label" for="e-name">Nome della serata da archiviare</label><input type="text" id="e-name" placeholder="Es. Festa di San Giovanni"></div>
+          <div class="row" id="e-reset-row"><button class="btn danger" id="e-reset">Nuovo evento: archivia questa serata</button></div>
+          <div class="stack" id="e-confirm-row" hidden>
+            <span style="font-weight:700">La serata in corso va in archivio e l'app riparte da zero. Vuoi anche scaricare subito l'Excel?</span>
+            <button class="btn primary big" id="e-reset-save">Scarica l'Excel e archivia</button>
+            <button class="btn danger" id="e-reset-yes">Archivia senza scaricare</button>
+            <button class="btn" id="e-reset-no">Annulla, lascia tutto com'è</button>
+          </div>
+          <div class="msg" id="e-reset-msg"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Serate passate</h2><button class="btn small" id="e-arch-load">Mostra</button></div>
+          <div class="list" id="e-arch"></div>
+          <div class="msg" id="e-arch-msg"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="modal" id="qr-modal" hidden>
+  <div class="panel">
+    <h2 id="qr-title"></h2>
+    <p class="hint" id="qr-hint"></p>
+    <div class="qr" id="qr-box"></div>
+    <div class="code" id="qr-code"></div>
+    <div class="linkbox" id="qr-link"></div>
+    <div class="row" style="justify-content:center">
+      <button class="btn" id="qr-copy">Copia link</button>
+      <button class="btn primary" id="qr-close">Chiudi</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
+
+<script src="js/config.js"></script>
+<script src="js/01-base.js"></script>
+<script src="js/02-cassa.js"></script>
+<script src="js/03-camerieri.js"></script>
+<script src="js/04-cucina.js"></script>
+<script src="js/05-bar.js"></script>
+<script src="js/06-avvisi.js"></script>
+<script src="js/07-persone.js"></script>
+<script src="js/08-riepilogo.js"></script>
+<script src="js/09-listino.js"></script>
+<script src="js/10-evento.js"></script>
+<script src="js/11-avvio.js"></script>
+</body>
+</html>
