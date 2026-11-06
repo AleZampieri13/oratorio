@@ -1,9 +1,11 @@
+/* chi può avere un reparto: cuochi e uscita piatti (il master vede sempre tutto) */
+const hasRepRole=u=>!!u&&(hasRole(u,"cucina")||hasRole(u,"uscita"))&&!hasRole(u,"master");
 /* Persone, file, ingresso camerieri, QR */
 /* ---------- PERSONE ---------- */
 function pickedRoles(id){const on=[...document.querySelectorAll("#"+id+" button[data-r]")].filter(b=>b.getAttribute("aria-pressed")==="true").map(b=>b.dataset.r);
   if(on.includes("master"))return ["master"];if(on.includes("cameriere"))return ["cameriere"];return PRIMARY_ORDER.filter(r=>on.includes(r))}
 function syncAddForm(){const pr=pickedRoles("u-ruoli"),cam=pr[0]==="cameriere";$("u-pinrow").hidden=cam;$("u-filarow").hidden=!cam;
-  $("u-reprow").hidden=!(pr.includes("cucina")&&repList().length)}
+  $("u-reprow").hidden=!((pr.includes("cucina")||pr.includes("uscita"))&&repList().length)}
 function repChips(sel){return repList().map(r=>`<button data-rep="${esc(r.id)}" aria-pressed="${sel.includes(r.id)}">${esc(r.nome)}</button>`).join("")}
 function pickedReps(id){return [...document.querySelectorAll("#"+id+" button[data-rep]")].filter(b=>b.getAttribute("aria-pressed")==="true").map(b=>b.dataset.rep)}
 document.addEventListener("click",e=>{const b=e.target.closest("#u-reps button[data-rep], #u-repedit button[data-rep]");if(!b)return;b.setAttribute("aria-pressed",String(b.getAttribute("aria-pressed")!=="true"))});
@@ -36,9 +38,9 @@ function renderUsers(){
       <span class="row"><button class="btn small primary" data-save="${esc(u.id)}">Salva</button><button class="btn small" data-cancel="1">Annulla</button></span></div>`;
     const fsel=(u.ruolo==="cameriere"||hasRole(u,"capo"))?`<select data-ufila="${esc(u.id)}" aria-label="Fila di ${esc(u.nome)}" style="width:auto;padding:6px 8px"><option value="">${u.ruolo!=="cameriere"?"Tutte le file":"Nessuna fila"}</option>${fileList().map(f=>`<option value="${esc(f.id)}" ${u.fila===f.id?"selected":""}>${esc(f.nome)}</option>`).join("")}</select>`:"";
     const cam=u.ruolo==="cameriere";
-    const acts=fsel+(cam?(u.token?`<button class="btn small" data-free="${esc(u.id)}">Libera</button>`:""):`<button class="btn small" data-editpin="${esc(u.id)}">Cambia PIN</button>${hasRole(S.me,"master")?`<button class="btn small" data-roles="${esc(u.id)}">Ruoli</button>`:""}${hasRole(S.me,"master")&&hasRole(u,"cucina")&&!hasRole(u,"master")&&repList().length?`<button class="btn small" data-reps="${esc(u.id)}">Reparto</button>`:""}`);
-    const ur=hasRole(u,"cucina")&&!hasRole(u,"master")?userReps(u):[];
-    const st=cam?(u.token?'<span class="pill ok">entrato</span>':'<span class="pill no">non entrato</span>'):`<span class="pill wait">${esc(rolesLbl(u))}${ur.length?" · "+esc(ur.map(repNome).join(", ")):hasRole(u,"cucina")&&repList().length&&!hasRole(u,"master")?" · tutti i reparti":""}</span>`;
+    const acts=fsel+(cam?(u.token?`<button class="btn small" data-free="${esc(u.id)}">Libera</button>`:""):`<button class="btn small" data-editpin="${esc(u.id)}">Cambia PIN</button>${hasRole(S.me,"master")?`<button class="btn small" data-roles="${esc(u.id)}">Ruoli</button>`:""}${hasRole(S.me,"master")&&hasRepRole(u)&&repList().length?`<button class="btn small" data-reps="${esc(u.id)}">Reparto</button>`:""}`);
+    const ur=hasRepRole(u)?userReps(u):[];
+    const st=cam?(u.token?'<span class="pill ok">entrato</span>':'<span class="pill no">non entrato</span>'):`<span class="pill wait">${esc(rolesLbl(u))}${ur.length?" · "+esc(ur.map(repNome).join(", ")):hasRepRole(u)&&repList().length?" · tutti i reparti":""}</span>`;
     return `<div class="li plain two"><span><b>${esc(u.nome)}</b> ${st}${self?' <span class="label">(tu)</span>':""}</span>
       <span class="row">${acts}<button class="btn small" data-rename="${esc(u.id)}">Rinomina</button>
       <button class="btn small danger" data-deluser="${esc(u.id)}" ${self?"disabled":""}>Rimuovi</button></span></div>`}).join("");
@@ -73,7 +75,7 @@ $("u-add").addEventListener("click",async()=>{
   if(S.users.some(u=>norm(u.nome)===norm(nome))){umsg("C'è già una persona con questo nome.");return}
   if(!validPin(pin)){umsg("Il PIN deve avere da 4 a 6 cifre.");return}
   const u={id:rid("u"),nome,ruolo,salt:newCode()+newCode()};if(ruoli.length)u.ruoli=ruoli;u.hash=await hashPin(u.salt,pin);
-  const reps=sel.includes("cucina")&&!sel.includes("master")?pickedReps("u-reps"):[];if(reps.length)u.reparti=reps;
+  const reps=(sel.includes("cucina")||sel.includes("uscita"))&&!sel.includes("master")?pickedReps("u-reps"):[];if(reps.length)u.reparti=reps;
   try{await R("config/utenti/"+u.id).set(u);$("u-nome").value="";$("u-pin").value="";setPicked("u-ruoli",[]);$("u-reps").innerHTML=repChips([]);syncAddForm();umsg(`${nome} aggiunto: ${rolesLbl(u).toLowerCase()}.`,true)}
   catch(e){umsg(errText(e))}
 });

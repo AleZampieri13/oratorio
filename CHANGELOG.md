@@ -1,5 +1,9 @@
 # Versioni
 
+## 33
+- **Uscita piatti per reparto:** il filtro in alto ora è per reparti della cucina (Tutti / Primo / Fritto / …), non più per file. Su ogni piatto si vedono il nome dei piatti dei reparti, il cameriere e la sua fila.
+- In Persone si può assegnare un reparto anche a chi fa l'uscita (come per i cuochi): vede solo i piatti di quel reparto. Senza reparto vede tutto e può scegliere.
+
 ## 32
 - **Porzioni esaurite:** la cassa non può vendere oltre le porzioni (o le bevande) rimaste; vede «esaurito» accanto a menù, singole e bevande. Il master può forzare. Vale anche per le modifiche.
 - **Rettifica** degli ordini già partiti (cassa e master): si tolgono le portate non ancora chiamate e le bevande; finché nessuna portata è chiamata anche i coperti. L'app calcola quanto restituire. Le rettifiche finiscono nel registro e nell'Excel.

@@ -140,7 +140,7 @@ async function setup(){
   for(const [n,l,pin] of [["capocucina","Capo cucina","3000"],["primo","Cuoco Primo","3001"],["fritto","Cuoco Fritto","3002"],["secondo","Cuoco Secondo","3003"],["dolce","Cuoca Dolci","3004"],["uscita","Uscita","6000"],["bar","Bar","4000"],["capo","Capo camerieri","5000"]]){await addDev(n,l);await loginPin(n,l,pin)}
   for(const c of CAM){await addDev(c.dev,`${c.nome} · Fila ${c.fila+1}`);await joinW(c.dev,JOIN,c.nome)}
   check(COOKS.every(n=>q(n,"#tabs").hidden&&!q(n,"#k-reps").hidden)&&q("uscita","#tabs").hidden&&!q("uscita","#p-uscita").hidden,"Cuochi e uscita piatti vedono solo la loro pagina");
-  check(qa("uscita","#o-file button").length===NFILE+1,`L'uscita piatti può filtrare per fila (Tutte + ${NFILE})`);
+  check(qa("uscita","#o-reps button").length===5&&!qa("uscita","#o-reps button").some(b=>/Fila/.test(b.textContent)),"L'uscita piatti filtra per reparto della cucina (Tutti + 4 reparti)");
 }
 
 /* ---------------- SERVIZIO ---------------- */

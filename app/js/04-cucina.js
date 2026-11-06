@@ -130,25 +130,35 @@ $("k-stock").addEventListener("click",e=>{
 $("k-stock").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id&&e.target.id.startsWith("sc-")){const b=e.target.parentNode.querySelector("button[data-addp]");b&&b.click()}});
 
 /* ---------- USCITA PIATTI: chi sta al bancone e consegna ai camerieri ---------- */
-function oFila(){const f=S.oFila||"";return f&&fileList().some(x=>x.id===f)?f:""}
+/* reparti dell'uscita: chi ha un reparto assegnato in Persone vede solo quello; gli altri scelgono */
+function oFixed(){if(!S.me||hasRole(S.me,"master")||!hasRole(S.me,"uscita"))return null;const rs=userReps(S.me);return rs.length?rs:null}
+function oScope(){const f=oFixed();if(f)return f;return S.oRep&&repList().some(r=>r.id===S.oRep)?[S.oRep]:null}
+/* i reparti di una portata dell'ordine: quelli fissati quando è stata chiamata, altrimenti quelli del listino */
+function courseReps(o,k){const p=o.portate&&o.portate[k];const snap=Object.keys((p&&p.rep)||{});return snap.length?snap:portReps(portataCfg(k)).map(x=>x.r)}
+function inOScope(c,sc){return !sc||courseReps(c.o,c.k).some(r=>sc.includes(r))}
 function renderUscita(){
-  const f=oFila(),inF=o=>!f||o.fila===f;
-  $("o-file").innerHTML=`<span class="label">Fila</span><span class="seg">${[["","Tutte"],...fileList().map(x=>[x.id,x.nome])].map(([id,n])=>`<button data-ofila="${esc(id)}" aria-pressed="${f===id}">${esc(n)}</button>`).join("")}</span>`;
-  const ready=flatCourses("pronta").filter(c=>!c.o.asportoSubito&&inF(c.o));
+  const sc=oScope(),fixed=oFixed(),box=$("o-reps");
+  if(fixed){box.hidden=false;box.innerHTML=`<span class="pill wait">Reparto ${fixed.map(r=>esc(repNome(r))).join(" + ")}</span>`}
+  else if(!repList().length){box.hidden=true;box.innerHTML=""}
+  else{box.hidden=false;const cur=sc?S.oRep:"";
+    box.innerHTML=`<span class="label">Reparto</span><span class="seg">${[["","Tutti"],...repList().map(r=>[r.id,r.nome])].map(([id,n])=>`<button data-orep="${esc(id)}" aria-pressed="${cur===id}">${esc(n)}</button>`).join("")}</span>`}
+  const ready=flatCourses("pronta").filter(c=>!c.o.asportoSubito&&inOScope(c,sc));
   $("o-ready").innerHTML=ready.length?ready.map(c=>{const stale=c.t&&(Date.now()-c.t)>5*60000,rf=righeFor(c.o,c.k),n=cop(rf),wn=kWho(c.o,c.o.portate[c.k]);
     const dis=S.pending.has(c.o.numero+"|"+c.k)?"disabled":"";
+    const parts=partsOf(c.o.portate[c.k]).map(x=>x.piatto||x.nome).join(" + ");
     return `<article class="kcard ${stale?"late":""}"><div class="top"><span class="n nm">${c.o.numero}</span><span class="age">pronta ${ago(c.t)==="adesso"?"adesso":"da "+ago(c.t)}</span></div>
       <div class="what kcourse"><span style="color:${portColor(c.k)}">${esc(c.l)}</span> <span class="label">· ${n} ${n===1?"piatto":"piatti"}</span></div>
+      ${parts?`<div class="kparts">${esc(parts)}</div>`:""}
       <div class="who">${esc(wn)}${c.o.fila?" · "+esc(filaNome(c.o.fila)):""}${c.o.nome?" · "+esc(c.o.nome):""}</div>
       <ul>${rf.map(r=>`<li><b>${r.qta}</b>${esc(r.nome)}</li>`).join("")}</ul>
       ${c.o.note?`<div class="note">${esc(c.o.note)}</div>`:""}
       <button class="btn go big" ${dis} data-set="${c.o.numero}|${c.k}|servita">Consegnato</button></article>`}).join("")
     :'<div class="panel"><div class="empty">Niente da consegnare.</div></div>';
-  const wip=flatCourses("chiamata").filter(c=>!c.o.asportoSubito&&inF(c.o));
+  const wip=flatCourses("chiamata").filter(c=>!c.o.asportoSubito&&inOScope(c,sc));
   $("o-wip").innerHTML=wip.length?wip.map(c=>{const pt=partsTxt(c.o.portate[c.k]);
     return `<div class="li plain two"><span><b>n. ${c.o.numero}</b> · <b style="color:${portColor(c.k)}">${esc(c.l)}</b> · ${cop(righeFor(c.o,c.k))} piatti<div class="sub">${esc(kWho(c.o,c.o.portate[c.k]))}${c.o.fila?" · "+esc(filaNome(c.o.fila)):""} · chiamata ${ago(c.t)==="adesso"?"adesso":"da "+ago(c.t)}${pt?" · "+pt:""}</div></span></div>`}).join("")
     :'<div class="empty">Niente in preparazione.</div>';
 }
-$("o-file").addEventListener("click",e=>{const b=e.target.closest("button[data-ofila]");if(!b)return;S.oFila=b.dataset.ofila;lsSet("ofila",S.oFila);S.seenOut=null;renderUscita()});
+$("o-reps").addEventListener("click",e=>{const b=e.target.closest("button[data-orep]");if(!b)return;S.oRep=b.dataset.orep;lsSet("orep",S.oRep);S.seenOut=null;renderUscita()});
 $("o-sound").addEventListener("click",()=>toggleSound());
 

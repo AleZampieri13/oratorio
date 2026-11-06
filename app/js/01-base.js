@@ -13,7 +13,7 @@ function rolesOf(u){if(!u)return [];const x=u.ruoli;const extra=Array.isArray(x)
 function hasRole(u,r){return rolesOf(u).includes(r)}
 function allowedFor(u){const st=new Set();rolesOf(u).forEach(r=>(ALLOWED[r]||[]).forEach(t=>st.add(t)));return TAB_ORDER.filter(t=>st.has(t))}
 function rolesLbl(u){return rolesOf(u).map(r=>ROLE_LBL[r]).join(" + ")}
-function whoLbl(){if(!S.me)return "";const f=myFila(),mr=myReps();return S.me.nome+" · "+(S.me.ruolo==="cameriere"&&f?filaNome(f):rolesLbl(S.me))+(mr?" ("+mr.map(repNome).join(", ")+")":"")}
+function whoLbl(){if(!S.me)return "";const f=myFila(),mr=myReps()||(typeof oFixed==="function"?oFixed():null);return S.me.nome+" · "+(S.me.ruolo==="cameriere"&&f?filaNome(f):rolesLbl(S.me))+(mr?" ("+mr.map(repNome).join(", ")+")":"")}
 /* reparti della cucina */
 const toArr=x=>(Array.isArray(x)?x:Object.values(x||{})).filter(Boolean);
 function repList(){return S.reparti||[]}
@@ -35,7 +35,7 @@ const S={root:null,online:true,ordMap:{},prenMap:{},ordLoaded:false,varianti:DEF
   qty:{},eqty:{},editOrder:null,numDirty:false,openNum:null,lastNum:null,selPren:null,loginPick:null,pending:new Set(),
   kFilt:lsGet("kfiltro")||"",seenCalls:null,seenReady:null,sound:false,audio:null,wFilter:"mie",imp:null,editUser:null,cfg:null,invite:null,inviteLoaded:false,joinCode:null,
   extra:[],xqty:{},exqty:{},pay:"contanti",xpay:"contanti",dpay:"contanti",scorte:{},fondo:0,contato:null,offMap:{},stockWarn:null,sqty:{},esqty:{},aspMode:"subito",newPorts:null,logMap:{},scorteX:{},aspConfirm:null,seenBar:null,post:{},closeKey:"",file:null,joinFila:"",
-  reparti:[],kRep:lsGet("krep")||"",oFila:lsGet("ofila")||"",seenOut:null,removedQ:[],annMap:{},editLocked:false};
+  reparti:[],kRep:lsGet("krep")||"",oRep:lsGet("orep")||"",seenOut:null,removedQ:[],annMap:{},editLocked:false};
 
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function lsSet(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){}}

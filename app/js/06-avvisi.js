@@ -31,7 +31,7 @@ function checkEvents(){
   const barNew=new Set(ordersArr().filter(o=>o.bar&&o.bar.stato==="chiamata").map(o=>o.numero+":"+o.bar.t));
   if(S.seenBar&&S.role==="bar"){for(const k of barNew)if(!S.seenBar.has(k)){buzz();break}}
   S.seenBar=barNew;
-  if(S.role==="uscita"){const of=oFila(),outKeys=new Set(flatCourses("pronta").filter(c=>!c.o.asportoSubito&&(!of||c.o.fila===of)).map(c=>c.o.numero+":"+c.k+":"+c.t));
+  if(S.role==="uscita"){const osc=oScope(),outKeys=new Set(flatCourses("pronta").filter(c=>!c.o.asportoSubito&&inOScope(c,osc)).map(c=>c.o.numero+":"+c.k+":"+c.t));
     if(S.seenOut){for(const k of outKeys)if(!S.seenOut.has(k)){buzz();break}}S.seenOut=outKeys}
   const allReady=[...flatCourses("pronta"),...barItems("pronta",true)];
   const mine=(S.role==="cassa"?allReady.filter(x=>x.o.asportoSubito&&x.o.creatoDaId===S.me.id):allReady.filter(x=>!x.o.asportoSubito&&isMine(x))),readyKeys=new Map(mine.map(x=>[x.o.numero+":"+x.k+":"+x.t,x]));
