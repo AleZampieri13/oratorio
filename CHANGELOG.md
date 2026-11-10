@@ -1,5 +1,11 @@
 # Versioni
 
+## 35
+- **Extra con gruppo e reparto** (Listino → Bevande ed extra): ogni extra ha un **gruppo** (es. Bevande, Dolci, Altro) con cui è diviso in cassa, e **«Lo prepara»**: il Bar oppure un reparto della cucina.
+- Gli extra di un reparto della cucina (es. «Patatine extra» al Fritto) sono una voce a parte sulla scheda del cameriere («Extra Fritto»), si chiamano quando si vuole, li vede solo quel reparto e poi li porta il cameriere o li consegna l'uscita. Il bar vede solo i suoi extra.
+- Se si toglie un reparto, i suoi extra tornano al bar.
+- Tolto il pulsante «Prova suono» (il suono funziona); resta la scritta «Suono bloccato: tocca qui» quando serve.
+
 ## 34
 - **Suono degli avvisi:** tre note più forti e più lunghe; l'audio si attiva al momento giusto del tocco (alcuni telefoni Android non lo attivavano).
 - Pulsante **«Prova suono»** in cucina, camerieri, uscita e bar: suona, vibra e dice se il telefono blocca l'audio.

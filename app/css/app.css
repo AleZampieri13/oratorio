@@ -335,3 +335,14 @@ input.bad{border-color:var(--danger);box-shadow:0 0 0 2px var(--danger-bg)}
 
 .sndbar{display:block;width:100%;margin:0 0 12px;padding:14px;border-radius:var(--r);border:2px solid var(--danger);background:var(--danger-bg);color:var(--danger);font:800 1rem var(--f-body);cursor:pointer;text-align:center}
 .sndbar[hidden]{display:none}
+.xgroup{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+.xgroup>.label{margin-top:4px}
+.xedit{display:flex;flex-direction:column;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+.xedit:last-child{border-bottom:0}
+.xedit .top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.xedit .top b{flex:1 1 120px;min-width:0}
+.xedit .top{flex-wrap:nowrap}
+.xedit .top .pricein{width:88px;flex:0 0 auto}
+.xf{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.xf label{display:flex;flex-direction:column;gap:4px;min-width:0}
+.xf input,.xf select{width:100%;min-width:0}

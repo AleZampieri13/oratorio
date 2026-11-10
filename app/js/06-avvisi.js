@@ -38,15 +38,15 @@ function beep(){
   try{const t=S.audio.currentTime+0.02;[[880,0],[1175,0.2],[1568,0.4]].forEach(([f,d])=>tone(f,t+d,0.17,0.9));return true}catch(e){return false}
 }
 function buzz(){beep();try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}}
-/* «Prova suono»: è un tocco, quindi può anche sbloccare l'audio */
+/* tocco sulla scritta «Suono bloccato»: sblocca l'audio e fa un suono di prova */
 function testSound(){
   if(!S.sound){S.sound=true;lsSet("suono","1");setSoundBtns()}
   ensureAudio();
   setTimeout(()=>{const ok=beep();let vib=false;try{vib=!!(navigator.vibrate&&navigator.vibrate([200,100,200]))}catch(e){}
     toast(ok?`Suono di prova${vib?" e vibrazione":""}. Se non senti niente alza il volume «contenuti multimediali»: premi il tasto del volume mentre suona.`
-      :`Il telefono blocca ancora il suono (audio: ${S.audio?S.audio.state:"assente"}). Tocca di nuovo «Prova suono»; se non cambia, ricarica la pagina.`,{ms:9000})},150);
+      :`Il telefono blocca ancora il suono (audio: ${S.audio?S.audio.state:"assente"}). Tocca di nuovo la scritta rossa; se non cambia, ricarica la pagina.`,{ms:9000})},150);
 }
-document.addEventListener("click",e=>{if(e.target.closest("[data-testsound],#sndbar"))testSound()});
+$("sndbar").addEventListener("click",testSound);
 document.addEventListener("visibilitychange",()=>paintSoundBar());
 function checkEvents(){
   if(!S.ordLoaded||!S.me)return;

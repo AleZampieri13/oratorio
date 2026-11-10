@@ -42,9 +42,12 @@ function renderListinoInner(){
       <input type="text" inputmode="decimal" id="lb-${esc(p.id)}" value="${euro(p.prezzoBimbi)}" placeholder="—" aria-label="Prezzo singolo bambini ${esc(p.nome)}">
       <span class="acts"><button class="btn small" data-up="${i}" ${i?"":"disabled"} aria-label="Sposta su">↑</button><button class="btn small" data-down="${i}" ${i<S.portate.length-1?"":"disabled"} aria-label="Sposta giù">↓</button>
       <button class="btn small danger" data-delport="${esc(p.id)}" ${S.portate.length>1?"":"disabled"}>Rimuovi</button></span></div>`).join("");
-  $("l-extra").innerHTML=S.extra.length?S.extra.map(x=>`<div class="menu-row"><span><b>${esc(x.nome)}</b></span>
+  const grp=[...new Set(["Bevande","Dolci","Altro",...S.extra.map(x=>(x.gruppo||"").trim()).filter(Boolean)])];
+  $("l-extra").innerHTML=S.extra.length?`<datalist id="xgruppi">${grp.map(g=>`<option value="${esc(g)}">`).join("")}</datalist>`+S.extra.map(x=>`<div class="xedit"><div class="top"><b>${esc(x.nome)}</b>
     <input type="text" inputmode="decimal" class="pricein" id="lx-${esc(x.id)}" value="${euro(x.prezzo)}" placeholder="0,00" aria-label="Prezzo ${esc(x.nome)}">
-    <button class="btn danger small" data-delextra="${esc(x.id)}">Rimuovi</button></div>`).join(""):'<div class="empty">Nessun extra. Aggiungi acqua, vino, bibite, caffè…</div>';
+    <button class="btn danger small" data-delextra="${esc(x.id)}">Rimuovi</button></div>
+    <div class="xf"><label><span class="label">Gruppo</span><input type="text" id="lxg-${esc(x.id)}" list="xgruppi" value="${esc(x.gruppo||"")}" placeholder="Es. Bevande"></label>
+    <label><span class="label">Lo prepara</span><select id="lxr-${esc(x.id)}"><option value="">Bar</option>${repList().map(r=>`<option value="${esc(r.id)}" ${xRep(x)===r.id?"selected":""}>${esc(r.nome)}</option>`).join("")}</select></label></div></div>`).join(""):'<div class="empty">Nessun extra. Aggiungi acqua, vino, bibite, caffè…</div>';
   $("l-saveextra").hidden=!S.extra.length;
   const noRep=S.portate.filter(p=>!portReps(p).length);
   $("l-rep").innerHTML=repList().length?repList().map(r=>`<div class="vrow"><div class="top"><b>${esc(r.nome)}</b><button class="btn danger small" data-delrep="${esc(r.id)}">Rimuovi</button></div>
@@ -62,6 +65,7 @@ $("l-newrep").addEventListener("keydown",e=>{if(e.key==="Enter")$("l-addrep").cl
 $("l-rep").addEventListener("click",async e=>{const b=e.target.closest("button");if(!b)return;
   if(b.dataset.delrep){if(!armed(b))return;const r=repList().find(x=>x.id===b.dataset.delrep);if(!r)return;
     await savePortate(S.portate.map(p=>({...p,reparti:portReps(p).filter(x=>x.r!==r.id)})),S.varianti,null,null);
+    if(S.extra.some(x=>x.rep===r.id))await saveExtra(S.extra.map(x=>{if(x.rep!==r.id)return x;const y={...x};delete y.rep;return y}),null,null);
     saveReparti(repList().filter(x=>x.id!==r.id),`Reparto ${r.nome} rimosso.`,"Tolto il reparto "+r.nome);return}
   if(b.dataset.rp){const [rid_,pid]=b.dataset.rp.split("|"),p=S.portate.find(x=>x.id===pid),on=portReps(p).some(x=>x.r===rid_);
     const list=S.portate.map(x=>x.id!==pid?x:{...x,reparti:on?portReps(x).filter(y=>y.r!==rid_):[...portReps(x),{r:rid_}]});
@@ -116,12 +120,18 @@ $("l-port").addEventListener("click",e=>{
 $("l-addport").addEventListener("click",()=>{const nome=$("l-newport").value.trim();if(!nome)return;$("l-newport").value="";
   savePortate([...curPort(),{id:rid("c"),nome,menu:null}],S.varianti,"Portata aggiunta a tutti i menù: toglila da quelli che non la comprendono.","Nuova portata "+nome)});
 /* extra */
-const curExtra=()=>S.extra.map(x=>({...x,prezzo:parsePrice(($("lx-"+x.id)||{}).value)}));
+const curExtra=()=>S.extra.map(x=>{const g=(($("lxg-"+x.id)||{}).value||"").trim(),r=($("lxr-"+x.id)||{}).value||"";
+  const e={id:x.id,nome:x.nome,prezzo:parsePrice(($("lx-"+x.id)||{}).value)};if(g)e.gruppo=g;if(r)e.rep=r;return e});
+/* cosa è cambiato in gruppo e reparto, per il registro */
+function extraDiffs(oldL,newL){return newL.map(n=>{const o=oldL.find(x=>x.id===n.id);if(!o)return null;const c=[];
+  if((o.gruppo||"")!==(n.gruppo||""))c.push(`gruppo «${n.gruppo||"—"}»`);if(xRep(o)!==(n.rep||""))c.push(`lo prepara ${n.rep?repNome(n.rep):"il bar"}`);
+  return c.length?`${n.nome}: ${c.join(", ")}`:null}).filter(Boolean).join("; ")}
 /* salvataggio automatico dei prezzi all'uscita dal campo */
 $("l-var").addEventListener("change",e=>{if(!e.target.id||!e.target.id.startsWith("lv-"))return;const n=curVar(),d=priceDiffs(S.varianti,n,"Prezzo menù");if(d)saveVarianti(n,"Prezzo salvato.",d)});
 $("l-port").addEventListener("change",e=>{const id=e.target.id||"";if(!id.startsWith("ls-")&&!id.startsWith("lb-"))return;const n=curPort(),d=[priceDiffs(S.portate,n,"Prezzo singolo"),priceDiffs(S.portate,n,"Prezzo singolo bambini","prezzoBimbi")].filter(Boolean).join("; ");if(d)savePortate(n,S.varianti,"Prezzo salvato.",d)});
-$("l-extra").addEventListener("change",e=>{if(!e.target.id||!e.target.id.startsWith("lx-"))return;const n=curExtra(),d=priceDiffs(S.extra,n,"Prezzo");if(d)saveExtra(n,"Prezzo salvato.",d)});
-$("l-saveextra").addEventListener("click",()=>{const n=curExtra();saveExtra(n,"Prezzi extra salvati.",priceDiffs(S.extra,n,"Prezzo"))});
+$("l-extra").addEventListener("change",e=>{const id=e.target.id||"";if(!/^lx[gr]?-/.test(id))return;const n=curExtra(),d=[priceDiffs(S.extra,n,"Prezzo"),extraDiffs(S.extra,n)].filter(Boolean).join("; ");
+  if(d){e.target.dataset.dirty="";saveExtra(n,"Salvato.",d)}});
+$("l-saveextra").addEventListener("click",()=>{const n=curExtra();saveExtra(n,"Extra salvati.",[priceDiffs(S.extra,n,"Prezzo"),extraDiffs(S.extra,n)].filter(Boolean).join("; "))});
 $("l-addextra").addEventListener("click",()=>{const nome=$("l-newextra").value.trim();if(!nome)return;
   const p=parsePrice($("l-newextraprice").value);$("l-newextra").value="";$("l-newextraprice").value="";
   saveExtra([...curExtra(),{id:rid("x"),nome,prezzo:p}],`${nome} aggiunto.`,`Nuovo extra ${nome} (${money(p)})`)});

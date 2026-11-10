@@ -4,7 +4,7 @@ function barWho(o){return o.asportoSubito?"Asporto":ownerId(o)?nameOf(ownerId(o)
 function renderBar(){
   const q=ordersArr().filter(o=>o.bar&&o.bar.stato==="chiamata").sort((a,b)=>(a.bar.t||0)-(b.bar.t||0));
   const ready=ordersArr().filter(o=>o.bar&&o.bar.stato==="pronta").sort((a,b)=>(a.bar.t||0)-(b.bar.t||0));
-  const need={};q.forEach(o=>extras(o).forEach(x=>{need[x.id]=(need[x.id]||0)+x.qta}));
+  const need={};q.forEach(o=>barExtras(o).forEach(x=>{need[x.id]=(need[x.id]||0)+x.qta}));
   $("b-sum").innerHTML=S.extra.map(x=>{const l=leftX(x.id),n=need[x.id]||0;if(!n&&l==null)return "";
     const parts=[esc(x.nome)];if(n)parts.push(`<b>${n}</b> da fare`);if(l!=null)parts.push(leftTxt(l));
     return `<span class="${stockCls(l)}">${parts.join(" · ")}</span>`}).join("");
@@ -14,11 +14,11 @@ function renderBar(){
     const wn=barWho(o);
     return `<article class="kcard ${late?"late":""}"><div class="top"><span class="n nm">${esc(wn)}</span><span class="age">${ago(o.bar.t)}</span></div>
       <div class="what">${o.nome?esc(o.nome)+" ":""}<span class="label">· n. ${o.numero}</span></div>${o.asporto&&wn!=="Asporto"?'<span class="pill asp">Asporto</span>':""}
-      <ul>${extras(o).map(x=>`<li><b>${x.qta}</b>${esc(x.nome)}</li>`).join("")}</ul>
+      <ul>${barExtras(o).map(x=>`<li><b>${x.qta}</b>${esc(x.nome)}</li>`).join("")}</ul>
       <button class="btn primary big" ${dis(o)} data-set="${o.numero}|bar|pronta">Pronto</button></article>`}).join("")
     :'<div class="panel"><div class="empty">Niente da preparare.</div></div>';
   $("b-ready").innerHTML=ready.length?ready.map(o=>{const wn=barWho(o);
-    return `<div class="li plain two"><span><b class="kwho">${esc(wn)}</b> · ${extras(o).map(x=>x.qta+" "+esc(x.nome)).join(", ")}<div class="sub">n. ${o.numero}${o.nome?" · "+esc(o.nome):""} · ${ago(o.bar.t)==="adesso"?"adesso":"da "+ago(o.bar.t)}</div></span>
+    return `<div class="li plain two"><span><b class="kwho">${esc(wn)}</b> · ${barExtras(o).map(x=>x.qta+" "+esc(x.nome)).join(", ")}<div class="sub">n. ${o.numero}${o.nome?" · "+esc(o.nome):""} · ${ago(o.bar.t)==="adesso"?"adesso":"da "+ago(o.bar.t)}</div></span>
       <span class="row"><button class="btn small go" ${dis(o)} data-set="${o.numero}|bar|servita">Portato</button><button class="btn small" ${dis(o)} data-bunready="${o.numero}">Annulla</button></span></div>`}).join("")
     :'<div class="empty">Nessuna.</div>';
   renderGive();
@@ -32,7 +32,7 @@ function renderGive(){
   if(st==="servita"){box.innerHTML=`<div class="wait ok">N. ${o.numero} · già dato</div>`;return}
   const note=o.asporto?"Asporto: di solito lo consegna la cassa.":(o.fila||ownerId(o))?(st==="pronta"?`Pronte per ${barWho(o)}: controlla che non le abbia già prese.`:`Lo segue ${barWho(o)}.`):"";
   box.innerHTML=`${o.nome?`<div class="who"><b>${esc(o.nome)}</b></div>`:""}
-    <ul>${extras(o).map(x=>`<li><b>${x.qta}</b> ${esc(x.nome)}</li>`).join("")}</ul>
+    <ul>${barExtras(o).map(x=>`<li><b>${x.qta}</b> ${esc(x.nome)}</li>`).join("")}</ul>
     ${note?`<div class="note">${note}</div>`:""}
     <button class="btn go big" id="b-dato" ${S.pending.has(o.numero+"|bar")?"disabled":""} data-n="${o.numero}">Dato</button>`;
 }
