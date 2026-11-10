@@ -1,5 +1,5 @@
 /* Ordini Oratorio: fa aprire l'app anche senza rete. I dati restano su Firebase. */
-const CACHE = "ordini-oratorio-v33";
+const CACHE = "ordini-oratorio-v34";
 const CORE = ["./", "index.html", "css/app.css", "js/01-base.js", "js/02-cassa.js", "js/03-camerieri.js", "js/04-cucina.js", "js/05-bar.js", "js/06-avvisi.js", "js/07-persone.js", "js/08-riepilogo.js", "js/09-listino.js", "js/10-evento.js", "js/11-avvio.js", "js/config.js", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png"];
 const CDN = [
   "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js",

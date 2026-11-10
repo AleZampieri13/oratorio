@@ -7,18 +7,47 @@ function setSoundBtns(){
 }
 function toggleSound(){
   S.sound=!S.sound;setSoundBtns();lsSet("suono",S.sound?"1":"0");
-  if(S.sound){try{S.audio=S.audio||new (window.AudioContext||window.webkitAudioContext)();S.audio.resume();beep()}catch(e){}}
+  if(S.sound){ensureAudio();setTimeout(beep,120)}
+  paintSoundBar();
 }
 $("k-sound").addEventListener("click",toggleSound);
 $("w-sound").addEventListener("click",toggleSound);
 $("b-sound").addEventListener("click",toggleSound);
+/* Suono. I telefoni fanno suonare una pagina solo dopo un tocco vero sullo schermo:
+   ensureAudio() va chiamata dentro un tocco e «sblocca» l'audio; se il telefono lo ferma di nuovo
+   (es. dopo aver cambiato app) compare la scritta «Suono bloccato: tocca qui». */
+const SOUND_ROLES=["cucina","camerieri","uscita","bar","cassa"];
+function audioOk(){return !!S.audio&&S.audio.state==="running"}
+function ensureAudio(){
+  if(!S.sound)return;
+  try{
+    if(!S.audio){S.audio=new (window.AudioContext||window.webkitAudioContext)();S.audio.onstatechange=paintSoundBar}
+    if(S.audio.state!=="running")S.audio.resume().then(paintSoundBar,()=>{});
+    const b=S.audio.createBuffer(1,1,22050),s=S.audio.createBufferSource();s.buffer=b;s.connect(S.audio.destination);s.start(0);
+  }catch(e){}
+  paintSoundBar();
+}
+function paintSoundBar(){const el=$("sndbar");if(el)el.hidden=!(S.me&&S.sound&&SOUND_ROLES.includes(S.role)&&!audioOk())}
+function tone(f,start,dur,vol){const o=S.audio.createOscillator(),g=S.audio.createGain();o.type="triangle";o.frequency.value=f;
+  g.gain.setValueAtTime(0.0001,start);g.gain.exponentialRampToValueAtTime(vol,start+0.015);g.gain.setValueAtTime(vol,start+dur-0.04);g.gain.exponentialRampToValueAtTime(0.0001,start+dur);
+  o.connect(g).connect(S.audio.destination);o.start(start);o.stop(start+dur+0.02)}
+/* tre note crescenti, forti e lunghe abbastanza da sentirsi in cucina */
 function beep(){
-  if(!S.sound||!S.audio)return;
-  try{S.audio.resume();const t=S.audio.currentTime;[0,0.18].forEach((d,i)=>{const o=S.audio.createOscillator(),g=S.audio.createGain();o.frequency.value=i?1046:784;
-    g.gain.setValueAtTime(0.0001,t+d);g.gain.exponentialRampToValueAtTime(0.3,t+d+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+d+0.16);
-    o.connect(g).connect(S.audio.destination);o.start(t+d);o.stop(t+d+0.18)})}catch(e){}
+  if(!S.sound)return false;
+  if(!audioOk()){paintSoundBar();return false}
+  try{const t=S.audio.currentTime+0.02;[[880,0],[1175,0.2],[1568,0.4]].forEach(([f,d])=>tone(f,t+d,0.17,0.9));return true}catch(e){return false}
 }
 function buzz(){beep();try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}}
+/* «Prova suono»: è un tocco, quindi può anche sbloccare l'audio */
+function testSound(){
+  if(!S.sound){S.sound=true;lsSet("suono","1");setSoundBtns()}
+  ensureAudio();
+  setTimeout(()=>{const ok=beep();let vib=false;try{vib=!!(navigator.vibrate&&navigator.vibrate([200,100,200]))}catch(e){}
+    toast(ok?`Suono di prova${vib?" e vibrazione":""}. Se non senti niente alza il volume «contenuti multimediali»: premi il tasto del volume mentre suona.`
+      :`Il telefono blocca ancora il suono (audio: ${S.audio?S.audio.state:"assente"}). Tocca di nuovo «Prova suono»; se non cambia, ricarica la pagina.`,{ms:9000})},150);
+}
+document.addEventListener("click",e=>{if(e.target.closest("[data-testsound],#sndbar"))testSound()});
+document.addEventListener("visibilitychange",()=>paintSoundBar());
 function checkEvents(){
   if(!S.ordLoaded||!S.me)return;
   const sc=kScope(),callKeys=new Set(sc?repItems("chiamata",sc).map(c=>c.o.numero+":"+c.k+":"+c.r+":"+c.t):flatCourses("chiamata").map(c=>c.o.numero+":"+c.k+":"+c.t));

@@ -1,5 +1,10 @@
 # Versioni
 
+## 34
+- **Suono degli avvisi:** tre note più forti e più lunghe; l'audio si attiva al momento giusto del tocco (alcuni telefoni Android non lo attivavano).
+- Pulsante **«Prova suono»** in cucina, camerieri, uscita e bar: suona, vibra e dice se il telefono blocca l'audio.
+- Scritta rossa **«Suono bloccato dal telefono: tocca qui»** quando il telefono ha fermato l'audio (es. dopo aver cambiato app).
+
 ## 33
 - **Uscita piatti per reparto:** il filtro in alto ora è per reparti della cucina (Tutti / Primo / Fritto / …), non più per file. Su ogni piatto si vedono il nome dei piatti dei reparti, il cameriere e la sua fila.
 - In Persone si può assegnare un reparto anche a chi fa l'uscita (come per i cuochi): vede solo i piatti di quel reparto. Senza reparto vede tutto e può scegliere.

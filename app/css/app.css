@@ -332,3 +332,6 @@ input.bad{border-color:var(--danger);box-shadow:0 0 0 2px var(--danger-bg)}
 .toast{display:flex;align-items:center;gap:10px;justify-content:space-between;cursor:pointer;width:min(560px,calc(100% - 32px));text-align:left}
 .toast .tbtn{background:var(--bg);color:var(--ink);border:0;border-radius:8px;padding:8px 12px;font-weight:800;cursor:pointer;flex:0 0 auto}
 .toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top,0px));z-index:30;background:var(--ready);color:var(--bg);font-weight:700;padding:14px 18px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.25);max-width:calc(100% - 32px);text-align:center}
+
+.sndbar{display:block;width:100%;margin:0 0 12px;padding:14px;border-radius:var(--r);border:2px solid var(--danger);background:var(--danger-bg);color:var(--danger);font:800 1rem var(--f-body);cursor:pointer;text-align:center}
+.sndbar[hidden]{display:none}

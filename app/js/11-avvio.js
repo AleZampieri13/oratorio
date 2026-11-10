@@ -3,6 +3,7 @@
 let rq=false;
 function schedule(){if(rq)return;rq=true;requestAnimationFrame(()=>{rq=false;checkEvents();renderAll()})}
 function renderAll(){
+  paintSoundBar();
   if(!S.me)return;
   prefillNum();
   if(S.role==="cassa"){refreshStepLabels();renderRecent();renderTicket();renderSearch();renderSel();renderMine();renderStock();renderAsporto();if(S.editOrder!=null&&!orderByNum(S.editOrder)){closeEdit();$("c-msg").className="msg";$("c-msg").textContent="L'ordine che stavi modificando è stato annullato."}
@@ -27,8 +28,8 @@ function listenMap(path,map,onReady){
 }
 async function start(){
   const sv=lsGet("suono");S.sound=sv==null?true:sv==="1";setSoundBtns();
-  const unlock=()=>{if(!S.sound)return;try{S.audio=S.audio||new (window.AudioContext||window.webkitAudioContext)();S.audio.resume()}catch(e){}};
-  document.addEventListener("click",unlock);document.addEventListener("touchstart",unlock,{passive:true});
+  /* l'audio si sblocca solo con un tocco «vero»: fine del tocco, clic o tasto (non l'inizio del tocco) */
+  ["pointerup","touchend","click","keydown"].forEach(ev=>document.addEventListener(ev,()=>{if(!audioOk())ensureAudio()},{passive:true}));
   renderSteppers();
   S.cfg=loadCfg();
   if(!S.cfg){setConn("err","Da configurare");renderGate();return}
