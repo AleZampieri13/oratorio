@@ -14,7 +14,7 @@ var CONFIG_VERO = {
   appId: "1:964473093372:web:7bf7edc80a7826cdc9eb79"
 };
 var CONFIG_PROVA = null;
-var SITI_VERI = ["giovanichef.netlify.app"];
+var SITI_VERI = ["giovanichef.netlify.app", "giovanichef-65d46.web.app", "giovanichef-65d46.firebaseapp.com"];
 
 var DB_PROVA = !!CONFIG_PROVA && SITI_VERI.indexOf(location.hostname) < 0;
 var EMBEDDED_CONFIG = DB_PROVA ? CONFIG_PROVA : CONFIG_VERO;
