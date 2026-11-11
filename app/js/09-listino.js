@@ -66,14 +66,12 @@ function renderListinoInner(){
     :'<div class="empty">Nessun menù: in cassa si vendono solo i piatti da soli.</div>';
   $("l-newports").innerHTML=L.piatti.map(p=>`<button class="tog" data-np="${esc(p.id)}" aria-pressed="${S.newMenu.has(p.id)}">${esc(p.nome)}</button>`).join("");
   /* piatti */
-  const grp=[...new Set(["Bevande","Dolci","Altro",...L.piatti.map(p=>(p.gruppo||"").trim()).filter(Boolean)])];
-  $("l-port").innerHTML=L.piatti.length?`<datalist id="xgruppi">${grp.map(g=>`<option value="${esc(g)}">`).join("")}</datalist>`+L.piatti.map((p,i)=>`<div class="xedit">
+  $("l-port").innerHTML=L.piatti.length?L.piatti.map((p,i)=>`<div class="xedit">
       <div class="top"><input type="color" class="pcol" data-pcol="${esc(p.id)}" value="${portColor(p.id)}" aria-label="Colore di ${esc(p.nome)}">
         <input type="text" class="lname" id="lpn-${esc(p.id)}" value="${esc(p.nome)}" aria-label="Nome del piatto">
         <button class="btn small" data-up="${i}" ${i?"":"disabled"} aria-label="Sposta su">↑</button><button class="btn small" data-down="${i}" ${i<L.piatti.length-1?"":"disabled"} aria-label="Sposta giù">↓</button>
         <button class="btn small danger" data-delp="${esc(p.id)}">Rimuovi</button></div>
       <div class="xf"><label><span class="label">Reparto</span><select id="lpr-${esc(p.id)}">${repOpts(p.rep)}</select></label>
-        <label><span class="label">Gruppo in cassa</span><input type="text" id="lpg-${esc(p.id)}" list="xgruppi" value="${esc(p.gruppo||"")}" placeholder="Es. Bevande"></label>
         <label><span class="label">Prezzo da solo</span><input type="text" inputmode="decimal" id="lps-${esc(p.id)}" value="${euro(p.prezzo)}" placeholder="non si vende"></label>
         <label><span class="label">Da solo bambini</span><input type="text" inputmode="decimal" id="lpb-${esc(p.id)}" value="${euro(p.prezzoBimbi)}" placeholder="—"></label></div></div>`).join("")
     :'<div class="empty">Nessun piatto. Aggiungine uno qui sotto.</div>';

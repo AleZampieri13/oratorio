@@ -11,11 +11,10 @@ function stepperHtml(list,qty,attr){
     <button ${attr}="${esc(v.id)}" data-d="-1" aria-label="Togli ${esc(v.nome)}">−</button><output>${qty[v.id]||0}</output>
     <button ${attr}="${esc(v.id)}" data-d="1" aria-label="Aggiungi ${esc(v.nome)}">+</button></span></div>`).join("");
 }
-/* piatti venduti da soli: divisi per gruppo, oppure per reparto se i gruppi non ci sono */
+/* piatti venduti da soli: divisi per reparto */
 function singlesHtml(qty,attr){
   const sl=singlesList(),pOf=i=>S.portate.find(x=>x.id===i.pid)||{};
-  let key=i=>(pOf(i).gruppo||"").trim(),groups=[...new Set(sl.map(key))];
-  if(groups.length<2){key=i=>repNome(pOf(i).rep)||"";groups=[...new Set(sl.map(key))]}
+  const key=i=>repNome(pOf(i).rep)||"",groups=[...new Set(sl.map(key))];
   if(groups.length<2)return stepperHtml(sl,qty,attr);
   groups.sort((a,b)=>(a==="")-(b===""));
   return groups.map(g=>`<div class="xgroup"><span class="label">${esc(g||"Altro")}</span>${stepperHtml(sl.filter(i=>key(i)===g),qty,attr)}</div>`).join("");

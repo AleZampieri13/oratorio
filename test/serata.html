@@ -105,8 +105,6 @@ async function setup(){
     await type("master","#l-newport",n);await setSel("#l-newprep",rid(rep));await type("master","#l-newpprice",pr);await click("master","#l-addport");
     await waitFor(()=>vals(db().config.listino.piatti).some(x=>x.nome===n),3000,"piatto "+n)}
   const pid=nm=>vals(db().config.listino.piatti).find(x=>x.nome===nm).id;
-  for(const nm of ["Acqua","Caffè","Vino","Bibita"])await type("master","#lpg-"+pid(nm),"Bevande");
-  await type("master","#lpg-"+pid("Patatine"),"Altro");
   // menù fissi: Standard = Sciatt, Pizzoccheri, Bresaola, Torta, Acqua, Caffè; Bambini senza Bresaola e Caffè
   const mid=nm=>vals(db().config.listino.menu).find(m=>m.nome===nm).id;
   await type("master","#lmv-"+mid("Standard"),"15");await type("master","#lmv-"+mid("Bambini"),"9");
@@ -119,7 +117,7 @@ async function setup(){
   {const Lx=db().config.listino,mp=nm=>vals(vals(Lx.menu).find(m=>m.nome===nm).piatti).map(id=>vals(Lx.piatti).find(x=>x.id===id).nome).join(",");
    check(mp("Standard")==="Sciatt,Pizzoccheri,Bresaola,Torta,Acqua,Caffè"&&mp("Bambini")==="Sciatt,Pizzoccheri,Torta,Acqua"&&vals(Lx.menu).map(m=>m.prezzo).join()==="15,9",
      "Menù fissi: Standard (Sciatt, Pizzoccheri, Bresaola, Torta, Acqua, Caffè) 15 €, Bambini 9 €",mp("Standard")+" | "+mp("Bambini"))
-   const P_=vals(Lx.piatti);check(P_.length===9&&P_.filter(x=>x.gruppo==="Bevande").every(x=>x.rep===rid("Bar"))&&P_.find(x=>x.nome==="Patatine").rep===rid("Fritto")&&vals(Lx.reparti).filter(r=>r.bar).length===1,
+   const P_=vals(Lx.piatti);check(P_.length===9&&["Acqua","Caffè","Vino","Bibita"].every(n=>P_.find(x=>x.nome===n).rep===rid("Bar"))&&P_.find(x=>x.nome==="Patatine").rep===rid("Fritto")&&vals(Lx.reparti).filter(r=>r.bar).length===1,
      "Piatti: ognuno con il suo reparto (acqua, caffè, vino al Bar; patatine al Fritto)")
    check(!db().config.menu,"La versione 36 non scrive nel listino della v35 (config/menu)")}
   {// passaggio dal listino della v35: portata con due reparti, portata senza reparto, extra del bar e del Fritto
@@ -171,7 +169,7 @@ async function setup(){
   for(const [n,l,pin] of [["capocucina","Capo cucina","3000"],["primo","Cuoco Primo","3001"],["fritto","Cuoco Fritto","3002"],["secondo","Cuoco Secondo","3003"],["dolce","Cuoca Dolci","3004"],["uscita","Uscita","6000"],["bar","Bar","4000"],["capo","Capo camerieri","5000"]]){await addDev(n,l);await loginPin(n,l,pin)}
   for(const c of CAM){await addDev(c.dev,`${c.nome} · Fila ${c.fila+1}`);await joinW(c.dev,JOIN,c.nome)}
   check(COOKS.every(n=>q(n,"#tabs").hidden&&!q(n,"#k-reps").hidden)&&q("uscita","#tabs").hidden&&!q("uscita","#p-uscita").hidden,"Cuochi e uscita piatti vedono solo la loro pagina");
-  check(qa(CASSE[0].dev,"#c-sing .xgroup").length===3&&/bevande/i.test(txt(CASSE[0].dev,"#c-sing")),"In cassa i piatti da soli sono divisi in gruppi (Bevande, Altro, senza gruppo)",txt(CASSE[0].dev,"#c-sing").slice(0,120));
+  check(qa(CASSE[0].dev,"#c-sing .xgroup").length===5&&qa(CASSE[0].dev,"#c-sing .xgroup > .label").map(x=>x.textContent).join()==="Fritto,Primo,Secondo,Dolce,Bar","In cassa i piatti da soli sono divisi per reparto",qa(CASSE[0].dev,"#c-sing .xgroup > .label").map(x=>x.textContent).join());
   check(qa("uscita","#o-reps button").length===5&&!qa("uscita","#o-reps button").some(b=>/Fila/.test(b.textContent)),"L'uscita piatti filtra per reparto della cucina (Tutti + 4 reparti)");
 }
 
