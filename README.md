@@ -44,3 +44,14 @@ Dentro `app/`: `index.html` (schermate), `css/app.css` (aspetto), `js/config.js`
 Serve Python (già installato su questo computer). Il server è `test/server.py`; la copia di prova la crea `test/genera-prova.ps1`.
 
 La serata simulata non prova la rete vera né i telefoni veri: prima di una serata importante, fate anche una prova con qualche telefono.
+
+## Pubblicare (Firebase Hosting)
+
+L'app è su **https://giovanichef.web.app** (progetto Firebase `giovanichef-65d46`, account personale dell'oratorio).
+Dopo una modifica, dal terminale nella cartella del progetto:
+
+```
+npx.cmd -y firebase-tools@15.35.0 deploy --only hosting --project giovanichef-65d46 --account oratoriopare@gmail.com
+```
+
+Netlify (giovanichef.netlify.app) non si usa più: i crediti sono finiti.
