@@ -55,3 +55,5 @@ npx.cmd -y firebase-tools@15.35.0 deploy --only hosting --project giovanichef-65
 ```
 
 Netlify (giovanichef.netlify.app) non si usa più: i crediti sono finiti.
+
+**Accesso:** il sito si apre solo con il link o il QR (contengono il codice di accesso, `#k=…`). Le regole del database sono in `database.rules.json`; si pubblicano con `--only hosting,database`. Il codice si cambia da Evento → «Cambia codice di accesso».

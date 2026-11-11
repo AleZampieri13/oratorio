@@ -1,6 +1,8 @@
 # Versioni
 
 ## 36
+- **Accesso solo con il link o il QR:** link e QR contengono un codice; senza, il telefono vede «Telefono non autorizzato» e il database non risponde. In Evento: «Cambia codice di accesso» (poi tutti riaprono il link nuovo).
+- Pubblicata su Firebase Hosting: **giovanichef.web.app**.
 - **Piatti al posto delle portate.** Nel Listino ci sono i **reparti** (uno o più segnati «Bar»), i **piatti** (ognuno con un solo reparto, prezzo da solo, gruppo in cassa, colore) e i **menù fissi** fatti di piatti. Acqua e caffè sono piatti del Bar e possono stare nei menù. Spariscono portate ed extra.
 - **Cameriere:** sulla scheda di ogni cliente i reparti sono linguette (un pallino dove c'è da chiamare); in ogni reparto si chiama un piatto alla volta o **«Chiama tutto»**. In cima i piatti pronti con «Porta».
 - **Cucina e bar:** le chiamate sono raggruppate per cliente, con «Pronto» per ogni piatto e «Tutto pronto». Il Bar vede i reparti bar; cucina e uscita «Tutti» solo gli altri. «Al banco» consegna le cose del bar a chi non ha cameriere.
