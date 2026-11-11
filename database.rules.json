@@ -1,0 +1,18 @@
+{
+  "rules": {
+    "segreto": {
+      ".read": false,
+      ".write": "auth != null && root.child('accessi').child(auth.uid).val() === root.child('segreto').val() && newData.isString() && newData.val().length >= 20"
+    },
+    "accessi": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid && newData.val() === root.child('segreto').val()"
+      }
+    },
+    "ev": {
+      ".read": "auth != null && root.child('accessi').child(auth.uid).val() === root.child('segreto').val()",
+      ".write": "auth != null && root.child('accessi').child(auth.uid).val() === root.child('segreto').val()"
+    }
+  }
+}

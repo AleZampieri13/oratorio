@@ -53,8 +53,13 @@ async function start(){
   catch(e){setConn("err","Errore");showBanner("Collegamento a Firebase non riuscito. Controlla che l'accesso Anonimo sia attivo e che la configurazione sia giusta.");
     $("v-config").hidden=false;$("cfg-text").value=JSON.stringify(S.cfg,null,2);return}
   S.root=firebase.database().ref("ev");
+  /* il telefono si registra con il codice del link/QR; le regole del database lasciano entrare solo chi ce l'ha */
+  {const k=hashParams.get("k");if(k)lsSet("acc",k);
+   const key=accKey(),me=firebase.auth().currentUser;
+   if(key&&me){try{await Promise.race([firebase.database().ref("accessi/"+me.uid).set(key),sleep(5000)])}
+     catch(e){if(isDenied(e)){lsSet("acc",null);S.noAccess=true;setConn("err","Non autorizzato");renderGate();return}}}}
   const j=hashParams.get("j");if(j)S.joinCode=j.toUpperCase();
-  if(j||hashParams.get("cfg")||hashParams.get("c"))history.replaceState(null,"",baseUrl());
+  if(j||hashParams.get("cfg")||hashParams.get("c")||hashParams.get("k"))history.replaceState(null,"",baseUrl());
   firebase.database().ref(".info/connected").on("value",s=>{S.online=!!s.val();setConn(S.online?"ok":"err",S.online?"Collegato":"Senza rete: salvo appena torna");
     if(!S.usersLoaded)showBanner(S.online?"":"In attesa di rete: l'app si carica appena torna il segnale.");else if(S.online&&$("banner").textContent.startsWith("In attesa di rete"))showBanner("")});
   R("config/utenti").on("value",s=>{
@@ -65,7 +70,7 @@ async function start(){
     else if(!S.me||!prev)renderGate();
     if(!S.me&&S.joinCode&&!$("v-join").hidden)renderJoin();
     else{$("who-t").textContent=whoLbl();if(S.role==="persone"&&!S.editUser)renderUsers();schedule()}
-  },e=>{showBanner(errText(e))});
+  },e=>{if(isDenied(e)){S.noAccess=true;setConn("err","Non autorizzato");renderGate();return}showBanner(errText(e))});
   R("config/file").on("value",s=>{const v=s.val();S.file=(Array.isArray(v)?v:Object.values(v||{})).filter(Boolean);if(S.role==="persone")renderUsers();if(!S.me&&S.joinCode)renderJoin();schedule()});
   R("config/iscrizione").on("value",s=>{S.invite=s.val()||null;S.inviteLoaded=true;if(!S.me&&!S.joinCode&&lsGet("joinmode")==="1"&&S.invite)S.joinCode=S.invite;if(S.usersLoaded&&!S.me)renderGate()});
   R("config/ingressiChiusi").on("value",s=>{S.ingressiChiusi=!!s.val();if(!S.me&&S.joinCode)renderJoin();if(S.role==="persone")renderJoinState()});

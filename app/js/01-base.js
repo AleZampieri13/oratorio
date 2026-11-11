@@ -69,9 +69,13 @@ function parseCfgText(t){const o={};let m;const re=/["']?(\w+)["']?\s*:\s*["']([
 function cfgOk(c){return c&&c.apiKey&&c.databaseURL&&c.projectId}
 function shortCfg(c){const o={};["apiKey","authDomain","databaseURL","projectId","appId"].forEach(k=>{if(c[k])o[k]=c[k]});return o}
 function baseUrl(){return location.origin+location.pathname}
+/* codice di accesso: arriva con il link o il QR (#k=…) e resta sul telefono */
+function accKey(){return lsGet("acc")||""}
+const isDenied=e=>String((e&&(e.code||e.message))||"").toLowerCase().includes("permission");
 function linkWith(params){
   const p=new URLSearchParams();
   if(!EMBEDDED_CONFIG&&S.cfg)p.set("cfg",b64e(JSON.stringify(shortCfg(S.cfg))));
+  if(accKey())p.set("k",accKey());
   Object.entries(params||{}).forEach(([k,v])=>p.set(k,v));
   const s=p.toString();return baseUrl()+(s?"#"+s:"");
 }
@@ -90,7 +94,7 @@ $("cfg-go").addEventListener("click",()=>{
 });
 
 /* ---------- vista, ruoli, schermo acceso ---------- */
-const VIEWS=["v-config","v-setup","v-login","v-join","p-cassa","p-camerieri","p-cucina","p-uscita","p-bar","p-listino","p-persone","p-evento"];
+const VIEWS=["v-config","v-setup","v-login","v-join","v-noaccess","p-cassa","p-camerieri","p-cucina","p-uscita","p-bar","p-listino","p-persone","p-evento"];
 function showOnly(id){VIEWS.forEach(x=>$(x).hidden=x!==id)}
 function sessionValid(u,k){return u&&(u.ruolo==="cameriere"?u.token===k:u.hash===k)}
 function restoreSession(){
@@ -119,6 +123,7 @@ async function keepAwake(){
 document.addEventListener("visibilitychange",keepAwake);
 document.addEventListener("click",keepAwake,{passive:true});
 function renderGate(){
+  if(S.noAccess){showOnly("v-noaccess");$("tabs").hidden=true;$("who").hidden=true;return}
   if(!S.root){showOnly(S.cfg?null:"v-config");$("tabs").hidden=true;$("who").hidden=true;return}
   if(!S.usersLoaded){showOnly(null);$("tabs").hidden=true;$("who").hidden=true;return}
   if(!S.users.length){showOnly("v-setup");$("tabs").hidden=true;$("who").hidden=true;return}

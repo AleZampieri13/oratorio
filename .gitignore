@@ -8,3 +8,5 @@ test/manifest.webmanifest
 *.zip
 .DS_Store
 Thumbs.db
+segreto.json
+.firebase/

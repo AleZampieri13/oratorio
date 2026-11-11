@@ -202,6 +202,14 @@ async function doReset(){
   catch(e){m.className="msg err";m.textContent=errText(e)}
   finally{$("e-reset-row").hidden=false;setTimeout(()=>{S.resetting=false;S.removedQ=[]},1500)}
 }
+/* nuovo codice di accesso: i telefoni con il link vecchio non entrano più */
+$("e-newkey").addEventListener("click",async()=>{const b=$("e-newkey"),m=$("e-newkey-msg");
+  if(!isBoss())return;if(!armed(b,"Tutti dovranno riaprire il link: confermi?"))return;
+  const k=newCode()+newCode()+newCode()+newCode(),me=firebase.auth().currentUser;b.disabled=true;m.className="msg";m.textContent="Cambio il codice…";
+  try{await firebase.database().ref("segreto").set(k);await firebase.database().ref("accessi/"+me.uid).set(k);lsSet("acc",k);
+    logChange("Cambiato il codice di accesso: servono link e QR nuovi");m.className="msg ok";m.textContent="Fatto. Ricarico la pagina: poi da qui mostra il link e il QR nuovi.";setTimeout(()=>location.reload(),1500)}
+  catch(e){m.className="msg err";m.textContent=errText(e);b.disabled=false}});
+
 /* serate passate */
 async function loadArchive(){
   const box=$("e-arch"),m=$("e-arch-msg");S.archShown=true;$("e-arch-load").textContent="Aggiorna";

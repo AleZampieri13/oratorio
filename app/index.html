@@ -99,6 +99,15 @@
     </div>
   </section>
 
+  <!-- TELEFONO NON AUTORIZZATO (manca il codice del link / QR) -->
+  <section id="v-noaccess" class="gate" hidden>
+    <div class="panel">
+      <h2>Telefono non autorizzato</h2>
+      <p class="hint">Per usare l'app apri il <b>link</b> o inquadra il <b>QR</b> che ti dà il responsabile (master o capo camerieri). Basta farlo una volta su questo telefono.</p>
+      <p class="hint">Se l'avevi già fatto, il codice di accesso è stato cambiato: chiedi il link nuovo.</p>
+    </div>
+  </section>
+
   <!-- ISCRIZIONE CAMERIERE -->
   <section id="v-join" class="gate" hidden>
     <div class="panel">
@@ -387,6 +396,9 @@
           <h2>Collega altri dispositivi</h2>
           <p class="hint">Apri questo link (o inquadra il QR) su cassa, cucina e telefoni dei responsabili. I camerieri invece entrano con il QR d'iscrizione dalla scheda Persone.</p>
           <button class="btn" id="e-showlink">Mostra link e QR</button>
+          <p class="hint">Link e QR contengono il <b>codice di accesso</b>: senza, il sito non si apre. Se un link è finito in mani sbagliate (o dopo la serata) cambia il codice: tutti i telefoni dovranno riaprire il link o il QR nuovi, anche i camerieri.</p>
+          <button class="btn danger" id="e-newkey">Cambia codice di accesso</button>
+          <div class="msg" id="e-newkey-msg"></div>
         </div>
         <div class="panel">
           <h2>Nuovo evento</h2>
