@@ -20,12 +20,11 @@ function canAct(o){if(!S.me)return false;if(capoLike())return true;const id=owne
 function whereTxt(o){return o.asporto&&!o.fila?"asporto n. "+o.numero:`n. ${o.numero}${o.nome?" "+o.nome:""}`}
 function since(t){const a=ago(t);return a==="adesso"?"adesso":"da "+a}
 function nextCourse(o){return orderCourses(o).find(c=>(c.p.stato||"attesa")==="attesa")}
-function orderDone(o){const cs=orderCourses(o);/* v36: anche i piatti del bar sono «portate» */return (cs.length>0||!!o.bar)&&cs.every(c=>c.p.stato==="servita")&&(!o.bar||o.bar.stato==="servita")}
+function orderDone(o){const cs=orderCourses(o);return cs.length>0&&cs.every(c=>c.p.stato==="servita")}
 function flatCourses(stato){
   const out=[];ordersArr().forEach(o=>orderCourses(o).forEach(c=>{if(c.p.stato===stato)out.push({o,k:c.k,l:c.l,t:c.p.t||0,daId:c.p.daId||"",da:nameOf(c.p.daId,c.p.da)})}));
   return out.sort((a,b)=>a.t-b.t);
 }
-function barItems(stato,incAsp){return ordersArr().filter(o=>o.bar&&(o.bar.stato||"attesa")===stato&&(incAsp||!o.asportoSubito)).map(o=>({o,k:"bar",l:"Bevande",t:o.bar.t||0,daId:ownerId(o),da:nameOf(ownerId(o),o.cameriere),bar:true})).sort((a,b)=>a.t-b.t)}
 function claimUpd(o){const upd={};if(!ownerId(o)&&S.me){upd.cameriereId=S.me.id;upd.cameriere=S.me.nome;upd.fila=myFila()||null}return upd}
 
 /* aggiungi un cliente: anteprima e conferma */
@@ -69,14 +68,14 @@ async function setStato(n,k,to,opts){
   const o=orderByNum(n);
   if(o&&S.role==="camerieri"&&!canAct(o))return;
   S.pending.add(key);schedule();
-  const now=Date.now(),upd={},prev=k==="bar"?(o&&o.bar&&o.bar.stato)||"attesa":(o&&o.portate&&o.portate[k]&&o.portate[k].stato)||"attesa";
+  const now=Date.now(),upd={},prev=(o&&o.portate&&o.portate[k]&&o.portate[k].stato)||"attesa";
   const tt=(opts&&opts.t)||now,sil=!!(opts&&opts.silent),f={stato:to,t:tt};
-  const node=k==="bar"?(o&&o.bar):(o&&o.portate&&o.portate[k]);
+  const node=o&&o.portate&&o.portate[k];
   if(to==="pronta"&&!sil){f.tc=(node&&node.t)||null;f.annull=null}
   if(to==="servita"&&!sil&&prev==="pronta")f.tp=(node&&node.t)||null;
-  if(to==="chiamata"&&!sil&&k!=="bar"){f.da=myName();f.daId=S.me?S.me.id:"";f.annull=null;f.rep=repSnap(k)}
-  if(to==="attesa"&&k!=="bar")f.rep=null;
-  const path=k==="bar"?`ordini/${n}/bar`:`ordini/${n}/portate/${k}`,expect=(opts&&opts.expect)||prev;
+  if(to==="chiamata"&&!sil){f.da=myName();f.daId=S.me?S.me.id:"";f.annull=null;f.rep=repSnap(k)}
+  if(to==="attesa")f.rep=null;
+  const path=`ordini/${n}/portate/${k}`,expect=(opts&&opts.expect)||prev;
   try{
     const ok=await transStato(path,expect,f);
     if(!ok){const msg="Qualcun altro l'ha appena aggiornato: guarda lo stato attuale.";if(S.role==="camerieri")$("w-msg").textContent=msg;else toast(msg,{ms:4000});return}
@@ -87,16 +86,14 @@ async function setStato(n,k,to,opts){
   finally{S.pending.delete(key);schedule()}
 }
 function afterAction(o,k,to,prev){
-  const c=k==="bar"?"Bevande":((orderCourses(o).find(x=>x.k===k)||{}).l||k);
-  const prevT=k==="bar"?(o.bar&&o.bar.t):(o.portate&&o.portate[k]&&o.portate[k].t);
-  const undo={label:"Annulla",fn:()=>{const x=orderByNum(o.numero);const cur=k==="bar"?(x&&x.bar&&x.bar.stato):(x&&x.portate&&x.portate[k]&&x.portate[k].stato);if(cur===to)setStato(o.numero,k,prev,{silent:true,t:prevT,expect:to})}};
-  if(S.role==="bar"&&k==="bar"){toast(`${barWho(o)} · bevande ${to==="servita"?"consegnate":"pronte"}`,{ms:5000,action:undo});return}
+  const c=(orderCourses(o).find(x=>x.k===k)||{}).l||k;
+  const prevT=o.portate&&o.portate[k]&&o.portate[k].t;
+  const undo={label:"Annulla",fn:()=>{const x=orderByNum(o.numero);const cur=x&&x.portate&&x.portate[k]&&x.portate[k].stato;if(cur===to)setStato(o.numero,k,prev,{silent:true,t:prevT,expect:to})}};
   if(S.role==="uscita"){toast(`n. ${o.numero} · ${c} consegnato a ${kWho(o,o.portate&&o.portate[k])}`,{ms:5000,action:undo});return}
   if(S.role==="cucina"||S.role==="bar"){const pp=o.portate&&o.portate[k];const wn=kWho(o,pp);
     toast(`${wn} · ${c} ${to==="servita"?"portato":"pronta"}`,{ms:5000,action:undo});return}
-  const pl=k==="bar";
-  if(to==="chiamata")toast(`${c} ${pl?"chiamate":"chiamato"} · ${whereTxt(o)}`,{ms:5000,action:undo});
-  else if(to==="servita")toast(`${c} ${pl?"portate":"portato"} · ${whereTxt(o)}`,{ms:10000,action:k==="bar"?undo:{label:"Annulla",fn:()=>unserve(o.numero,k)}});
+  if(to==="chiamata")toast(`${c} chiamato · ${whereTxt(o)}`,{ms:5000,action:undo});
+  else if(to==="servita")toast(`${c} portato · ${whereTxt(o)}`,{ms:10000,action:{label:"Annulla",fn:()=>unserve(o.numero,k)}});
 }
 document.addEventListener("click",e=>{
   const b=e.target.closest("button[data-set]");if(b&&!b.disabled){const [n,k,to]=b.dataset.set.split("|");setStato(Number(n),k,to)}
@@ -112,7 +109,6 @@ const isTodo=c=>(c.p.stato||"attesa")==="attesa";
 function cardAction(o){
   const cs=orderCourses(o),n=o.numero,act=canAct(o),dis=k=>S.pending.has(n+"|"+k)||!act?"disabled":"";
   const out=[];
-  if(o.bar&&o.bar.stato==="pronta")out.push(`<button class="btn go big" ${dis("bar")} data-set="${n}|bar|servita">Porta le bevande</button>`);
   const ready=cs.filter(c=>c.p.stato==="pronta");
   ready.forEach(c=>{const q=cop(righeFor(o,c.k));out.push(`<button class="btn go big" ${dis(c.k)} data-set="${n}|${c.k}|servita">Porta ${q} ${esc(c.l)}</button>`)});
   if(ready.length>1&&act)out.push(`<button class="btn go" data-carryall="${n}">Portati tutti i pronti (${ready.length})</button>`);
@@ -134,15 +130,13 @@ function cardAction(o){
     return `<div class="wpiatto ${st}"><span class="wpn"><b>${q}</b> ${esc(c.l)}</span><span class="row">${right}</span></div>`}).join("");
   const all=todo.length>1&&act?`<button class="btn primary big" data-callall="${n}|${esc(cur)}">Chiama tutto ${esc(repNome(cur))} (${todo.length})</button>`:"";
   out.push(`<div class="wrep">${tabs}<div class="wrows">${rows}</div>${all}</div>`);
-  if(o.bar&&o.bar.stato==="chiamata")out.push(`<div class="wait big">Bevande al bar · ${ago(o.bar.t)}</div>`);
-  if(o.bar&&(o.bar.stato||"attesa")==="attesa")out.push(`<button class="btn" ${dis("bar")} data-set="${n}|bar|chiamata">Chiama bevande</button>`);
   return out.join("");
 }
 /* «portato» per sbaglio: il piatto torna pronto da portare */
-async function unserve(n,k){const o=orderByNum(n),p=o&&o.portate&&o.portate[k];if(!p||p.stato!=="servita"){renderWaiterLists();return}
+async function unserve(n,k){const o=orderByNum(n),p=o&&o.portate&&o.portate[k];if(!p||p.stato!=="servita"){schedule();return}
   try{const ok=await transStato(`ordini/${n}/portate/${k}`,"servita",{stato:"pronta",t:p.tp||Date.now(),tp:null});
     toast(ok?`${p.nome||"Piatto"} di nuovo da portare · ${whereTxt(o)}`:"Qualcun altro l'ha appena aggiornato: guarda lo stato attuale.",{ms:4000})}
-  catch(e){$("w-msg").textContent=errText(e)}}
+  catch(e){showBanner(errText(e))}}
 /* più piatti insieme: uno dopo l'altro, con un solo avviso alla fine */
 async function setMany(n,ks,to){const done=[];for(const k of ks){if(await setStato(n,k,to,{notoast:true}))done.push(k)}return done}
 function waitersList(){return S.users.filter(u=>u.ruolo==="cameriere"||hasRole(u,"capo"))}
@@ -158,8 +152,8 @@ function custCard(o){
       .sort((a,b)=>((b.fila===mf)-(a.fila===mf))||a.nome.localeCompare(b.nome));
     pick=`<div class="wpick"><span class="label">${pk==="share"?"Condividi con":"Sposta a"}</span><div class="grp">${ws.map(u=>`<button data-pk="${esc(u.id)}" aria-pressed="${pk==="share"&&sh.includes(u.id)}">${esc(u.nome)}${u.fila&&u.fila!==mf?` <small>${esc(filaNome(u.fila))}</small>`:""}</button>`).join("")||'<span class="sub">Nessun altro cameriere.</span>'}</div>
       <button class="btn small" data-pkclose="1">Chiudi</button></div>`}
-  return `<div class="ccard" data-card="${o.numero}"><div class="chead"><span class="tav"><small>n.</small>${o.numero}</span>
-    <span class="tmid"><b class="cname">${esc(o.nome||"Senza nome")}</b><span class="sub">${cop(righe(o))} coperti${extras(o).length?" · "+extras(o).map(x=>x.qta+" "+esc(x.nome)).join(", "):""}${who?" · "+esc(who):""}</span></span>
+  return `<div class="ccard${orderDone(o)?" cdone":""}" data-card="${o.numero}"><div class="chead"><span class="tav"><small>n.</small>${o.numero}</span>
+    <span class="tmid"><b class="cname">${esc(o.nome||"Senza nome")}</b><span class="sub">${cop(righe(o))} coperti${who?" · "+esc(who):""}</span></span>
     ${canShare||canMove?`<span class="cmore">${canShare?`<button class="btn small" data-share="${o.numero}">Condividi</button>`:""}${canMove?`<button class="btn small" data-move="${o.numero}">Sposta</button>`:""}</span>`:""}</div>
     ${pick}
     ${o.note?`<div class="note">${esc(o.note)}</div>`:""}
@@ -200,8 +194,8 @@ function renderWaiterLists(){
   $("w-tt").textContent=seesAll()?"Tutti i clienti":"I miei clienti";
   $("w-tt-sub").textContent="";
   $("w-nofila").hidden=true;
-  const hasReady=o=>orderCourses(o).some(c=>c.p.stato==="pronta")||(o.bar&&o.bar.stato==="pronta");
-  const recent=o=>{const ts=[...orderCourses(o).map(c=>c.p.t||0),o.bar?o.bar.t||0:0];return Math.max(...ts)};
+  const hasReady=o=>orderCourses(o).some(c=>c.p.stato==="pronta");
+  const recent=o=>Math.max(0,...orderCourses(o).map(c=>c.p.t||0));
   const list=ordersArr().filter(o=>!o.asportoSubito&&(seesAll()?(ownerId(o)||o.fila):mineOrder(o)))
     .filter(o=>!orderDone(o)||Date.now()-recent(o)<3*60000)
     .sort((a,b)=>(orderDone(a)-orderDone(b))||(hasReady(b)-hasReady(a))||a.numero-b.numero);
@@ -210,5 +204,5 @@ function renderWaiterLists(){
 }
 /* compatibilità con il resto dell'app */
 function renderDetail(){}
-function readyItems(){return [...flatCourses("pronta"),...barItems("pronta")].filter(x=>!x.o.asportoSubito&&(seesAll()||mineOrder(x.o)))}
+function readyItems(){return flatCourses("pronta").filter(x=>!x.o.asportoSubito&&(seesAll()||mineOrder(x.o)))}
 

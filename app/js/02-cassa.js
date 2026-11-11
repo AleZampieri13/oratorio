@@ -1,10 +1,9 @@
 /* Cassa: nuovo ordine, modifica, rettifica, annullo */
 /* ---------- CASSA ---------- */
 function stepperHtml(list,qty,attr){
-  const anyP=S.varianti.some(x=>x.prezzo>0)||S.extra.some(x=>x.prezzo>0)||S.portate.some(x=>x.prezzo>0||x.prezzoBimbi>0);
+  const anyP=S.varianti.some(x=>x.prezzo>0)||S.portate.some(x=>x.prezzo>0||x.prezzoBimbi>0);
   const out=v=>{let miss=[];
     if(attr==="data-sstep"||attr==="data-esstep"){const l=stockLeft(v.pid);if(l!=null&&l<=0)miss=["esaurito"]}
-    else if(attr==="data-xstep"||attr==="data-exstep"){const l=leftX(v.id);if(l!=null&&l<=0)miss=["esaurito"]}
     else{miss=S.portate.filter(p=>applies(p,v.id)&&stockLeft(p.id)!=null&&stockLeft(p.id)<=0).map(p=>"manca "+p.nome)}
     return miss.length?` <span class="label" style="color:var(--danger)">${esc(miss.join(", "))}</span>`:""};
   return list.map(v=>`<div class="stepper"><span class="name">${esc(v.nome)}${v.prezzo>0?` <span class="label">${money(v.prezzo)}</span>`:anyP?` <span class="label" style="color:var(--danger)">prezzo non impostato</span>`:""}${out(v)}</span><span class="ctl">
@@ -39,7 +38,7 @@ function paintCash(toPay,pay){
   if(resto<0){el.className="resto err";el.innerHTML=`<small>Mancano</small>${money(-resto)}`}
   else{el.className="resto ok";el.innerHTML=`<small>Resto</small>${money(resto)}`;btn.hidden=resto<=0}
 }
-function repaintC(){paintTotal("c",bill(S.qty,S.xqty,$("c-paid").checked,S.sqty),$("c-paid").checked,S.pay)}
+function repaintC(){paintTotal("c",bill(S.qty,{},$("c-paid").checked,S.sqty),$("c-paid").checked,S.pay)}
 $("c-off").addEventListener("input",repaintC);
 $("c-ric").addEventListener("input",repaintC);
 $("c-ric").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();createOrder()}});
@@ -47,26 +46,24 @@ function hideDone(){$("c-last-wrap").hidden=true}
 ["c-search","c-nome","c-note"].forEach(id=>$(id).addEventListener("input",hideDone));
 $("c-ric").addEventListener("input",()=>{$("c-ric").classList.remove("bad");if($("c-msg").textContent==="Scrivi quanto ti ha dato il cliente.")$("c-msg").textContent=""});
 $("c-nome").addEventListener("input",()=>{$("c-nome").classList.remove("bad");if($("c-msg").textContent==="Scrivi il nominativo.")$("c-msg").textContent=""});
-["c-steppers","c-sing","c-extra"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target.closest("button"))hideDone()}));
+["c-steppers","c-sing"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target.closest("button"))hideDone()}));
 $("c-off-resto").addEventListener("click",()=>{
-  const b=bill(S.qty,S.xqty,$("c-paid").checked,S.sqty),off=parsePrice($("c-off").value),ric=parsePrice($("c-ric").value);
+  const b=bill(S.qty,{},$("c-paid").checked,S.sqty),off=parsePrice($("c-off").value),ric=parsePrice($("c-ric").value);
   const resto=r2(ric-(b.due+off));if(resto>0){$("c-off").value=r2(off+resto).toFixed(2).replace(".",",");repaintC()}
 });
 function renderStock(){
-  const box=$("c-stock"),lim=S.portate.filter(p=>stockLeft(p.id)!=null),limx=S.extra.filter(x=>leftX(x.id)!=null);
-  box.hidden=!lim.length&&!limx.length;
-  box.innerHTML=lim.map(p=>{const l=stockLeft(p.id);return `<span class="pill ${stockCls(l)||"wait"}">${esc(p.nome)}: ${leftTxt(l)}</span>`}).join("")+
-    limx.map(x=>{const l=leftX(x.id);return `<span class="pill ${stockCls(l)||"wait"}">${esc(x.nome)}: ${leftTxt(l)}</span>`}).join("");
+  const box=$("c-stock"),lim=S.portate.filter(p=>stockLeft(p.id)!=null);
+  box.hidden=!lim.length;
+  box.innerHTML=lim.map(p=>{const l=stockLeft(p.id);return `<span class="pill ${stockCls(l)||"wait"}">${esc(p.nome)}: ${leftTxt(l)}</span>`}).join("");
 }
 function stockProblems(rr,ss,xx){
-  return [...S.portate.map(p=>{const l=stockLeft(p.id);if(l==null)return null;const need=cop(rr.filter(r=>applies(p,r.id)))+cop((ss||[]).filter(s=>s.pid===p.id));return need>l?{p,l,need,what:"porzioni"}:null}),
-    ...(xx||[]).map(x=>{const l=leftX(x.id);return l!=null&&x.qta>l?{p:{id:"x-"+x.id,nome:x.nome},l,need:x.qta,what:"pezzi"}:null})].filter(Boolean);
+  return [...S.portate.map(p=>{const l=stockLeft(p.id);if(l==null)return null;const need=cop(rr.filter(r=>applies(p,r.id)))+cop((ss||[]).filter(s=>s.pid===p.id));return need>l?{p,l,need,what:"porzioni"}:null})].filter(Boolean);
 }
 const isBoss=()=>!!S.me&&hasRole(S.me,"master");
 /* aggiorna le scritte «esaurito» quando altri ordini consumano le porzioni, senza toccare il resto del modulo */
 function refreshStepLabels(){
-  [["c-steppers",S.varianti,S.qty,"data-step"],["c-extra",null,S.xqty,"data-xstep"],["c-sing","s",S.sqty,"data-sstep"]].forEach(([id,l,q,a])=>{
-    const h=l==="s"?singlesHtml(q,a):l?stepperHtml(l,q,a):extraStepsHtml(q,a);if($(id).dataset.h!==h){$(id).innerHTML=h;$(id).dataset.h=h}});
+  [["c-steppers",S.varianti,S.qty,"data-step"],["c-sing","s",S.sqty,"data-sstep"]].forEach(([id,l,q,a])=>{
+    const h=l==="s"?singlesHtml(q,a):stepperHtml(l,q,a);if($(id).dataset.h!==h){$(id).innerHTML=h;$(id).dataset.h=h}});
 }
 function stockTxt(probs){return probs.map(x=>x.l<=0?`${x.p.nome}: esaurito`:`${x.p.nome}: ne restano solo ${x.l} (ne servono ${x.need})`).join(". ")}
 function stockBlockMsg(probs){
@@ -77,16 +74,13 @@ function stockBlockMsg(probs){
 function stockProblemsDelta(o,rr,ss,xx){
   return [...S.portate.map(p=>{const l=stockLeft(p.id);if(l==null)return null;
       const had=o.portate&&o.portate[p.id]?cop(righeFor(o,p.id)):0,need=cop(rr.filter(r=>applies(p,r.id)))+cop((ss||[]).filter(s=>s.pid===p.id));
-      return need-had>l?{p,l,need:need-had,what:"porzioni"}:null}),
-    ...(xx||[]).map(x=>{const l=leftX(x.id);if(l==null)return null;const had=extras(o).filter(y=>y.id===x.id).reduce((a,y)=>a+y.qta,0);
-      return x.qta-had>l?{p:{id:"x-"+x.id,nome:x.nome},l,need:x.qta-had,what:"pezzi"}:null})].filter(Boolean);
+      return need-had>l?{p,l,need:need-had,what:"porzioni"}:null})].filter(Boolean);
 }
 function renderSteppers(){
   S.aspConfirm=null;$("c-create").textContent="Crea ordine";
   $("c-steppers").innerHTML=stepperHtml(S.varianti,S.qty,"data-step");
-  $("c-extra-box").hidden=!S.extra.length;$("c-extra").innerHTML=extraStepsHtml(S.xqty,"data-xstep");
   const sl=singlesList();$("c-sing-box").hidden=!sl.length;$("c-sing").innerHTML=singlesHtml(S.sqty,"data-sstep");
-  paintTotal("c",bill(S.qty,S.xqty,$("c-paid").checked,S.sqty),$("c-paid").checked,S.pay);
+  paintTotal("c",bill(S.qty,{},$("c-paid").checked,S.sqty),$("c-paid").checked,S.pay);
   $("c-asp-row").hidden=!$("c-asp").checked;$("c-aspmode").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.m===S.aspMode)));
   renderStock();
   if(S.editOrder!=null)renderEditSteppers();
@@ -97,8 +91,6 @@ $("c-asp").addEventListener("change",renderSteppers);
 $("c-aspmode").addEventListener("click",e=>{const b=e.target.closest("button[data-m]");if(!b)return;S.aspMode=b.dataset.m;renderSteppers()});
 $("c-steppers").addEventListener("click",e=>{const b=e.target.closest("button[data-step]");if(!b)return;
   const id=b.dataset.step;S.qty[id]=Math.max(0,(S.qty[id]||0)+Number(b.dataset.d));S.stockWarn=null;renderSteppers();$("c-msg").textContent=""});
-$("c-extra").addEventListener("click",e=>{const b=e.target.closest("button[data-xstep]");if(!b)return;
-  const id=b.dataset.xstep;S.xqty[id]=Math.max(0,(S.xqty[id]||0)+Number(b.dataset.d));renderSteppers();$("c-msg").textContent=""});
 $("c-pay").addEventListener("click",e=>{const b=e.target.closest("button[data-pay]");if(!b)return;S.pay=b.dataset.pay;renderSteppers()});
 $("c-paid").addEventListener("change",renderSteppers);
 $("c-num").addEventListener("input",()=>{S.numDirty=true;S.aspConfirm=null;$("c-create").textContent="Crea ordine"});
@@ -126,10 +118,10 @@ function selectPren(id){
   renderSearch();renderSteppers();renderSel();$("c-msg").textContent="";
 }
 function renderSel(){const p=S.selPren&&S.prenMap[S.selPren];$("c-sel").hidden=!p;if(p)$("c-sel-t").textContent="Prenotazione: "+p.nome}
-function resetForm(){S.selPren=null;S.qty={};S.xqty={};S.sqty={};$("c-asp").checked=false;S.aspMode="subito";S.pay="contanti";S.stockWarn=null;$("c-off").value="";$("c-ric").value="";$("c-nome").value="";$("c-note").value="";$("c-paid").checked=false;renderSel();renderSteppers()}
+function resetForm(){S.selPren=null;S.qty={};S.sqty={};$("c-asp").checked=false;S.aspMode="subito";S.pay="contanti";S.stockWarn=null;$("c-off").value="";$("c-ric").value="";$("c-nome").value="";$("c-note").value="";$("c-paid").checked=false;renderSel();renderSteppers()}
 $("c-sel-x").addEventListener("click",resetForm);
 const PAY_LBL={contanti:"contanti",pos:"POS"};
-function canUndo(o){return !!o&&!o.asportoSubito&&Date.now()-(o.creato||0)<60000&&!isLocked(o)&&(!o.bar||(o.bar.stato||"attesa")==="attesa")}
+function canUndo(o){return !!o&&!o.asportoSubito&&Date.now()-(o.creato||0)<60000&&!isLocked(o)}
 function renderTicket(){
   const wrap=$("c-last-wrap");
   if(S.lastNum==null||wrap.hidden){return}
@@ -157,7 +149,7 @@ function recentBtn(o){return isLocked(o)?`<button class="btn small" data-open="$
 function renderRecent(){
   const list=ordersArr().sort((a,b)=>b.numero-a.numero).slice(0,15);
   $("c-recent").innerHTML=list.length?list.map(o=>`<div class="li plain"><span class="n">${o.numero}</span>
-    <span>${o.nome?`<b>${esc(o.nome)}</b>`:""}<div class="chips">${o.asporto?'<span class="pill asp">Asporto</span>':""}${righeChips(righe(o))}${singChips(singoli(o))}${extraChips(extras(o))}</div>${payTxt(o)?`<div class="sub">${payTxt(o)}</div>`:""}${barTxt(o)}</span><span class="recact">${dots(o)}${recentBtn(o)}</span></div>`).join("")
+    <span>${o.nome?`<b>${esc(o.nome)}</b>`:""}<div class="chips">${o.asporto?'<span class="pill asp">Asporto</span>':""}${righeChips(righe(o))}${singChips(singoli(o))}</div>${payTxt(o)?`<div class="sub">${payTxt(o)}</div>`:""}</span><span class="recact">${dots(o)}${recentBtn(o)}</span></div>`).join("")
     :'<div class="empty">Nessun ordine.</div>';
 }
 $("c-recent").addEventListener("click",e=>{const b=e.target.closest("button[data-open]");if(b)openEdit(Number(b.dataset.open))});
@@ -172,7 +164,7 @@ function payTotals(fo,fd){
   t.contanti=r2(t.contanti);t.pos=r2(t.pos);t.offerte=r2(t.offerte);return t;
 }
 function renderAsporto(){
-  const allC=o=>[...orderCourses(o),...(o.bar?[{k:"bar",l:"Bevande",p:o.bar,bar:true}]:[])];
+  const allC=o=>orderCourses(o);
   const list=ordersArr().filter(o=>o.asportoSubito&&allC(o).some(c=>c.p.stato!=="servita")).sort((a,b)=>a.numero-b.numero);
   $("c-asp-panel").hidden=!list.length;if(!list.length)return;
   $("c-asplist").innerHTML=list.map(o=>{const cs=allC(o),ready=cs.every(c=>c.p.stato==="pronta"||c.p.stato==="servita");
@@ -183,7 +175,6 @@ function renderAsporto(){
 $("c-asplist").addEventListener("click",async e=>{const b=e.target.closest("button[data-consegna]");if(!b)return;
   const n=Number(b.dataset.consegna),o=orderByNum(n);if(!o)return;b.disabled=true;
   const upd={};orderCourses(o).forEach(c=>{if(c.p.stato==="pronta"){upd["portate/"+c.k+"/stato"]="servita";upd["portate/"+c.k+"/t"]=Date.now();upd["portate/"+c.k+"/tp"]=c.p.t||null}});
-  if(o.bar&&o.bar.stato==="pronta"){upd["bar/stato"]="servita";upd["bar/t"]=Date.now()}
   try{await R("ordini/"+n).update(upd)}catch(err){showBanner(errText(err));b.disabled=false}
 });
 function renderMine(){
@@ -196,7 +187,7 @@ $("c-fondo-save").addEventListener("click",()=>{if(!S.me||!hasRole(S.me,"master"
 
 async function createOrder(){
   const msg=$("c-msg");msg.className="msg err";
-  const paid=$("c-paid").checked,b=bill(S.qty,S.xqty,paid,S.sqty);
+  const paid=$("c-paid").checked,b=bill(S.qty,{},paid,S.sqty);
   if(!b.rr.length&&!b.ss.length&&!b.xx.length){msg.textContent="Aggiungi almeno un menù o un piatto.";return}
   if(!$("c-nome").value.trim()){msg.textContent="Scrivi il nominativo.";$("c-nome").classList.add("bad");$("c-nome").focus();return}
   let n=parseInt($("c-num").value,10);
@@ -204,11 +195,11 @@ async function createOrder(){
   const off=parsePrice($("c-off").value),toPay=r2(b.due+off),ric=S.pay==="contanti"?parsePrice($("c-ric").value):0;
   if(toPay>0&&S.pay==="contanti"&&!(ric>0)){msg.textContent="Scrivi quanto ti ha dato il cliente.";$("c-ric").classList.add("bad");$("c-ric").focus();return}
   if(toPay>0&&ric>0&&ric<toPay){msg.textContent=`Mancano ${money(r2(toPay-ric))}: controlla quanto hai ricevuto.`;return}
-  const probs=stockProblems(b.rr,b.ss,b.xx),key=JSON.stringify([S.qty,S.sqty,S.xqty,probs.map(x=>x.p.id)]);
+  const probs=stockProblems(b.rr,b.ss,b.xx),key=JSON.stringify([S.qty,S.sqty,probs.map(x=>x.p.id)]);
   if(probs.length){
     if(!isBoss()){msg.textContent=stockBlockMsg(probs);return}
     if(S.stockWarn!==key){S.stockWarn=key;msg.textContent=stockTxt(probs)+". Sei master: premi di nuovo «Crea ordine» per venderle lo stesso.";return}}
-  const direct=$("c-asp").checked&&S.aspMode==="subito",ckey=JSON.stringify([S.qty,S.sqty,S.xqty,n]);
+  const direct=$("c-asp").checked&&S.aspMode==="subito",ckey=JSON.stringify([S.qty,S.sqty,n]);
   if(direct&&S.aspConfirm!==ckey){S.aspConfirm=ckey;msg.className="msg err";
     const what=[...b.rr.map(r=>`${r.qta} ${r.nome}`),...b.ss.map(s=>`${s.qta} ${s.nome}`)].join(", ");
     msg.textContent=`Asporto diretto: ${what} vanno subito in cucina e al bar e l'ordine non si potrà più cambiare. Controlla e premi «Conferma e manda in cucina».`;
@@ -219,7 +210,6 @@ async function createOrder(){
   const base={creato:Date.now(),creatoDa:myName(),creatoDaId:S.me?S.me.id:"",nome:$("c-nome").value.trim(),righe:b.rr,extra:b.xx,note:$("c-note").value.trim(),
     tavolo:"",prenotazione:pren||"",importoMenu:b.menu,importoExtra:b.ext,importo:b.tot,pagatoPrima:paid,incassato:b.due,offerta:off,ricevuto:ric>0?ric:0,metodo:toPay>0?S.pay:"",singoli:b.ss,importoSingoli:b.sing,
     asporto:$("c-asp").checked,asportoSubito:$("c-asp").checked&&S.aspMode==="subito",portate:coursesFor(b.rr,b.ss,b.xx),v:2};
-  if(barX(b.xx).length)base.bar={stato:"attesa",t:Date.now()};
   if(base.asportoSubito){const now=Date.now();Object.entries(base.portate).forEach(([k,c])=>{c.stato="chiamata";c.t=now;c.da="Asporto";c.daId=S.me?S.me.id:"";const rs=repSnap(k);if(rs)c.rep=rs});if(base.bar)base.bar.stato="chiamata"}
   if(S.annMap[n]&&!auto){btn.disabled=false;clearTimeout(slow);msg.className="msg err";msg.textContent=`Il numero ${n} era di un ordine annullato. Usa ${nextNum()}.`;S.numDirty=false;prefillNum();return}
   try{
@@ -266,7 +256,7 @@ function openEdit(n){
   if(locked){const w=o.cameriereId?nameOf(o.cameriereId,o.cameriere):"";
     $("x-lockmsg").textContent=`Ordine già partito${w?` (l'ha preso ${w})`:""}: non si modifica più, ma puoi togliere quello che non è ancora stato chiamato e restituire i soldi.${boss?" Sei master: puoi anche annullarlo del tutto (cucina e cameriere vedranno sparire le schede).":""}`;
     S.fix={rm:{},q:{},sq:{},xq:{},amt:null,sig:""}}
-  S.editOrder=n;S.eqty={};righe(o).forEach(r=>{S.eqty[r.id]=r.qta});S.esqty={};singoli(o).forEach(s=>{S.esqty[s.pid+"|"+s.k]=s.qta});S.exqty={};extras(o).forEach(r=>{S.exqty[r.id]=r.qta});S.xpay=o.metodo||"contanti";
+  S.editOrder=n;S.eqty={};righe(o).forEach(r=>{S.eqty[r.id]=r.qta});S.esqty={};singoli(o).forEach(s=>{S.esqty[s.pid+"|"+s.k]=s.qta});S.xpay=o.metodo||"contanti";
   $("x-off").value=o.offerta?o.offerta.toFixed(2).replace(".",","):"";$("x-title").textContent=(locked?"Rettifica ordine ":"Modifica ordine ")+n+(o.nome?" · "+o.nome:"")+(o.asporto?" · asporto":"");$("x-nome").value=o.nome||"";$("x-note").value=o.note||"";$("x-paid").checked=!!o.pagatoPrima;
   $("x-msg").textContent="";$("x-del-row").hidden=locked&&!boss;$("x-confirm-row").hidden=true;$("x-panel").hidden=false;$("c-last-wrap").hidden=true;
   renderEditSteppers();if(locked)renderFix(true);$("x-panel").scrollIntoView({behavior:"smooth",block:"start"});
@@ -283,20 +273,22 @@ function fixCalc(o){
   righe(o).forEach((r,i)=>{const d=r.qta-rr[i].qta;if(d>0){if(!o.pagatoPrima)refund+=d*(r.prezzo||0);desc.push(`−${d} ${r.nome}`)}});
   singoli(o).forEach((s,i)=>{const d=s.qta-ss[i].qta;if(d>0){refund+=d*(s.prezzo||0);desc.push(`−${d} ${s.nome} singolo`)}});
   extras(o).forEach((x,i)=>{const d=x.qta-xx[i].qta;if(d>0){refund+=d*(x.prezzo||0);desc.push(`−${d} ${x.nome}`)}});
+  let noPrice=[];
   orderCourses(o).filter(c=>F.rm[c.k]).forEach(c=>{const p=portataCfg(c.k)||{};let v=0,nP=0;
+    if(!o.pagatoPrima&&!(p.prezzo>0)&&rr.some(r=>r.qta>0&&applies(portataCfg(c.k),r.id)))noPrice.push(c.l);
     if(!o.pagatoPrima)rr.filter(r=>r.qta>0&&applies(portataCfg(c.k),r.id)).forEach(r=>{v+=r.qta*((r.id==="bimbi"&&p.prezzoBimbi>0)?p.prezzoBimbi:(p.prezzo||0))});
     rr.filter(r=>r.qta>0&&applies(portataCfg(c.k),r.id)).forEach(r=>{nP+=r.qta});
     ss.filter(s=>s.pid===c.k&&s.qta>0).forEach(s=>{v+=s.qta*(s.prezzo||0);nP+=s.qta});
     refund+=v;desc.push(`tolto ${c.l} (${nP} ${nP===1?"piatto":"piatti"})`)});
   ss=ss.filter(s=>!F.rm[s.pid]);
-  return {rr:rr.filter(r=>r.qta>0),ss:ss.filter(s=>s.qta>0),xx:xx.filter(x=>x.qta>0),refund:r2(Math.max(0,Math.min(refund,o.incassato||0))),desc,noneCalled};
+  return {rr:rr.filter(r=>r.qta>0),ss:ss.filter(s=>s.qta>0),xx:xx.filter(x=>x.qta>0),refund:r2(Math.max(0,Math.min(refund,o.incassato||0))),desc,noneCalled,noPrice};
 }
 function fixStep(list,qmap,attr,key){return list.map(r=>{const k=key(r),cur=qmap[k]!=null?qmap[k]:r.qta;
   return `<div class="stepper"><span class="name">${esc(r.nome)} <span class="label">${cur<r.qta?"erano "+r.qta:""}</span></span><span class="ctl"><button ${attr}="${esc(k)}" data-max="${r.qta}" data-d="-1" aria-label="Togli ${esc(r.nome)}">−</button><output>${cur}</output><button ${attr}="${esc(k)}" data-max="${r.qta}" data-d="1" ${cur>=r.qta?"disabled":""} aria-label="Rimetti ${esc(r.nome)}">+</button></span></div>`}).join("")}
 function renderFix(force){
   const o=orderByNum(S.editOrder),F=S.fix,box=$("x-fix");if(!o||!F)return;
   const sig=JSON.stringify([o,{...F,sig:""}]);if(!force&&sig===F.sig)return;F.sig=sig;
-  const c=fixCalc(o),pend=orderCourses(o).filter(x=>(x.p.stato||"attesa")==="attesa"&&!isXk(x.k));
+  const c=fixCalc(o),pend=orderCourses(o).filter(x=>(x.p.stato||"attesa")==="attesa");
   if(F.amt==null)$("x-fix").dataset.sugg=c.refund;
   const amt=F.amt!=null?F.amt:c.refund;
   box.innerHTML=`<span class="label">Piatti non ancora chiamati</span>
@@ -304,6 +296,7 @@ function renderFix(force){
     ${c.noneCalled&&(righe(o).length||singoli(o).length)?`<span class="label">Coperti (nessun piatto ancora chiamato)</span>${fixStep(righe(o),F.q,"data-fq",r=>r.id)}${fixStep(singoli(o).map(s=>({...s,nome:s.nome+" singolo"})),F.sq,"data-fsq",s=>s.pid+"|"+s.k)}`:""}
     ${extras(o).length?`<span class="label">Bevande ed extra</span>${fixStep(extras(o),F.xq,"data-fxq",x=>x.id)}`:""}
     <div class="sub">${c.desc.length?esc(c.desc.join(" · ")):"Scegli cosa togliere."}</div>
+    ${c.noPrice.length?`<div class="note">${esc(c.noPrice.join(", "))}: nel Listino non c'è il prezzo da solo, quindi l'app non sa quanto vale dentro il menù. Scrivi tu quanto restituire.</div>`:""}
     <div class="payrow"><label class="label" for="x-fixamt">Da restituire (${PAY_LBL[o.metodo]||"contanti"})</label><input type="text" id="x-fixamt" inputmode="decimal" class="pricein" value="${amt?amt.toFixed(2).replace(".",","):""}" placeholder="0,00 €"></div>
     ${c.refund>0&&F.amt!=null&&F.amt!==c.refund?`<div class="sub">Calcolato: ${money(c.refund)}</div>`:""}
     <button class="btn primary big" id="x-fixsave" ${c.desc.length?"":"disabled"}>Togli${amt>0?" e restituisci "+money(amt):""}</button>`;
@@ -327,7 +320,6 @@ async function saveFix(){
   upd.importo=r2(upd.importoMenu+upd.importoSingoli+upd.importoExtra);
   const need=coursesFor(c.rr,c.ss,c.xx);
   Object.keys(o.portate||{}).forEach(k=>{if((F.rm[k]||!need[k])&&(o.portate[k].stato||"attesa")==="attesa")upd["portate/"+k]=null});
-  if(!barX(c.xx).length&&o.bar&&(o.bar.stato||"attesa")==="attesa")upd.bar=null;
   upd.incassato=r2((o.incassato||0)-amt);upd.stornato=r2((o.stornato||0)+amt);
   const sid=rid("s");upd["storni/"+sid]={t:Date.now(),da:myName(),daId:S.me?S.me.id:"",cosa:c.desc.join(", "),importo:amt};
   try{await R("ordini/"+n).update(upd);m.className="msg ok";m.textContent="Rettifica salvata."+(amt>0?` Restituisci ${money(amt)} (${PAY_LBL[o.metodo]||"contanti"}).`:"");
@@ -337,14 +329,11 @@ async function saveFix(){
 }
 function renderEditSteppers(){
   $("x-steppers").innerHTML=stepperHtml(S.varianti,S.eqty,"data-estep");
-  $("x-extra-box").hidden=!S.extra.length;$("x-extra").innerHTML=extraStepsHtml(S.exqty,"data-exstep");
   const sl=singlesList();$("x-sing-box").hidden=!sl.length;$("x-sing").innerHTML=singlesHtml(S.esqty,"data-esstep");
-  paintTotal("x",bill(S.eqty,S.exqty,$("x-paid").checked,S.esqty),$("x-paid").checked,S.xpay);
+  paintTotal("x",bill(S.eqty,{},$("x-paid").checked,S.esqty),$("x-paid").checked,S.xpay);
 }
 $("x-steppers").addEventListener("click",e=>{const b=e.target.closest("button[data-estep]");if(!b)return;
   const id=b.dataset.estep;S.eqty[id]=Math.max(0,(S.eqty[id]||0)+Number(b.dataset.d));renderEditSteppers()});
-$("x-extra").addEventListener("click",e=>{const b=e.target.closest("button[data-exstep]");if(!b)return;
-  const id=b.dataset.exstep;S.exqty[id]=Math.max(0,(S.exqty[id]||0)+Number(b.dataset.d));renderEditSteppers()});
 $("x-sing").addEventListener("click",e=>{const b=e.target.closest("button[data-esstep]");if(!b)return;
   const id=b.dataset.esstep;S.esqty[id]=Math.max(0,(S.esqty[id]||0)+Number(b.dataset.d));renderEditSteppers()});
 $("x-pay").addEventListener("click",e=>{const b=e.target.closest("button[data-pay]");if(!b)return;S.xpay=b.dataset.pay;renderEditSteppers()});
@@ -354,18 +343,17 @@ $("x-close").addEventListener("click",closeEdit);
 $("x-save").addEventListener("click",async()=>{
   const n=S.editOrder,o=orderByNum(n),m=$("x-msg");if(!o){closeEdit();return}
   if(isLocked(o)){m.className="msg err";m.textContent=LOCK_MSG(n);return}
-  const paid=$("x-paid").checked,b=bill(S.eqty,S.exqty,paid,S.esqty);
+  const paid=$("x-paid").checked,b=bill(S.eqty,{},paid,S.esqty);
   if(!b.rr.length&&!b.ss.length&&!b.xx.length){m.className="msg err";m.textContent="L'ordine è vuoto. Per toglierlo usa «Annulla ordine».";return}
   const upd={nome:$("x-nome").value.trim(),note:$("x-note").value.trim(),righe:b.rr,extra:b.xx,importoMenu:b.menu,importoExtra:b.ext,importo:b.tot,
     singoli:b.ss,importoSingoli:b.sing,pagatoPrima:paid,incassato:b.due,offerta:parsePrice($("x-off").value),metodo:(b.due+parsePrice($("x-off").value))>0?S.xpay:""};
   const need=coursesFor(b.rr,b.ss,b.xx);Object.keys(need).forEach(k=>{if(!(o.portate&&o.portate[k]))upd["portate/"+k]=need[k]});
   Object.keys(o.portate||{}).forEach(k=>{if(!need[k])upd["portate/"+k]=null});
-  if(barX(b.xx).length&&!o.bar)upd.bar={stato:"attesa",t:Date.now()};if(!barX(b.xx).length&&o.bar)upd.bar=null;
   const diff=r2(b.due+upd.offerta-(o.incassato||0)-(o.offerta||0));
   const before=orderDesc(righe(o),singoli(o),extras(o)),after=orderDesc(b.rr,b.ss,b.xx);
   try{
     const fresh=orderByNum(n);if(!fresh||isLocked(fresh)){m.className="msg err";m.textContent=fresh?LOCK_MSG(n):"L'ordine non esiste più.";return}
-    const sp=stockProblemsDelta(fresh,b.rr,b.ss,b.xx),skey=JSON.stringify([S.eqty,S.esqty,S.exqty]);
+    const sp=stockProblemsDelta(fresh,b.rr,b.ss,b.xx),skey=JSON.stringify([S.eqty,S.esqty]);
     if(sp.length){m.className="msg err";if(!isBoss()){m.textContent=stockBlockMsg(sp);return}
       if(S.editStockWarn!==skey){S.editStockWarn=skey;m.textContent=stockTxt(sp)+". Sei master: premi di nuovo «Salva» per farlo lo stesso.";return}}
     await R("ordini/"+n).update(upd);m.className="msg ok";

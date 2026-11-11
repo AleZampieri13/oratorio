@@ -146,8 +146,8 @@ function exportExcel(title){
   const qtyOf=(o,v)=>{const r=righe(o).find(x=>x.id===v.id);return r?r.qta:0};
   const XN=[...new Set([...S.extra.map(x=>x.nome),...O.flatMap(o=>extras(o).map(x=>x.nome))])];
   const xOf=(o,n)=>{const r=extras(o).find(x=>x.nome===n);return r?r.qta:0};
-  const ord=[["Numero","Nominativo",...V.map(v=>v.nome),"Coperti","Piatti da soli","Asporto",...XN,"Importo menù €","Importo piatti da soli €","Importo extra €","Bevande","Importo totale €","Incassato in cassa €","Restituito con rettifiche €","Offerta €","Ricevuto €","Pagamento","Ora","Creato da","Fila","Dove","Note",...S.portate.map(p=>p.nome)]];
-  O.forEach(o=>ord.push([o.numero,o.nome||"",...V.map(v=>qtyOf(o,v)),cop(righe(o)),singoli(o).map(s=>`${s.qta} ${s.nome}`).join(", "),o.asporto?(o.asportoSubito?"Sì, subito":"Sì"):"No",...XN.map(n=>xOf(o,n)),o.importoMenu!=null?o.importoMenu:(o.importo||0),o.importoSingoli||0,o.importoExtra||0,o.bar?(BAR_TXT[o.bar.stato||"attesa"]||""):"",o.importo||0,
+  const ord=[["Numero","Nominativo",...V.map(v=>v.nome),"Coperti","Piatti da soli","Asporto",...XN,"Importo menù €","Importo piatti da soli €","Importo extra €","Importo totale €","Incassato in cassa €","Restituito con rettifiche €","Offerta €","Ricevuto €","Pagamento","Ora","Creato da","Fila","Dove","Note",...S.portate.map(p=>p.nome)]];
+  O.forEach(o=>ord.push([o.numero,o.nome||"",...V.map(v=>qtyOf(o,v)),cop(righe(o)),singoli(o).map(s=>`${s.qta} ${s.nome}`).join(", "),o.asporto?(o.asportoSubito?"Sì, subito":"Sì"):"No",...XN.map(n=>xOf(o,n)),o.importoMenu!=null?o.importoMenu:(o.importo||0),o.importoSingoli||0,o.importoExtra||0,o.importo||0,
     o.incassato||0,o.stornato||0,o.offerta||0,o.ricevuto||"",((o.incassato||0)+(o.offerta||0))>0?(o.metodo==="pos"?"POS":"Contanti"):"",fmtTime(o.creato),nameOf(o.creatoDaId,o.creatoDa),o.fila?filaNome(o.fila):"",o.dove||o.tavolo||"",o.note||"",
     ...S.portate.map(p=>o.portate&&o.portate[p.id]?(o.portate[p.id].stato||"attesa"):"—")]));
   const SP=S.portate.filter(p=>P.some(x=>(x.singoli||{})[p.id]));
@@ -189,7 +189,7 @@ function archiveData(nome){
   const utenti={};S.users.forEach(u=>{utenti[u.id]={id:u.id,nome:u.nome,ruolo:u.ruolo,...(u.ruoli?{ruoli:u.ruoli}:{})}});
   const sum={id,nome,t:Date.now(),da:myName(),ordini:T.n,coperti:T.cop,contanti:P.contanti,pos:P.pos,offerte:P.offerte,totale:T.valore};
   return {sum,data:{...sum,ordini:S.ordMap,annullati:S.annMap,prenotazioni:S.prenMap,offerte:S.offMap,log:S.logMap,postazioni:S.post,
-    menu:{varianti:S.varianti,portate:S.portate,extra:S.extra,reparti:repList()},listino:S.L,file:fileList(),utenti,scorte:S.scorte,scorteBar:S.scorteX}};
+    menu:{varianti:S.varianti,portate:S.portate,extra:S.extra,reparti:repList()},listino:S.L,file:fileList(),utenti,scorte:S.scorte}};
 }
 async function doReset(){
   $("e-confirm-row").hidden=true;const m=$("e-reset-msg");m.className="msg";m.textContent="Archivio la serata…";
@@ -222,11 +222,11 @@ async function loadArchive(){
 $("e-arch-load").addEventListener("click",loadArchive);
 /* rifà l'Excel di una serata archiviata usando i suoi dati al posto di quelli in corso */
 function withArchive(A,fn){
-  const keys=["ordMap","annMap","prenMap","offMap","logMap","post","varianti","portate","extra","reparti","file","users","scorte","scorteX"],bak={};keys.forEach(k=>bak[k]=S[k]);
+  const keys=["ordMap","annMap","prenMap","offMap","logMap","post","varianti","portate","extra","reparti","file","users","scorte"],bak={};keys.forEach(k=>bak[k]=S[k]);
   const fix=o=>{const x={};Object.entries(o||{}).forEach(([k,v])=>{x[k]={...v,id:v.id||k}});return x};
   try{S.ordMap=fix(A.ordini);S.annMap=fix(A.annullati);S.prenMap=fix(A.prenotazioni);S.offMap=fix(A.offerte);S.logMap=fix(A.log);S.post=A.postazioni||{};
     const M=A.menu||{};S.varianti=toArr(M.varianti);S.portate=toArr(M.portate).map(p=>({...p,menu:p.menu?toArr(p.menu):null,reparti:toArr(p.reparti)}));S.extra=toArr(M.extra);S.reparti=toArr(M.reparti);
-    S.file=toArr(A.file);S.users=Object.values(A.utenti||{});S.scorte=A.scorte||{};S.scorteX=A.scorteBar||{};
+    S.file=toArr(A.file);S.users=Object.values(A.utenti||{});S.scorte=A.scorte||{};
     return fn()}
   finally{keys.forEach(k=>S[k]=bak[k])}
 }

@@ -1,6 +1,11 @@
 # Versioni
 
 ## 36
+- **Uscita piatti:** nuova lista «Appena consegnati» con «Non consegnato» (per 3 minuti).
+- **Telefono non autorizzato:** si può incollare il link o scrivere il codice (utile su iPhone con l'app sulla schermata Home).
+- **Rettifica:** se un piatto tolto non ha il prezzo da solo, l'app avvisa di scrivere a mano quanto restituire.
+- **Camerieri:** i clienti finiti sono più piccoli e in fondo. 🔔 in alto per provare il suono.
+- Tolto il codice della v35 che non serviva più (bevande ed extra a parte).
 - **Cassa:** titoli «Menù» e «Piatti da soli» più grandi con una linea; ogni reparto dei piatti da soli ha il suo titolo con il colore del reparto.
 - **Camerieri:** linguette dei reparti e «Chiama» più grandi; la linguetta aperta ha il colore del reparto, quelle finite diventano grigie (sempre apribili). «Portato» si annulla: dall'avviso o con «Non portato» sul piatto (per 3 minuti); le schede finite restano visibili 3 minuti.
 - **Ordine per reparto:** le frecce ↑↓ sono sui reparti (linguette del cameriere, cassa, listino); i piatti seguono il loro reparto.

@@ -19,10 +19,7 @@ const toArr=x=>(Array.isArray(x)?x:Object.values(x||{})).filter(Boolean);
 function repList(){return S.reparti||[]}
 function repNome(id){const r=repList().find(x=>x.id===id);return r?r.nome:""}
 function portReps(p){return toArr(p&&p.reparti).filter(x=>x.r&&repList().some(r=>r.id===x.r))}
-/* extra preparati da un reparto della cucina: nell'ordine sono una «portata» con chiave x-<reparto> */
-const isXk=k=>String(k).startsWith("x-");
-function repSnap(k){if(isXk(k)){const r=k.slice(2);return {[r]:{s:"chiamata",nome:repNome(r)||"Cucina"}}}
-  const rs=portReps(S.portate.find(p=>p.id===k));if(!rs.length)return null;const o={};
+function repSnap(k){  const rs=portReps(S.portate.find(p=>p.id===k));if(!rs.length)return null;const o={};
   rs.forEach(x=>{o[x.r]={s:"chiamata",nome:repNome(x.r)};if(x.piatto)o[x.r].piatto=x.piatto});return o}
 function userReps(u){return toArr(u&&u.reparti).filter(id=>repList().some(r=>r.id===id))}
 function myReps(){if(!S.me||hasRole(S.me,"master")||!hasRole(S.me,"cucina"))return null;const rs=userReps(S.me).filter(r=>!barReps().includes(r));return rs.length?rs:null}
@@ -43,7 +40,7 @@ const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;"
 const S={root:null,online:true,ordMap:{},prenMap:{},ordLoaded:false,varianti:DEFAULT_VAR,portate:DEFAULT_PORT,users:[],usersLoaded:false,me:null,role:null,
   qty:{},eqty:{},editOrder:null,numDirty:false,openNum:null,lastNum:null,selPren:null,loginPick:null,pending:new Set(),
   kFilt:lsGet("kfiltro")||"",seenCalls:null,seenReady:null,sound:false,audio:null,wFilter:"mie",imp:null,editUser:null,cfg:null,invite:null,inviteLoaded:false,joinCode:null,
-  extra:[],xqty:{},exqty:{},pay:"contanti",xpay:"contanti",dpay:"contanti",scorte:{},fondo:0,contato:null,offMap:{},stockWarn:null,sqty:{},esqty:{},aspMode:"subito",newPorts:null,logMap:{},scorteX:{},aspConfirm:null,seenBar:null,post:{},closeKey:"",file:null,joinFila:"",
+  extra:[],pay:"contanti",xpay:"contanti",dpay:"contanti",scorte:{},fondo:0,contato:null,offMap:{},stockWarn:null,sqty:{},esqty:{},aspMode:"subito",newPorts:null,logMap:{},aspConfirm:null,seenBar:null,post:{},closeKey:"",file:null,joinFila:"",
   reparti:[],L:null,wTab:{},kRep:lsGet("krep")||"",bRep:lsGet("brep")||"",oRep:lsGet("orep")||"",seenOut:null,removedQ:[],annMap:{},editLocked:false};
 
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
@@ -239,36 +236,27 @@ $("toast").addEventListener("click",e=>{const el=$("toast");el.hidden=true;
 /* portate */
 function portataCfg(k){return S.portate.find(p=>p.id===k)}
 function applies(p,vid){return !p||!Array.isArray(p.menu)||p.menu.includes(vid)}
-function coursesFor(rr,ss,xx){const out={};S.portate.forEach((p,i)=>{if(rr.some(r=>applies(p,r.id))||(ss||[]).some(s=>s.pid===p.id))out[p.id]={stato:"attesa",t:0,nome:p.nome,ord:i}});
-  [...new Set((xx||[]).filter(x=>x.rep).map(x=>x.rep))].forEach((r,i)=>{out["x-"+r]={stato:"attesa",t:0,nome:"Extra "+(repNome(r)||"cucina"),ord:50+i,xr:r}});return out}
+function coursesFor(rr,ss,xx){const out={};S.portate.forEach((p,i)=>{if(rr.some(r=>applies(p,r.id))||(ss||[]).some(s=>s.pid===p.id))out[p.id]={stato:"attesa",t:0,nome:p.nome,ord:i}});return out}
 function orderCourses(o){
   const ps=o.portate||{};
   return Object.keys(ps).map(k=>{const c=portataCfg(k);const idx=S.portate.indexOf(c);return {k,l:(c&&c.nome)||ps[k].nome||k,ord:idx<0?100+(ps[k].ord||0):idx,p:ps[k]}}).sort((a,b)=>a.ord-b.ord);
 }
 function singoli(o){const r=o&&o.singoli;return (Array.isArray(r)?r:Object.values(r||{})).filter(Boolean)}
-function righeFor(o,k){if(isXk(k))return extras(o).filter(x=>x.rep&&"x-"+x.rep===k).map(x=>({id:"x"+x.id,nome:x.nome,qta:x.qta}));
+function righeFor(o,k){
   const p=portataCfg(k);return [...righe(o).filter(r=>applies(p,r.id)),...singoli(o).filter(s=>s.pid===k).map(s=>({id:"s-"+s.pid+s.k,nome:s.k==="b"?"singola bambini":"singola",qta:s.qta}))]}
 function stOf(o,k){return (o.portate&&o.portate[k]&&o.portate[k].stato)||"attesa"}
 function buildRighe(qty){return S.varianti.map(v=>({id:v.id,nome:v.nome,qta:qty[v.id]||0,prezzo:v.prezzo||0})).filter(r=>r.qta>0)}
 function singlesList(){return S.portate.flatMap(p=>[p.prezzo>0?{id:p.id+"|a",pid:p.id,k:"a",nome:p.nome,prezzo:p.prezzo}:null,p.prezzoBimbi>0?{id:p.id+"|b",pid:p.id,k:"b",nome:p.nome+" bambini",prezzo:p.prezzoBimbi}:null]).filter(Boolean)}
 function buildSingoli(sq){return singlesList().map(i=>({pid:i.pid,k:i.k,nome:i.nome,qta:sq[i.id]||0,prezzo:i.prezzo})).filter(r=>r.qta>0)}
 /* chi prepara un extra: "" = bar, altrimenti l'id del reparto (se esiste ancora) */
-function xRep(x){return x&&x.rep&&repList().some(r=>r.id===x.rep)?x.rep:""}
-function buildExtra(xq){return S.extra.map(x=>{const e={id:x.id,nome:x.nome,qta:xq[x.id]||0,prezzo:x.prezzo||0};const r=xRep(x);if(r)e.rep=r;return e}).filter(r=>r.qta>0)}
+function buildExtra(){return []}
 /* nell'ordine: gli extra senza reparto sono del bar */
-const barX=xx=>(xx||[]).filter(x=>!x.rep);
 function extras(o){const r=o&&o.extra;return (Array.isArray(r)?r:Object.values(r||{})).filter(Boolean)}
-function barExtras(o){return barX(extras(o))}
-/* in cassa gli extra sono divisi per gruppo (se i gruppi ci sono) */
-function xGroups(){const g=[];S.extra.forEach(x=>{const n=(x.gruppo||"").trim();if(!g.includes(n))g.push(n)});return g.sort((a,b)=>(a==="")-(b===""))}
-function extraStepsHtml(qty,attr){const g=xGroups();if(g.length<2)return stepperHtml(S.extra,qty,attr);
-  return g.map(n=>`<div class="xgroup"><span class="label">${esc(n||"Altro")}</span>${stepperHtml(S.extra.filter(x=>(x.gruppo||"").trim()===n),qty,attr)}</div>`).join("")}
 const importo=rr=>Math.round(rr.reduce((a,r)=>a+r.qta*(r.prezzo||0),0)*100)/100;
 const r2=v=>Math.round(v*100)/100;
 function bill(qty,xq,paid,sq){const rr=buildRighe(qty),xx=buildExtra(xq),ss=buildSingoli(sq||{}),menu=importo(rr),ext=importo(xx),sing=importo(ss);
   return {rr,xx,ss,menu,ext,sing,tot:r2(menu+ext+sing),due:r2((paid?0:menu)+ext+sing),cop:cop(rr)}}
 function singChips(ss){return (ss||[]).map(r=>`<span class="chip">${r.qta} ${esc(r.nome)}${r.k!=="b"?" (da solo)":""}</span>`).join("")}
-function extraChips(xx){return (xx||[]).map(r=>`<span class="chip extra-chip">${r.qta} ${esc(r.nome)}</span>`).join("")}
 /* porzioni */
 const PORT_COLORS=["#0f766e","#b45309","#7c3aed","#be123c","#1d4ed8","#4d7c0f","#a21caf","#0e7490"];
 /* colori per reparto: ogni piatto prende il colore del suo reparto (cucina, uscita, bar, cameriere) */
@@ -277,7 +265,7 @@ function portColor(pid){const i=S.portate.findIndex(p=>p.id===pid);const p=S.por
 function usedFor(pid){return ordersArr().reduce((a,o)=>a+(o.portate&&o.portate[pid]?cop(righeFor(o,pid)):0),0)}
 function stockLeft(pid){const lim=S.scorte[pid];return (lim==null||lim==="")?null:lim-usedFor(pid)}
 function leftTxt(l){return l<=0?"esaurito":l===1?"resta 1":"restano "+l}
-function isLocked(o){return !!o&&(!!o.cameriereId||orderCourses(o).some(c=>(c.p.stato||"attesa")!=="attesa")||(!!o.bar&&(o.bar.stato||"attesa")!=="attesa"))}
+function isLocked(o){return !!o&&(!!o.cameriereId||orderCourses(o).some(c=>(c.p.stato||"attesa")!=="attesa"))}
 const LOCK_MSG=n=>{const o=orderByNum(n),w=o&&o.cameriereId?nameOf(o.cameriereId,o.cameriere):"";
   return `L'ordine ${n} è già partito${w?` (l'ha preso ${w})`:" (è già in cucina o al bar)"}: non si può più modificare. Per aggiungere qualcosa crea un nuovo ordine. Solo il master può annullarlo.`};
 function orderDesc(rr,ss,xx){return [...(rr||[]).map(r=>`${r.qta} ${r.nome}`),...(ss||[]).map(s=>`${s.qta} ${s.nome}`),...(xx||[]).map(x=>`${x.qta} ${x.nome}`)].join(", ")||"vuoto"}
@@ -294,9 +282,5 @@ function armed(btn,label){
   btn._armT=setTimeout(()=>{if(btn.isConnected)disarm()},4000);
   return false;
 }
-function usedX(xid){return ordersArr().reduce((a,o)=>a+extras(o).filter(x=>x.id===xid).reduce((s,x)=>s+x.qta,0),0)}
-function leftX(xid){const lim=S.scorteX[xid];return (lim==null||lim==="")?null:lim-usedX(xid)}
-const BAR_TXT={attesa:"da chiamare",chiamata:"al bar",pronta:"pronte da portare",servita:"consegnate"};
-function barTxt(o){return o.bar?`<div class="sub">Bevande ${BAR_TXT[o.bar.stato||"attesa"]}</div>`:""}
 function stockCls(left){return left==null?"":left<=0?"out":left<=10?"low":""}
 

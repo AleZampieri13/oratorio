@@ -91,5 +91,10 @@ async function start(){
   listenMap("annullati",S.annMap);
   listenMap("prenotazioni",S.prenMap);
 }
+/* sblocco a mano: link incollato o codice scritto */
+$("na-go").addEventListener("click",()=>{const v=$("na-code").value.trim(),m=/[#&?]k=([A-Za-z0-9]+)/.exec(v),k=(m?m[1]:v).toUpperCase().replace(/[^A-Z0-9]/g,"");
+  if(k.length<20){$("na-msg").textContent="Codice non valido: incolla il link intero che ti hanno dato.";return}
+  lsSet("acc",k);location.reload()});
+$("na-code").addEventListener("keydown",e=>{if(e.key==="Enter")$("na-go").click()});
 start();
 if("serviceWorker" in navigator&&location.protocol==="https:"){window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{})})}

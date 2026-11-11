@@ -10,3 +10,4 @@ test/manifest.webmanifest
 Thumbs.db
 segreto.json
 .firebase/
+backups/

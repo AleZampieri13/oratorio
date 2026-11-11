@@ -28,7 +28,7 @@
       <h1>Ordini Oratorio</h1>
       <div class="right">
         <span class="conn" id="conn"><i></i><span id="conn-t">Avvio…</span></span>
-        <span class="who" id="who" hidden><span id="who-t"></span><button class="btn" id="logout">Esci</button></span>
+        <span class="who" id="who" hidden><span id="who-t"></span><button class="btn" id="sndtest" title="Prova suono" aria-label="Prova suono">🔔</button><button class="btn" id="logout">Esci</button></span>
       </div>
     </div>
     <nav class="tabs" role="tablist" id="tabs" hidden></nav>
@@ -105,6 +105,9 @@
       <h2>Telefono non autorizzato</h2>
       <p class="hint">Per usare l'app apri il <b>link</b> o inquadra il <b>QR</b> che ti dà il responsabile (master o capo camerieri). Basta farlo una volta su questo telefono.</p>
       <p class="hint">Se l'avevi già fatto, il codice di accesso è stato cambiato: chiedi il link nuovo.</p>
+      <p class="hint">Su iPhone, se hai aggiunto l'app alla schermata Home, incolla qui il link (o scrivi il codice) una volta:</p>
+      <div class="row"><input type="text" id="na-code" placeholder="Link o codice" autocomplete="off" autocapitalize="characters"><button class="btn primary" id="na-go">Entra</button></div>
+      <div class="msg err" id="na-msg"></div>
     </div>
   </section>
 
@@ -133,7 +136,6 @@
         <div class="csec">Menù</div>
         <div id="c-steppers"></div>
         <div class="stack" id="c-sing-box" hidden><div class="csec">Piatti da soli</div><div id="c-sing"></div></div>
-        <div class="stack" id="c-extra-box" hidden><span class="label">Bevande ed extra</span><div id="c-extra"></div></div>
         <div class="stock" id="c-stock" hidden></div>
         <textarea id="c-note" placeholder="Note per la cucina (allergie, intolleranze…)" aria-label="Note per la cucina"></textarea>
         <label class="check"><input type="checkbox" id="c-asp"> Da asporto</label>
@@ -161,7 +163,6 @@
           <div id="x-steppers"></div>
           <div class="stack" id="x-sing-box" hidden><div class="csec">Piatti da soli</div><div id="x-sing"></div></div>
           <label class="check"><input type="checkbox" id="x-paid"> Menù già pagato in anticipo</label>
-          <div class="stack" id="x-extra-box" hidden><span class="label">Bevande ed extra</span><div id="x-extra"></div></div>
           <div class="totline" id="x-total" hidden></div>
           <div class="payrow"><label class="label" for="x-off">Offerta</label><input type="text" id="x-off" inputmode="decimal" class="pricein" placeholder="0,00 €"></div>
           <div class="payrow" id="x-pay-row" hidden><span class="label">Pagamento</span><span class="seg big" id="x-pay"><button data-pay="contanti">Contanti</button><button data-pay="pos">POS</button></span></div>
@@ -244,6 +245,8 @@
     <div class="kq" id="o-ready"></div>
     <div class="section-head"><h2>In preparazione</h2></div>
     <div class="panel"><div class="list" id="o-wip"></div></div>
+    <div class="section-head"><h2>Appena consegnati</h2></div>
+    <div class="panel"><p class="hint">Se hai toccato «Consegnato» per sbaglio, tocca «Non consegnato»: il piatto torna pronto (per 3 minuti).</p><div class="list" id="o-done"></div></div>
   </section>
 
   <!-- PERSONE -->

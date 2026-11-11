@@ -386,3 +386,8 @@ ul.kitems li .kin{flex:1;font-weight:700}
 .xgroup>.cgrp{display:flex;align-items:center;gap:8px;margin:12px 0 2px;padding-bottom:4px;border-bottom:2px solid var(--c);
   font-size:.95rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--ink)}
 .xgroup>.cgrp::before{content:"";width:12px;height:12px;border-radius:3px;background:var(--c);flex:0 0 auto}
+/* camerieri: clienti finiti più piccoli e in fondo */
+.ccard.cdone{opacity:.6;padding-top:8px;padding-bottom:8px}
+.ccard.cdone .tav{transform:scale(.8);transform-origin:left center}
+.ccard.cdone .note{display:none}
+#sndtest{padding-left:10px;padding-right:10px}

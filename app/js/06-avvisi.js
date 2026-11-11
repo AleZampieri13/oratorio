@@ -47,6 +47,7 @@ function testSound(){
       :`Il telefono blocca ancora il suono (audio: ${S.audio?S.audio.state:"assente"}). Tocca di nuovo la scritta rossa; se non cambia, ricarica la pagina.`,{ms:9000})},150);
 }
 $("sndbar").addEventListener("click",testSound);
+$("sndtest").addEventListener("click",testSound);
 document.addEventListener("visibilitychange",()=>paintSoundBar());
 function checkEvents(){
   if(!S.ordLoaded||!S.me)return;
@@ -62,17 +63,16 @@ function checkEvents(){
   S.seenBar=barNew;
   if(S.role==="uscita"){const osc=oScope(),outKeys=new Set(flatCourses("pronta").filter(c=>!c.o.asportoSubito&&inOScope(c,osc)).map(c=>c.o.numero+":"+c.k+":"+c.t));
     if(S.seenOut){for(const k of outKeys)if(!S.seenOut.has(k)){buzz();break}}S.seenOut=outKeys}
-  const allReady=[...flatCourses("pronta"),...barItems("pronta",true)];
+  const allReady=flatCourses("pronta");
   const mine=(S.role==="cassa"?allReady.filter(x=>x.o.asportoSubito&&x.o.creatoDaId===S.me.id):allReady.filter(x=>!x.o.asportoSubito&&isMine(x))),readyKeys=new Map(mine.map(x=>[x.o.numero+":"+x.k+":"+x.t,x]));
   if(S.seenReady&&(S.me.ruolo==="cameriere"||hasRole(S.me,"capo")||S.role==="camerieri"||S.role==="cassa")){
     const fresh=[...readyKeys.entries()].filter(([k])=>!S.seenReady.has(k)).map(([,x])=>x);
-    if(fresh.length){buzz();toast(fresh.map(x=>`${x.bar?"Bevande pronte al bar":(x.o.asporto?"Asporto pronto":"Pronto")+": "+x.l} · ${whereTxt(x.o)}`).join("  ·  "),{ms:8000})}
+    if(fresh.length){buzz();toast(fresh.map(x=>`${x.o.asporto?"Asporto pronto":"Pronto"}: ${x.l} · ${whereTxt(x.o)}`).join("  ·  "),{ms:8000})}
   }
   S.seenReady=new Set(readyKeys.keys());
-  const myReady=new Set();ordersArr().filter(mineOrder).forEach(o=>{orderCourses(o).forEach(c=>{if(c.p.stato==="pronta")myReady.add(o.numero+"|"+c.k)});if(o.bar&&o.bar.stato==="pronta")myReady.add(o.numero+"|bar")});
+  const myReady=new Set();ordersArr().filter(mineOrder).forEach(o=>{orderCourses(o).forEach(c=>{if(c.p.stato==="pronta")myReady.add(o.numero+"|"+c.k)})});
   if(S.seenMyCalls&&(S.me.ruolo==="cameriere"||S.role==="camerieri")){
     const back=[...S.seenMyCalls].filter(x=>!myReady.has(x)).map(x=>{const [n,k]=x.split("|"),o=orderByNum(Number(n));
-      if(k==="bar")return o&&o.bar&&o.bar.stato==="chiamata"&&o.bar.annull==="pronta"?{o,l:"Bevande"}:null;
       const p=o&&o.portate&&o.portate[k];return p&&p.stato==="chiamata"&&p.annull==="pronta"?{o,l:(orderCourses(o).find(c=>c.k===k)||{}).l||k}:null}).filter(Boolean);
     if(back.length){buzz();toast(back.map(x=>`Non ancora pronto: ${x.l} · ${whereTxt(x.o)}`).join("  ·  "),{ms:9000})}
   }
