@@ -282,5 +282,9 @@ function armed(btn,label){
   btn._armT=setTimeout(()=>{if(btn.isConnected)disarm()},4000);
   return false;
 }
+/* tempo massimo di preparazione del piatto (Listino, «Pronto entro»); vuoto = 15 minuti */
+const MIN_DEF=15;
+function maxMin(pid){const p=S.portate.find(x=>x.id===pid);return p&&p.min>0?p.min:MIN_DEF}
+function isLate(pid,t){return !!t&&Date.now()-t>maxMin(pid)*60000}
 function stockCls(left){return left==null?"":left<=0?"out":left<=10?"low":""}
 

@@ -105,6 +105,10 @@ async function setup(){
     await type("master","#l-newport",n);await setSel("#l-newprep",rid(rep));await type("master","#l-newpprice",pr);await click("master","#l-addport");
     await waitFor(()=>vals(db().config.listino.piatti).some(x=>x.nome===n),3000,"piatto "+n)}
   const pid=nm=>vals(db().config.listino.piatti).find(x=>x.nome===nm).id;
+  await type("master","#lpm-"+pid("Acqua"),"3");
+  {const id=pid("Acqua"),W_=W("master");await sleep(STEP*2);
+   check(vals(db().config.listino.piatti).find(x=>x.nome==="Acqua").min===3&&W_.eval(`isLate("${id}",Date.now()-4*60000)&&!isLate("${id}",Date.now()-2*60000)&&isLate("p-primo",Date.now()-16*60000)&&!isLate("p-primo",Date.now()-14*60000)`),
+     "«Pronto entro» per piatto: Acqua in ritardo dopo 3 minuti, gli altri dopo 15")}
   // menù fissi: Standard = Sciatt, Pizzoccheri, Bresaola, Torta, Acqua, Caffè; Bambini senza Bresaola e Caffè
   const mid=nm=>vals(db().config.listino.menu).find(m=>m.nome===nm).id;
   await type("master","#lmv-"+mid("Standard"),"15");await type("master","#lmv-"+mid("Bambini"),"9");

@@ -124,7 +124,7 @@ function cardAction(o){
   const mine=cs.filter(c=>repOfC(o,c)===cur),todo=mine.filter(isTodo);
   const rows=mine.map(c=>{const st=c.p.stato||"attesa",q=cop(righeFor(o,c.k));let right="";
     if(st==="attesa")right=act?`<button class="btn primary wcall" ${dis(c.k)} data-set="${n}|${c.k}|chiamata">Chiama</button>`:'<span class="pill wait">da chiamare</span>';
-    else if(st==="chiamata"){const late=c.p.t&&Date.now()-c.p.t>15*60000;right=`<span class="pill ${late?"out":"call"}">in preparazione · ${ago(c.p.t)}</span>${act?`<button class="btn small" ${dis(c.k)} data-uncall="${n}|${c.k}">Annulla</button>`:""}`}
+    else if(st==="chiamata"){const late=isLate(c.k,c.p.t);right=`<span class="pill ${late?"out":"call"}">in preparazione · ${ago(c.p.t)}</span>${act?`<button class="btn small" ${dis(c.k)} data-uncall="${n}|${c.k}">Annulla</button>`:""}`}
     else if(st==="pronta")right='<span class="pill ready">pronto</span>';
     else right=`<span class="pill wait">portato ✓</span>${act&&c.p.t&&Date.now()-c.p.t<3*60000?`<button class="btn small" ${dis(c.k)} data-unserve="${n}|${c.k}">Non portato</button>`:""}`;
     return `<div class="wpiatto ${st}"><span class="wpn"><b>${q}</b> ${esc(c.l)}</span><span class="row">${right}</span></div>`}).join("");

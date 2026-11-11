@@ -1,6 +1,7 @@
 # Versioni
 
 ## 36
+- **«Pronto entro (minuti)» per ogni piatto** nel Listino (vuoto = 15): oltre quel tempo dalla chiamata il piatto diventa rosso in cucina, al bar e sulla scheda del cameriere.
 - **Uscita piatti:** nuova lista «Appena consegnati» con «Non consegnato» (per 3 minuti).
 - **Telefono non autorizzato:** si può incollare il link o scrivere il codice (utile su iPhone con l'app sulla schermata Home).
 - **Rettifica:** se un piatto tolto non ha il prezzo da solo, l'app avvisa di scrivere a mano quanto restituire.

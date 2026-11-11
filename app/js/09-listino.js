@@ -8,7 +8,7 @@ function logChange(cosa){if(!cosa)return;const id=rid("l");R("log/"+id).set({id,
 function normL(L){
   const reparti=toArr(L&&L.reparti).filter(r=>r&&r.id&&r.nome).map(r=>{const o={id:r.id,nome:r.nome};if(r.bar)o.bar=true;if(r.colore)o.colore=r.colore;return o});
   const piatti=toArr(L&&L.piatti).filter(p=>p&&p.id&&p.nome).map(p=>{const o={id:p.id,nome:p.nome,rep:reparti.some(r=>r.id===p.rep)?p.rep:"",prezzo:p.prezzo||0,prezzoBimbi:p.prezzoBimbi||0};
-    if(p.colore)o.colore=p.colore;if(p.gruppo)o.gruppo=p.gruppo;return o});
+    if(p.colore)o.colore=p.colore;if(p.gruppo)o.gruppo=p.gruppo;if(p.min>0)o.min=p.min;return o});
   /* l'ordine conta per reparto (↑↓ sui reparti): i piatti seguono l'ordine del loro reparto */
   const ri=id=>{const i=reparti.findIndex(r=>r.id===id);return i<0?999:i};
   piatti.forEach((p,i)=>{p._i=i});piatti.sort((x,y)=>ri(x.rep)-ri(y.rep)||x._i-y._i);piatti.forEach(p=>{delete p._i});
@@ -76,7 +76,8 @@ function renderListinoInner(){
         <button class="btn small danger" data-delp="${esc(p.id)}">Rimuovi</button></div>
       <div class="xf"><label><span class="label">Reparto</span><select id="lpr-${esc(p.id)}">${repOpts(p.rep)}</select></label>
         <label><span class="label">Prezzo da solo</span><input type="text" inputmode="decimal" id="lps-${esc(p.id)}" value="${euro(p.prezzo)}" placeholder="non si vende"></label>
-        <label><span class="label">Da solo bambini</span><input type="text" inputmode="decimal" id="lpb-${esc(p.id)}" value="${euro(p.prezzoBimbi)}" placeholder="—"></label></div></div>`).join("")
+        <label><span class="label">Da solo bambini</span><input type="text" inputmode="decimal" id="lpb-${esc(p.id)}" value="${euro(p.prezzoBimbi)}" placeholder="—"></label>
+        <label><span class="label">Pronto entro (minuti)</span><input type="number" inputmode="numeric" min="1" max="180" id="lpm-${esc(p.id)}" value="${p.min||""}" placeholder="${MIN_DEF}"></label></div></div>`).join("")
     :'<div class="empty">Nessun piatto. Aggiungine uno qui sotto.</div>';
   $("l-newprep").innerHTML=repOpts($("l-newprep").value||(L.reparti.find(r=>!r.bar)||L.reparti[0]||{}).id);
   /* reparti */
@@ -134,12 +135,13 @@ $("l-port").addEventListener("click",e=>{const b=e.target.closest("button");if(!
 });
 $("l-port").addEventListener("change",e=>{const t=e.target,L=S.L;
   if(t.dataset.pcol){const p=L.piatti.find(x=>x.id===t.dataset.pcol);if(p)saveL("piatti",L.piatti.map(x=>x.id===p.id?{...x,colore:t.value}:x),"l-pmsg",`Colore di ${p.nome} salvato.`);return}
-  const m=/^lp([nrgsb])-(.+)$/.exec(t.id||"");if(!m)return;const p=L.piatti.find(x=>x.id===m[2]);if(!p)return;t.dataset.dirty="";
+  const m=/^lp([nrgsbm])-(.+)$/.exec(t.id||"");if(!m)return;const p=L.piatti.find(x=>x.id===m[2]);if(!p)return;t.dataset.dirty="";
   const v=t.value.trim();let nx={...p},log="";
   if(m[1]==="n"){if(!v||v===p.nome){t.value=p.nome;return}nx.nome=v;log=`Piatto ${p.nome} → ${v}`}
   if(m[1]==="r"){if(v===p.rep)return;nx.rep=v;log=`${p.nome}: lo prepara ${repNome(v)}`}
   if(m[1]==="g"){if(v===(p.gruppo||""))return;if(v)nx.gruppo=v;else delete nx.gruppo;log=`${p.nome}: gruppo «${v||"—"}»`}
   if(m[1]==="s"){const x=parsePrice(v);if(x===p.prezzo)return;nx.prezzo=x;log=`Prezzo da solo ${p.nome}: ${money(p.prezzo)} → ${money(x)}`}
+  if(m[1]==="m"){const x=Math.max(0,Math.min(180,Math.round(+v||0)));if(x===(p.min||0))return;if(x)nx.min=x;else delete nx.min;log=`${p.nome}: pronto entro ${x||MIN_DEF} minuti`}
   if(m[1]==="b"){const x=parsePrice(v);if(x===p.prezzoBimbi)return;nx.prezzoBimbi=x;log=`Prezzo da solo bambini ${p.nome}: ${money(p.prezzoBimbi)} → ${money(x)}`}
   saveL("piatti",L.piatti.map(x=>x.id===p.id?nx:x),"l-pmsg","Salvato.",log);
 });

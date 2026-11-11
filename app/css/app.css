@@ -391,3 +391,6 @@ ul.kitems li .kin{flex:1;font-weight:700}
 .ccard.cdone .tav{transform:scale(.8);transform-origin:left center}
 .ccard.cdone .note{display:none}
 #sndtest{padding-left:10px;padding-right:10px}
+/* piatto in ritardo rispetto al suo «Pronto entro» */
+ul.kitems li.klate .kin{text-decoration:underline wavy var(--danger);text-underline-offset:4px}
+ul.kitems li.klate small{color:var(--danger);font-weight:700}
