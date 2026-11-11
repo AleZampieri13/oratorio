@@ -123,7 +123,7 @@ function cardAction(o){
   const reps=wReps(o);
   let cur=S.wTab[n];if(!reps.includes(cur))cur=reps.find(r=>cs.some(c=>repOfC(o,c)===r&&isTodo(c)))||reps[0];
   const tabs=reps.length>1?`<div class="rtabs" role="tablist">${reps.map(r=>{const rc=cs.filter(c=>repOfC(o,c)===r),todo=rc.some(isTodo),ok=rc.every(c=>c.p.stato==="servita");
-      return `<button role="tab" data-wtab="${n}|${esc(r)}" aria-pressed="${r===cur}">${esc(repNome(r)||"Altro")}${todo?'<span class="rdot" aria-label="da chiamare"></span>':ok?" ✓":""}</button>`}).join("")}</div>`:"";
+      return `<button role="tab" data-wtab="${n}|${esc(r)}" aria-pressed="${r===cur}" style="border-left-color:${repColor(r)}">${esc(repNome(r)||"Altro")}${todo?'<span class="rdot" aria-label="da chiamare"></span>':ok?" ✓":""}</button>`}).join("")}</div>`:"";
   const mine=cs.filter(c=>repOfC(o,c)===cur),todo=mine.filter(isTodo);
   const rows=mine.map(c=>{const st=c.p.stato||"attesa",q=cop(righeFor(o,c.k));let right="";
     if(st==="attesa")right=act?`<button class="btn primary" ${dis(c.k)} data-set="${n}|${c.k}|chiamata">Chiama</button>`:'<span class="pill wait">da chiamare</span>';

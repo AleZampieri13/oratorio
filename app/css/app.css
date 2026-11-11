@@ -367,3 +367,6 @@ ul.kitems li .kin{flex:1;font-weight:700}
 .vrow .top .tog{flex:0 0 auto}
 #l-port .xedit .top{flex-wrap:wrap}
 #l-port .xedit .top .lname{flex:1 1 150px}
+.rcolbar{width:10px;align-self:stretch;min-height:36px;border-radius:5px;flex:0 0 auto}
+/* linguette del cameriere: un filo del colore del reparto */
+.rtabs button{border-left-width:5px}
