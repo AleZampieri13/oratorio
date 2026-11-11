@@ -1,6 +1,7 @@
 # Versioni
 
 ## 36
+- Se il master cambia ruoli o reparti di una persona già dentro, le sue schede si aggiornano subito (con un avviso).
 - **Permessi per ruolo nel database:** i PIN stanno in una parte del database che nessuno può leggere; all'accesso il database controlla il PIN (o il QR del cameriere) e da lì sa il ruolo. Ogni ruolo può scrivere solo quello che gli serve (es. listino: master e cassa; persone: master, e il capo per i camerieri; nuovo evento e archivio: master). Regole generate da `tools/regole.py`.
 - Serata simulata anche sull'emulatore di Firebase con le regole vere (`?emu=1`), con i controlli di cosa ogni ruolo non può fare.
 - **«Pronto entro (minuti)» per ogni piatto** nel Listino (vuoto = 15): oltre quel tempo dalla chiamata il piatto diventa rosso in cucina, al bar e sulla scheda del cameriere.

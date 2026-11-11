@@ -64,10 +64,12 @@ async function start(){
     if(!S.usersLoaded)showBanner(S.online?"":"In attesa di rete: l'app si carica appena torna il segnale.");else if(S.online&&$("banner").textContent.startsWith("In attesa di rete"))showBanner("")});
   R("config/utenti").on("value",s=>{
     S.users=Object.values(s.val()||{}).filter(u=>u&&u.id);if(!S.usersLoaded&&$("banner").textContent.startsWith("In attesa di rete"))showBanner("");S.usersLoaded=true;
-    const prev=S.me&&S.me.id;restoreSession();
+    const prev=S.me&&S.me.id,prevRoles=S.me?rolesOf(S.me).join()+"|"+userReps(S.me).join():"";restoreSession();
     if(prev&&!S.me)showBanner("La tua sessione è scaduta: accedi di nuovo.");
     if(S.me&&!prev)renderGate();
     else if(!S.me||!prev)renderGate();
+    /* ruoli o reparti cambiati dal master: le schede in alto si aggiornano subito */
+    else if(rolesOf(S.me).join()+"|"+userReps(S.me).join()!==prevRoles){renderGate();toast("Il master ha cambiato i tuoi ruoli o reparti: "+rolesLbl(S.me),{ms:6000})}
     if(!S.me&&S.joinCode&&!$("v-join").hidden)renderJoin();
     else{$("who-t").textContent=whoLbl();if(S.role==="persone"&&!S.editUser)renderUsers();schedule()}
   },e=>{if(isDenied(e)){S.noAccess=true;setConn("err","Non autorizzato");renderGate();return}showBanner(errText(e))});

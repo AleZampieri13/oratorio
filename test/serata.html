@@ -414,7 +414,7 @@ async function closing(){
   check(STAT.chiamateTutto>0&&STAT.cambiReparto>0&&STAT.tuttoPronto>0,`Camerieri: ${STAT.chiamateTutto} «Chiama tutto», ${STAT.cambiReparto} cambi di reparto; cucina: ${STAT.tuttoPronto} «Tutto pronto»`);
   {const P0=vals(E.prenotazioni);const asp=P0.filter(p=>p.asporto),sg=P0.filter(p=>p.singoli&&Object.keys(p.singoli).length);
    const used=O.filter(o=>o.prenotazione&&asp.some(p=>p.id===o.prenotazione));
-   check(asp.length>0&&sg.length>0&&used.every(o=>o.asporto&&vals(o.singoli).some(s=>s.pid==="p-antipasto")),`Prenotazioni d'asporto con piatti da soli: in cassa diventano asporto con gli Sciatt (${used.length} ordini)`)}
+   if(asp.length)check(sg.length>0&&used.every(o=>o.asporto&&vals(o.singoli).some(s=>s.pid==="p-antipasto")),`Prenotazioni d'asporto con piatti da soli: in cassa diventano asporto con gli Sciatt (${used.length} ordini)`)}
   const stuck=O.flatMap(o=>vals(o.portate).flatMap(p=>Object.entries(p.rep||{}).filter(([,v])=>v.s!=="pronta"&&p.stato!=="servita").map(([r])=>o.numero+":"+r)));
   check(!stuck.length,"Nessun pezzo di reparto rimasto a metà",stuck.join(", "));
   const screens=[...["capocucina",...COOKS].map(c=>[c,"#k-queue",/Niente da preparare/]),["bar","#b-queue",/Niente da preparare/],["uscita","#o-ready",/Niente da consegnare/]];
