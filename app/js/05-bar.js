@@ -2,8 +2,16 @@
 /* ---------- BAR ---------- */
 function barWho(o){return o.asportoSubito?"Asporto":ownerId(o)?nameOf(ownerId(o),o.cameriere):o.asporto?"Asporto":"Al banco"}
 function isBarCourse(o,k){const br=barReps();return courseReps(o,k).some(r=>br.includes(r))}
+function renderBReps(){
+  const box=$("b-reps"),fixed=bFixed(),bs=barReps();
+  if(fixed){box.hidden=false;box.innerHTML=`<span class="pill wait">Reparto ${fixed.map(r=>esc(repNome(r))).join(" + ")}</span>`;return}
+  if(bs.length<2){box.hidden=true;box.innerHTML="";return}
+  const cur=bs.includes(S.bRep)?S.bRep:"";box.hidden=false;
+  box.innerHTML=`<span class="label">Reparto</span><span class="seg">${[["","Tutti"],...bs.map(r=>[r,repNome(r)])].map(([id,n])=>`<button data-brep="${esc(id)}" aria-pressed="${cur===id}">${esc(n)}</button>`).join("")}</span>`;
+}
+$("b-reps").addEventListener("click",e=>{const b=e.target.closest("button[data-brep]");if(!b)return;S.bRep=b.dataset.brep;lsSet("brep",S.bRep);S.seenBar=null;renderBar();checkEvents()});
 function renderBar(){
-  const sc=barReps();
+  renderBReps();const sc=bScope();
   if(!sc.length){$("b-sum").innerHTML="";$("b-queue").innerHTML='<div class="panel"><div class="empty">Nessun reparto bar: il master ne segna uno in Listino → Reparti («Bar»).</div></div>';$("b-ready").innerHTML="";renderGive();return}
   $("b-sum").className="ksum";
   renderRepView(sc,{sum:"b-sum",queue:"b-queue",ready:"b-ready"});

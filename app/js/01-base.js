@@ -13,7 +13,7 @@ function rolesOf(u){if(!u)return [];const x=u.ruoli;const extra=Array.isArray(x)
 function hasRole(u,r){return rolesOf(u).includes(r)}
 function allowedFor(u){const st=new Set();rolesOf(u).forEach(r=>(ALLOWED[r]||[]).forEach(t=>st.add(t)));return TAB_ORDER.filter(t=>st.has(t))}
 function rolesLbl(u){return rolesOf(u).map(r=>ROLE_LBL[r]).join(" + ")}
-function whoLbl(){if(!S.me)return "";const f=myFila(),mr=myReps()||(typeof oFixed==="function"?oFixed():null);return S.me.nome+" · "+(S.me.ruolo==="cameriere"&&f?filaNome(f):rolesLbl(S.me))+(mr?" ("+mr.map(repNome).join(", ")+")":"")}
+function whoLbl(){if(!S.me)return "";const f=myFila(),mr=myReps()||(typeof oFixed==="function"?oFixed():null)||bFixed();return S.me.nome+" · "+(S.me.ruolo==="cameriere"&&f?filaNome(f):rolesLbl(S.me))+(mr?" ("+mr.map(repNome).join(", ")+")":"")}
 /* reparti della cucina */
 const toArr=x=>(Array.isArray(x)?x:Object.values(x||{})).filter(Boolean);
 function repList(){return S.reparti||[]}
@@ -25,7 +25,10 @@ function repSnap(k){if(isXk(k)){const r=k.slice(2);return {[r]:{s:"chiamata",nom
   const rs=portReps(S.portate.find(p=>p.id===k));if(!rs.length)return null;const o={};
   rs.forEach(x=>{o[x.r]={s:"chiamata",nome:repNome(x.r)};if(x.piatto)o[x.r].piatto=x.piatto});return o}
 function userReps(u){return toArr(u&&u.reparti).filter(id=>repList().some(r=>r.id===id))}
-function myReps(){if(!S.me||hasRole(S.me,"master")||!hasRole(S.me,"cucina"))return null;const rs=userReps(S.me);return rs.length?rs:null}
+function myReps(){if(!S.me||hasRole(S.me,"master")||!hasRole(S.me,"cucina"))return null;const rs=userReps(S.me).filter(r=>!barReps().includes(r));return rs.length?rs:null}
+/* bar: chi ha un reparto bar assegnato in Persone vede solo quello; gli altri scelgono (Tutti = tutti i bar) */
+function bFixed(){if(!S.me||hasRole(S.me,"master")||!hasRole(S.me,"bar"))return null;const rs=userReps(S.me).filter(r=>barReps().includes(r));return rs.length?rs:null}
+function bScope(){const f=bFixed();if(f)return f;const bs=barReps();return S.bRep&&bs.includes(S.bRep)?[S.bRep]:bs}
 /* reparti segnati «è un bar»: li vede la pagina Bar; gli altri la cucina e l'uscita */
 function barReps(){return repList().filter(r=>r.bar).map(r=>r.id)}
 function kitchenReps(){return repList().filter(r=>!r.bar).map(r=>r.id)}
@@ -41,7 +44,7 @@ const S={root:null,online:true,ordMap:{},prenMap:{},ordLoaded:false,varianti:DEF
   qty:{},eqty:{},editOrder:null,numDirty:false,openNum:null,lastNum:null,selPren:null,loginPick:null,pending:new Set(),
   kFilt:lsGet("kfiltro")||"",seenCalls:null,seenReady:null,sound:false,audio:null,wFilter:"mie",imp:null,editUser:null,cfg:null,invite:null,inviteLoaded:false,joinCode:null,
   extra:[],xqty:{},exqty:{},pay:"contanti",xpay:"contanti",dpay:"contanti",scorte:{},fondo:0,contato:null,offMap:{},stockWarn:null,sqty:{},esqty:{},aspMode:"subito",newPorts:null,logMap:{},scorteX:{},aspConfirm:null,seenBar:null,post:{},closeKey:"",file:null,joinFila:"",
-  reparti:[],L:null,wTab:{},kRep:lsGet("krep")||"",oRep:lsGet("orep")||"",seenOut:null,removedQ:[],annMap:{},editLocked:false};
+  reparti:[],L:null,wTab:{},kRep:lsGet("krep")||"",bRep:lsGet("brep")||"",oRep:lsGet("orep")||"",seenOut:null,removedQ:[],annMap:{},editLocked:false};
 
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function lsSet(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){}}

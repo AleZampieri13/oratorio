@@ -275,7 +275,7 @@
           <div class="stack"><label class="label" for="u-nome">Nome</label><input type="text" id="u-nome" placeholder="Es. Cassa 1"></div>
           <div class="stack"><span class="label">Ruoli (anche più di uno)</span>
             <div class="grp" id="u-ruoli"><button data-r="cassa" aria-pressed="false">Cassa</button><button data-r="cucina" aria-pressed="false">Cucina</button><button data-r="bar" aria-pressed="false">Bar</button><button data-r="uscita" aria-pressed="false">Uscita piatti</button><button data-r="capo" aria-pressed="false">Capo camerieri</button><button data-r="master" aria-pressed="false">Master</button><button data-r="cameriere" aria-pressed="false">Cameriere</button></div></div>
-          <div class="stack" id="u-reprow" hidden><span class="label">Reparto cucina (nessuno = vede tutto)</span><div class="grp" id="u-reps"></div></div>
+          <div class="stack" id="u-reprow" hidden><span class="label">Reparto (nessuno = vede tutto)</span><div class="grp" id="u-reps"></div></div>
           <div class="stack" id="u-filarow" hidden><label class="label" for="u-pfila">Fila</label><select id="u-pfila"></select></div>
           <div class="stack" id="u-pinrow"><label class="label" for="u-pin">PIN (da 4 a 6 cifre)</label><input type="password" id="u-pin" inputmode="numeric" autocomplete="off"></div>
           <button class="btn primary big" id="u-add">Aggiungi</button>
@@ -293,6 +293,7 @@
       <input type="number" id="b-num" inputmode="numeric" min="1" placeholder="N. sul biglietto" class="bignum" aria-label="Numero sul biglietto">
       <div class="bgive" id="b-give" hidden></div>
     </div>
+    <div class="kreps" id="b-reps" hidden></div>
     <div class="bsum" id="b-sum"></div>
     <div class="section-head">
       <h2>Da preparare</h2>

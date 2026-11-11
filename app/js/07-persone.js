@@ -1,11 +1,11 @@
 /* chi può avere un reparto: cuochi e uscita piatti (il master vede sempre tutto) */
-const hasRepRole=u=>!!u&&(hasRole(u,"cucina")||hasRole(u,"uscita"))&&!hasRole(u,"master");
+const hasRepRole=u=>!!u&&(hasRole(u,"cucina")||hasRole(u,"uscita")||hasRole(u,"bar"))&&!hasRole(u,"master");
 /* Persone, file, ingresso camerieri, QR */
 /* ---------- PERSONE ---------- */
 function pickedRoles(id){const on=[...document.querySelectorAll("#"+id+" button[data-r]")].filter(b=>b.getAttribute("aria-pressed")==="true").map(b=>b.dataset.r);
   if(on.includes("master"))return ["master"];if(on.includes("cameriere"))return ["cameriere"];return PRIMARY_ORDER.filter(r=>on.includes(r))}
 function syncAddForm(){const pr=pickedRoles("u-ruoli"),cam=pr[0]==="cameriere";$("u-pinrow").hidden=cam;$("u-filarow").hidden=!cam;
-  $("u-reprow").hidden=!((pr.includes("cucina")||pr.includes("uscita"))&&repList().length)}
+  $("u-reprow").hidden=!((pr.includes("cucina")||pr.includes("uscita")||pr.includes("bar"))&&repList().length)}
 function repChips(sel){return repList().map(r=>`<button data-rep="${esc(r.id)}" aria-pressed="${sel.includes(r.id)}">${esc(r.nome)}</button>`).join("")}
 function pickedReps(id){return [...document.querySelectorAll("#"+id+" button[data-rep]")].filter(b=>b.getAttribute("aria-pressed")==="true").map(b=>b.dataset.rep)}
 document.addEventListener("click",e=>{const b=e.target.closest("#u-reps button[data-rep], #u-repedit button[data-rep]");if(!b)return;b.setAttribute("aria-pressed",String(b.getAttribute("aria-pressed")!=="true"))});
@@ -75,7 +75,7 @@ $("u-add").addEventListener("click",async()=>{
   if(S.users.some(u=>norm(u.nome)===norm(nome))){umsg("C'è già una persona con questo nome.");return}
   if(!validPin(pin)){umsg("Il PIN deve avere da 4 a 6 cifre.");return}
   const u={id:rid("u"),nome,ruolo,salt:newCode()+newCode()};if(ruoli.length)u.ruoli=ruoli;u.hash=await hashPin(u.salt,pin);
-  const reps=(sel.includes("cucina")||sel.includes("uscita"))&&!sel.includes("master")?pickedReps("u-reps"):[];if(reps.length)u.reparti=reps;
+  const reps=(sel.includes("cucina")||sel.includes("uscita")||sel.includes("bar"))&&!sel.includes("master")?pickedReps("u-reps"):[];if(reps.length)u.reparti=reps;
   try{await R("config/utenti/"+u.id).set(u);$("u-nome").value="";$("u-pin").value="";setPicked("u-ruoli",[]);$("u-reps").innerHTML=repChips([]);syncAddForm();umsg(`${nome} aggiunto: ${rolesLbl(u).toLowerCase()}.`,true)}
   catch(e){umsg(errText(e))}
 });

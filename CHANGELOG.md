@@ -1,6 +1,7 @@
 # Versioni
 
 ## 36
+- **Bar per reparto:** se ci sono più reparti «Bar» (es. Bar e Caffetteria), nella pagina Bar si filtra per reparto (Tutti / …). In Persone si può assegnare un reparto anche a chi fa il bar: vede solo quello.
 - **Accesso solo con il link o il QR:** link e QR contengono un codice; senza, il telefono vede «Telefono non autorizzato» e il database non risponde. In Evento: «Cambia codice di accesso» (poi tutti riaprono il link nuovo).
 - Pubblicata su Firebase Hosting: **giovanichef.web.app**.
 - **Piatti al posto delle portate.** Nel Listino ci sono i **reparti** (uno o più segnati «Bar»), i **piatti** (ognuno con un solo reparto, prezzo da solo, gruppo in cassa, colore) e i **menù fissi** fatti di piatti. Acqua e caffè sono piatti del Bar e possono stare nei menù. Spariscono portate ed extra.
