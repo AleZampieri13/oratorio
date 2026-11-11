@@ -11,3 +11,5 @@ Thumbs.db
 segreto.json
 .firebase/
 backups/
+test/emu/
+*-debug.log

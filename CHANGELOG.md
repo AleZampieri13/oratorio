@@ -1,6 +1,8 @@
 # Versioni
 
 ## 36
+- **Permessi per ruolo nel database:** i PIN stanno in una parte del database che nessuno può leggere; all'accesso il database controlla il PIN (o il QR del cameriere) e da lì sa il ruolo. Ogni ruolo può scrivere solo quello che gli serve (es. listino: master e cassa; persone: master, e il capo per i camerieri; nuovo evento e archivio: master). Regole generate da `tools/regole.py`.
+- Serata simulata anche sull'emulatore di Firebase con le regole vere (`?emu=1`), con i controlli di cosa ogni ruolo non può fare.
 - **«Pronto entro (minuti)» per ogni piatto** nel Listino (vuoto = 15): oltre quel tempo dalla chiamata il piatto diventa rosso in cucina, al bar e sulla scheda del cameriere.
 - **Uscita piatti:** nuova lista «Appena consegnati» con «Non consegnato» (per 3 minuti).
 - **Telefono non autorizzato:** si può incollare il link o scrivere il codice (utile su iPhone con l'app sulla schermata Home).

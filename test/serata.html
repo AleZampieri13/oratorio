@@ -54,7 +54,7 @@ function check(c,msg,det){c=!!c;if(c){R.ok++;R.checks.push("OK  "+msg)}else{R.ko
 function issue(m){R.issues.push(m);log("⚠ "+m,"warn")}
 const F={};
 function addDev(name,label){return new Promise(res=>{const w=document.createElement("div");w.className="dev";w.innerHTML=`<div class="lbl">${label}</div>`;
-  const f=document.createElement("iframe");f.src="index.html?dev="+name;f.title=label;f.onload=()=>res();w.appendChild(f);$devs.appendChild(w);F[name]=f})}
+  const f=document.createElement("iframe");f.src=(EMU?"emu/":"")+"index.html?dev="+name+(EMU?"#k="+EMU_KEY:"");f.title=label;f.onload=()=>res();w.appendChild(f);$devs.appendChild(w);F[name]=f})}
 const D=n=>F[n].contentDocument,W=n=>F[n].contentWindow;
 async function waitFor(fn,ms,what){const t0=performance.now();ms=ms||4000;while(performance.now()-t0<ms){try{const v=fn();if(v)return v}catch(e){}await sleep(25)}throw new Error("Tempo scaduto: "+(what||String(fn).slice(0,90)))}
 const q=(n,s)=>D(n).querySelector(s),qa=(n,s)=>[...D(n).querySelectorAll(s)];
@@ -62,7 +62,13 @@ async function click(n,s){const e=typeof s==="string"?await waitFor(()=>q(n,s),3
 async function clickText(n,s,t,starts){const e=await waitFor(()=>qa(n,s).find(b=>starts?b.textContent.trim().startsWith(t):b.textContent.trim()===t),3000,`[${n}] ${s} «${t}»`);e.click();await sleep(STEP)}
 async function type(n,s,v){const e=await waitFor(()=>q(n,s),3000,`[${n}] ${s}`);e.value=v;e.dispatchEvent(new Event("input",{bubbles:true}));e.dispatchEvent(new Event("change",{bubbles:true}));await sleep(STEP)}
 const txt=(n,s)=>{const e=q(n,s);return e?e.innerText.replace(/\s+/g," ").trim():""};
-const db=()=>{try{return (JSON.parse(localStorage.getItem("mockdb")||"null")||{}).ev||{}}catch(e){return {}}};
+/* ?emu=1: l'app vera collegata all'emulatore di Firebase, con le regole vere del database */
+const EMU=P.get("emu")==="1",EMU_KEY="EMULATORECODICEPROVA2026",EMU_URL="http://127.0.0.1:9000/.json?ns=giovanichef-65d46-default-rtdb";
+function emuReq(method,body){const x=new XMLHttpRequest();x.open(method,EMU_URL,false);x.setRequestHeader("Authorization","Bearer owner");x.send(body==null?null:JSON.stringify(body));return x.status===200?JSON.parse(x.responseText||"null"):null}
+const rawDb=()=>EMU?(emuReq("GET")||{}):(JSON.parse(localStorage.getItem("mockdb")||"null")||{});
+/* Firebase restituisce gli ordini numerati 1,2,3… come elenco con buchi: li rimetto come oggetto */
+const unholes=x=>Array.isArray(x)?Object.fromEntries(x.map((v,i)=>[i,v]).filter(([,v])=>v!=null)):x;
+const db=()=>{try{const e=rawDb().ev||{};if(e.ordini)e.ordini=unholes(e.ordini);if(e.annullati)e.annullati=unholes(e.annullati);return e}catch(e){return {}}};
 const vals=x=>Object.values(x||{}).filter(Boolean);
 const num=s=>Number(String(s).replace(/\./g,"").replace(",","."));
 const eur=s=>{const m=String(s).match(/(\d[\d.]*,\d\d)/);return m?num(m[1]):0};
@@ -146,9 +152,9 @@ async function setup(){
     await type("master","#u-nome",nome);for(const b of qa("master","#u-ruoli button"))b.setAttribute("aria-pressed","false");
     for(const r of roles)await click("master",`#u-ruoli button[data-r="${r}"]`);
     for(const rp of reps||[])await clickText("master","#u-reps button",rp);
-    await type("master","#u-pin",pin);await click("master","#u-add");await waitFor(()=>U(nome),3000,"persona "+nome)}
+    await type("master","#u-pin",pin);await click("master","#u-add");await waitFor(()=>U(nome),3000,"persona "+nome);await waitFor(()=>q("master","#u-nome").value==="",3000,"campo nome libero")}
   for(let f=0;f<NFILE;f++){const names=CAM.filter(c=>c.fila===f).map(c=>c.nome);if(!names.length)continue;
-    await type("master","#u-wnames",names.join("\n"));q("master","#u-wfila").value=FILE_IDS[f];await click("master","#u-wadd");await waitFor(()=>names.every(U),3000,"camerieri fila "+(f+1))}
+    await type("master","#u-wnames",names.join("\n"));q("master","#u-wfila").value=FILE_IDS[f];await click("master","#u-wadd");await waitFor(()=>names.every(U),3000,"camerieri fila "+(f+1));await waitFor(()=>!q("master","#u-wadd").disabled,3000,"aggiunta finita")}
   check(CAM.every(c=>U(c.nome)&&U(c.nome).fila===FILE_IDS[c.fila]),`${NCAM} camerieri su ${NFILE} file, ${PEOPLE.length} altre persone (4 cuochi con il loro reparto, l'uscita piatti)`);
   await click("master","#u-joinqr");JOIN=await waitFor(()=>txt("master","#qr-code"),3000,"codice QR");await click("master","#qr-close");
   // porzioni: i dolci finiranno a metà serata, il vino anche
@@ -164,7 +170,7 @@ async function setup(){
   const inp=q("master","#i-file");inp.files=dt.files;inp.dispatchEvent(new WW.Event("change"));
   await waitFor(()=>!q("master","#i-map-wrap").hidden,4000,"anteprima import");
   {const nAsp=Math.floor((NP+4)/9),pv=txt("master","#i-preview");
-   check(new RegExp(`${NP-nAsp} al tavolo, ${nAsp} d'asporto`).test(pv)&&/Sciatt da soli/.test(pv)&&/Torta da soli/.test(pv)&&!/Colonne non usate/.test(txt("master","#i-basehint")),
+   check(new RegExp(`${NP-nAsp} al tavolo, ${nAsp} d'asporto`).test(pv)&&(NP<5||/Sciatt da soli/.test(pv))&&(NP<2||/Torta da soli/.test(pv))&&!/Colonne non usate/.test(txt("master","#i-basehint")),
      "Import prenotazioni (formato del 21/11): menù, piatti «SOLO …» e TIPO riconosciuti da soli",pv.slice(-160))}
   await click("master","#i-go");
   await waitFor(()=>vals(db().prenotazioni).length===NP,3000,"prenotazioni importate");
@@ -211,7 +217,7 @@ async function ensureNoDessert(){
     await type("master","#l-newvar",n);await type("master","#l-newprice",p);
     const M0=vals(db().config.listino.menu).find(m=>m.nome===base);
     for(const id of vals(M0.piatti).filter(x=>x!=="p-dolce")){const chip=q("master",`#l-newports button[data-np="${id}"]`);if(chip.getAttribute("aria-pressed")!=="true")await click("master",chip)}
-    await click("master","#l-addvar");await waitFor(()=>vals(db().config.listino.menu).some(v=>v.nome===n),3000,"menù "+n)}
+    await click("master","#l-addvar");await waitFor(()=>vals(db().config.listino.menu).some(v=>v.nome===n),3000,"menù "+n);await waitFor(()=>q("master","#l-newvar").value==="",3000,"campo menù libero")}
   const V=vals(db().config.listino.menu);
   check(V.length===4&&V.filter(v=>v.nome.includes("senza")).every(v=>!vals(v.piatti).includes("p-dolce")&&vals(v.piatti).length>=3),"Menù senza dolce creati: non comprendono la Torta");
   await tab("master",prev);
@@ -244,9 +250,9 @@ async function createOrder(o){
   if(o.vuoto){log(`Ordine saltato (dopo aver tolto il finito non restava niente): ${o.nome||o.pren}`);
     if(!q(n,"#c-sel").hidden)q(n,"#c-sel-x").click();q(n,"#c-nome").value="";q(n,"#c-off").value="";q(n,"#c-ric").value="";
     const c=q(n,"#c-asp");if(c.checked){c.checked=false;c.dispatchEvent(new Event("change"))}await sleep(STEP);return null}
-  const nn=await waitFor(()=>Object.keys(db().ordini||{}).find(k=>!before.has(k)),3000,"nuovo ordine").catch(()=>null);
+  const nn=await waitFor(()=>(()=>{const O_=db().ordini||{};return Object.keys(O_).find(k=>!before.has(k)&&O_[k])})(),3000,"nuovo ordine").catch(()=>null);
   if(!nn){check(false,"Ordine creato: "+(o.nome||o.pren),txt(n,"#c-msg"));return null}
-  o.n=+nn;const real=db().ordini[nn];o.due=r2((real.incassato||0)+(real.offerta||0));L[n][o.pay]=r2(L[n][o.pay]+o.due);
+  o.n=+nn;const real=await waitFor(()=>(db().ordini||{})[nn],3000,"ordine "+nn);o.due=r2((real.incassato||0)+(real.offerta||0));L[n][o.pay]=r2(L[n][o.pay]+o.due);
   if(o.waiter)queueFor[o.waiter].push(o.n);ORD.push(o);return o;
 }
 async function waiterAdd(w,force){
@@ -303,12 +309,12 @@ async function specialAfterCreate(o,S){
   if(k>=3&&!S.edited&&!o.asp&&o.waiter){S.edited=true;
     queueFor[o.waiter]=queueFor[o.waiter].filter(x=>x!==o.n);
     await click(o.cassa,`#c-recent button[data-open="${o.n}"]`);await click(o.cassa,'#x-sing button[aria-label="Aggiungi Bibita"]');await click(o.cassa,"#x-save");
-    const m=txt(o.cassa,"#x-msg");check(/Incassa altri 2,00/.test(m),`Modifica prima che il cameriere lo prenda: +1 Bibita sul n. ${o.n} → «Incassa altri 2,00 €»`,m);
+    const m=await waitFor(()=>/Incassa|Modifiche|non|Operazione/.test(txt(o.cassa,"#x-msg"))&&txt(o.cassa,"#x-msg"),3000,"esito modifica").catch(()=>txt(o.cassa,"#x-msg"));check(/Incassa altri 2,00/.test(m),`Modifica prima che il cameriere lo prenda: +1 Bibita sul n. ${o.n} → «Incassa altri 2,00 €»`,m);
     if(/Incassa altri/.test(m)){L[o.cassa][o.pay]=r2(L[o.cassa][o.pay]+2)}
     await click(o.cassa,"#x-close");queueFor[o.waiter].push(o.n)}
   else if(k>=5&&!S.undo&&o.asp!=="subito"){S.undo=true;
     if(o.waiter)queueFor[o.waiter]=queueFor[o.waiter].filter(x=>x!==o.n);
-    const b=await waitFor(()=>q(o.cassa,"#c-undo"),2000,"pulsante annulla").catch(()=>null);
+    const b=await waitFor(()=>q(o.cassa,"#c-undo"),5000,"pulsante annulla").catch(()=>null);
     if(b){await click(o.cassa,b);await click(o.cassa,"#c-undo");await waitFor(()=>db().annullati&&db().annullati[o.n],2000).catch(()=>null);
       check(!!(db().annullati&&db().annullati[o.n])&&!db().ordini[o.n],`Annullo entro un minuto: il n. ${o.n} è bruciato`);
       L[o.cassa][o.pay]=r2(L[o.cassa][o.pay]-o.due);o.annullato=true;S.burned=o.n;S.checkNext=true}
@@ -367,6 +373,34 @@ async function specialTick(t,S){
     await tab("capo","camerieri")}
 }
 
+/* ---------------- REGOLE DEL DATABASE (solo con l'emulatore) ---------------- */
+async function tryWrite(dev,path,val,mode){const w=W(dev);try{const r=w.firebase.database().ref(path);await (mode==="remove"?r.remove():mode==="update"?r.update(val):r.set(val));return "ok"}catch(e){return /permission/i.test(String(e&&(e.code||e.message)))?"no":"err:"+(e&&e.message)}}
+async function tryRead(dev,path){const w=W(dev);try{await w.firebase.database().ref(path).once("value");return "ok"}catch(e){return /permission/i.test(String(e&&(e.code||e.message)))?"no":"err"}}
+async function emuRuleChecks(){
+  R.fase="regole";log("— Regole del database: cosa può fare ogni ruolo —","h");
+  const w=CAM[0].dev,c=CASSE[0].dev;await sleep(STEP*4);
+  const R1=[
+    ["Nessuno legge i PIN (nemmeno il master)",await tryRead("master","pin"),"no"],
+    ["Un cameriere non cambia il listino",await tryWrite(w,"ev/config/listino/menu",[]),"no"],
+    ["Un cameriere non cambia le persone",await tryWrite(w,"ev/config/utenti/"+U("Don Paolo").id+"/ruolo","cameriere"),"no"],
+    ["Un cameriere non crea ordini",await tryWrite(w,"ev/ordini/9999",{numero:9999,v:2}),"no"],
+    ["Un cameriere non registra offerte",await tryWrite(w,"ev/offerte/x",{importo:5}),"no"],
+    ["Un cameriere non cambia il codice di accesso",await tryWrite(w,"segreto","ABCDEFGHJKLMNPQRSTUVWX"),"no"],
+    ["La cucina non cambia i prezzi",await tryWrite("primo","ev/config/listino/menu",[]),"no"],
+    ["La cassa non cancella l'archivio",await tryWrite(c,"ev/archivio","x"),"no"],
+    ["La cassa non cambia le persone",await tryWrite(c,"ev/config/utenti/"+U("Don Paolo").id+"/nome","X"),"no"],
+    ["La cassa non scrive un PIN",await tryWrite(c,"pin/"+U("Don Paolo").id,"abc"),"no"],
+    ["Un telefono non si finge master con un PIN sbagliato",await tryWrite(w,"sessioni/"+W(w).firebase.auth().currentUser.uid,{u:U("Don Paolo").id,h:"sbagliato"}),"no"],
+    ["Il capo camerieri non diventa master",await tryWrite("capo","ev/config/utenti/"+U("Capo camerieri").id+"/ruolo","master"),"no"],
+    ["La cassa aggiunge porzioni (consentito)",await tryWrite(c,"ev/config/scorte/p-primo",500),"ok"],
+  ];
+  await tryWrite("master","ev/config/scorte/p-primo",null);
+  R1.forEach(([m,got,exp])=>check(got===exp,"Regole: "+m,got));
+  Object.keys(F).forEach(n=>{if(W(n).__denied)W(n).__denied.length=0});/* questi rifiuti erano voluti */
+}
+function emuDeniedCheck(){const d=Object.keys(F).flatMap(n=>(W(n).__denied||[]).map(x=>n+": "+x));
+  check(!d.length,"Regole: nessuna operazione normale è stata rifiutata dal database",d.slice(0,6).join(" | "))}
+
 /* ---------------- CHIUSURA ---------------- */
 async function closing(){
   R.fase="chiusura";log("— Fine serata: controlli —","h");
@@ -410,7 +444,7 @@ async function closing(){
   // nuovo evento → archivio
   R.fase="archivio";const nOrd=O.length;R.excel=null;
   await type("master","#e-name","Serata simulata "+ORDERS);await click("master","#e-reset");await click("master","#e-reset-yes");
-  await waitFor(()=>!db().ordini&&vals(db().archivioIndice).length,5000,"archiviazione").catch(()=>null);
+  await waitFor(()=>{const z=db();return !z.ordini&&!z.annullati&&!z.prenotazioni&&!z.log&&!(z.config&&z.config.scorte)&&vals(z.archivioIndice).length},8000,"archiviazione").catch(()=>null);
   const Z=db(),idx=vals(Z.archivioIndice)[0];
   check(!Z.ordini&&!Z.annullati&&!Z.prenotazioni&&!(Z.config.scorte)&&vals(Z.config.utenti).length>=PEOPLE.length+NCAM&&Z.config.listino,"Nuovo evento: serata in corso svuotata, porzioni da reimpostare, persone e listino restano");
   check(idx&&idx.nome==="Serata simulata "+ORDERS&&idx.ordini===nOrd&&Math.abs(idx.contanti-totC)<.01&&Math.abs(idx.pos-totP)<.01,`Archivio: «${idx&&idx.nome}» con ${idx&&idx.ordini} ordini e gli stessi incassi`);
@@ -423,7 +457,8 @@ async function closing(){
 
 async function run(){
   document.getElementById("go").disabled=true;const t0=performance.now();
-  try{localStorage.clear();await setup();await service();await closing()}
+  try{localStorage.clear();if(EMU){emuReq("PUT",{segreto:EMU_KEY});log("Emulatore di Firebase: database vuoto, regole vere","h")}
+    await setup();if(EMU)await emuRuleChecks();await service();await closing();if(EMU)emuDeniedCheck()}
   catch(e){R.error=`[${R.fase}] `+String(e&&e.message||e);log("ERRORE: "+R.error,"ko")}
   R.done=true;R.stats.secondi=Math.round((performance.now()-t0)/1000);
   $st.textContent=`Finita in ${R.stats.secondi}s · ${R.ok} controlli ok, ${R.ko} non ok${R.issues.length?`, ${R.issues.length} avvisi`:""}${R.error?" · ERRORE":""}`;

@@ -54,4 +54,4 @@ Dopo una modifica, dal terminale nella cartella del progetto:
 npx.cmd -y firebase-tools@15.35.0 deploy --only hosting --project giovanichef-65d46 --account oratoriopare@gmail.com
 ```
 
-**Accesso:** il sito si apre solo con il link o il QR (contengono il codice di accesso, `#k=…`). Le regole del database sono in `database.rules.json`; si pubblicano con `--only hosting,database`. Il codice si cambia da Evento → «Cambia codice di accesso».
+**Accesso:** il sito si apre solo con il link o il QR (contengono il codice di accesso, `#k=…`). Le regole del database (anche per ruolo) si generano con `py toolsegole.py` in `database.rules.json` e si pubblicano con `--only hosting,database`. Prima di pubblicarle: serata simulata sull'emulatore (`firebase emulators:start --only database,auth`, `py test\genera-emu.py`, poi `serata.html?emu=1`). Il codice si cambia da Evento → «Cambia codice di accesso».

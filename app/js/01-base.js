@@ -96,16 +96,31 @@ $("cfg-go").addEventListener("click",()=>{
 /* ---------- vista, ruoli, schermo acceso ---------- */
 const VIEWS=["v-config","v-setup","v-login","v-join","v-noaccess","p-cassa","p-camerieri","p-cucina","p-uscita","p-bar","p-listino","p-persone","p-evento"];
 function showOnly(id){VIEWS.forEach(x=>$(x).hidden=x!==id)}
-function sessionValid(u,k){return u&&(u.ruolo==="cameriere"?u.token===k:u.hash===k)}
+/* Sessione nel database: il telefono scrive in sessioni/<suo id> chi è, con l'impronta del PIN
+   (o il gettone del cameriere). Le regole del database la accettano solo se è giusta, e da lì
+   sanno il ruolo. I PIN stanno in pin/<persona>, che nessuno può leggere. */
+const fdb=p=>firebase.database().ref(p);
+function authUid(){try{return firebase.auth().currentUser.uid}catch(e){return ""}}
+const credOf=(u,k)=>u.ruolo==="cameriere"?{t:k}:{h:k};
+/* true = accettata, false = PIN sbagliato / scaduta, null = rete lenta */
+async function openSess(uid,cred){const a=authUid();if(!a)return null;
+  try{await Promise.race([fdb("sessioni/"+a).set({u:uid,...cred}),sleep(8000).then(()=>{throw {code:"timeout"}})]);return true}
+  catch(e){return isDenied(e)?false:null}}
+function sessionValid(u,k){return !!u&&!!k&&(u.ruolo==="cameriere"?u.token===k:true)}
 function restoreSession(){
   let s=null;try{s=JSON.parse(lsGet("sess")||"null")}catch(e){}
   const u=s&&S.users.find(x=>x.id===s.uid);
   S.me=sessionValid(u,s&&s.k)?u:null;
   if(S.me&&!S._wf){S.wFilter=hasRole(S.me,"master")?"tutte":"mie";S._wf=true}
   if(!S.me&&s)lsSet("sess",null);
+  /* il database ricontrolla la sessione all'avvio e quando cambia il PIN (cambia il «sale») */
+  if(S.me){const sig=S.me.id+"|"+(S.me.salt||"")+"|"+(S.me.token||"");
+    if(S.sessSig!==sig){S.sessSig=sig;const me=S.me;
+      openSess(me.id,credOf(me,s.k)).then(ok=>{if(ok===false&&S.me&&S.me.id===me.id){lsSet("sess",null);S.me=null;S.sessSig=null;S.role=null;
+        showBanner("La tua sessione è scaduta: accedi di nuovo.");renderGate()}})}}
 }
-function startSession(u){
-  S.me=u;lsSet("sess",JSON.stringify({uid:u.id,k:u.ruolo==="cameriere"?u.token:u.hash}));
+function startSession(u,k){
+  S.me=u;S.sessSig=u.id+"|"+(u.salt||"")+"|"+(u.token||"");lsSet("sess",JSON.stringify({uid:u.id,k}));
   S.role=null;S.wFilter=hasRole(u,"master")?"tutte":"mie";S.seenReady=null;$("toast").hidden=true;
   if(/sessione è scaduta|QR d'iscrizione non è più valido/.test($("banner").textContent))showBanner("");
   closeEdit();resetForm();S.lastNum=null;S.openNum=null;$("w-prev").hidden=true;$("w-num").value="";
@@ -148,6 +163,7 @@ function renderGate(){
 $("tabs").addEventListener("click",e=>{const b=e.target.closest("button[data-role]");if(!b)return;S.role=b.dataset.role;lsSet("ruolo",S.role);renderGate()});
 $("logout").addEventListener("click",()=>{if(!armed($("logout"),"Esci davvero?"))return;$("toast").hidden=true;
   if(S.me&&S.me.ruolo==="cameriere"){lsSet("joinmode","1");S.joinCode=S.invite||null}
+  if(authUid())fdb("sessioni/"+authUid()).remove().catch(()=>{});
   S.me=null;lsSet("sess",null);S.loginPick=null;$("l-pin").value="";S.role=null;keepAwake();renderGate()});
 
 /* ---------- primo avvio, accesso, iscrizione ---------- */
@@ -156,10 +172,12 @@ $("s-go").addEventListener("click",async()=>{
   if(!nome){m.textContent="Scrivi il tuo nome.";return}
   if(!validPin(p)){m.textContent="Il PIN deve avere da 4 a 6 cifre.";return}
   if(p!==p2){m.textContent="I due PIN non coincidono.";return}
-  const id=rid("u"),salt=newCode()+newCode();const u={id,nome,ruolo:"master",salt,hash:await hashPin(salt,p)};
-  try{const r=await R("config/utenti").transaction(cur=>cur?undefined:{[id]:u});
+  const id=rid("u"),salt=newCode()+newCode(),h=await hashPin(salt,p);const u={id,nome,ruolo:"master",salt};
+  try{await fdb("pin/"+id).set(h);
+    const r=await R("config/utenti").transaction(cur=>cur?undefined:{[id]:u});
     if(!r.committed){m.textContent="Un master esiste già: accedi dalla schermata di accesso.";return}
-    lsSet("sess",JSON.stringify({uid:id,k:u.hash}));if(!S.users.some(x=>x.id===id))S.users=[...S.users,u];startSession(u);}
+    await openSess(id,{h});
+    if(!S.users.some(x=>x.id===id))S.users=[...S.users,u];startSession(u,h);}
   catch(e){m.textContent=errText(e)}
 });
 function renderLogin(){
@@ -170,9 +188,11 @@ function renderLogin(){
 $("l-names").addEventListener("click",e=>{const b=e.target.closest("button[data-uid]");if(!b)return;S.loginPick=b.dataset.uid;$("l-msg").textContent="";$("l-pin").value="";renderLogin();$("l-pin").focus()});
 async function doLogin(){
   const u=S.users.find(x=>x.id===S.loginPick);if(!u)return;
-  const h=await hashPin(u.salt,$("l-pin").value);
-  if(h!==u.hash){$("l-msg").textContent="PIN sbagliato. Riprova.";$("l-pin").value="";return}
-  $("l-pin").value="";S.loginPick=null;startSession(u);
+  const h=await hashPin(u.salt,$("l-pin").value),b=$("l-go");b.disabled=true;$("l-msg").textContent="";
+  const ok=await openSess(u.id,{h});b.disabled=false;
+  if(ok===false){$("l-msg").textContent="PIN sbagliato. Riprova.";$("l-pin").value="";return}
+  if(ok===null){$("l-msg").textContent="Rete lenta: non riesco a controllare il PIN. Riprova.";return}
+  $("l-pin").value="";S.loginPick=null;startSession(u,h);
 }
 $("l-go").addEventListener("click",doLogin);
 $("l-pin").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin()});
@@ -198,11 +218,11 @@ $("j-list").addEventListener("click",async e=>{
   const b=e.target.closest("button[data-juid]");if(!b||b.disabled)return;const m=$("j-msg");m.textContent="";
   if(S.ingressiChiusi||S.joinCode!==S.invite){renderGate();return}
   const u=S.users.find(x=>x.id===b.dataset.juid);if(!u)return;
-  if(myTok(u)){S.joinCode=null;startSession(u);return}
+  if(myTok(u)){await openSess(u.id,{t:u.token});S.joinCode=null;startSession(u,u.token);return}
   const tok=newCode();b.disabled=true;
   try{const r=await R("config/utenti/"+u.id+"/token").transaction(cur=>cur?undefined:tok);
     if(!r.committed){m.textContent=`${u.nome} è già in uso su un altro telefono. Chiedi al capo camerieri.`;renderJoin();return}
-    lsSet("wtok:"+u.id,tok);S.joinCode=null;const me={...u,token:tok};S.users=S.users.map(x=>x.id===u.id?me:x);startSession(me)}
+    lsSet("wtok:"+u.id,tok);await openSess(u.id,{t:tok});S.joinCode=null;const me={...u,token:tok};S.users=S.users.map(x=>x.id===u.id?me:x);startSession(me,tok)}
   catch(err){m.textContent=errText(err);b.disabled=false}
 });
 

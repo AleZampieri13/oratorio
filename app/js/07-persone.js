@@ -74,9 +74,9 @@ $("u-add").addEventListener("click",async()=>{
     return}
   if(S.users.some(u=>norm(u.nome)===norm(nome))){umsg("C'è già una persona con questo nome.");return}
   if(!validPin(pin)){umsg("Il PIN deve avere da 4 a 6 cifre.");return}
-  const u={id:rid("u"),nome,ruolo,salt:newCode()+newCode()};if(ruoli.length)u.ruoli=ruoli;u.hash=await hashPin(u.salt,pin);
+  const u={id:rid("u"),nome,ruolo,salt:newCode()+newCode()};if(ruoli.length)u.ruoli=ruoli;const h=await hashPin(u.salt,pin);
   const reps=(sel.includes("cucina")||sel.includes("uscita")||sel.includes("bar"))&&!sel.includes("master")?pickedReps("u-reps"):[];if(reps.length)u.reparti=reps;
-  try{await R("config/utenti/"+u.id).set(u);$("u-nome").value="";$("u-pin").value="";setPicked("u-ruoli",[]);$("u-reps").innerHTML=repChips([]);syncAddForm();umsg(`${nome} aggiunto: ${rolesLbl(u).toLowerCase()}.`,true)}
+  try{await fdb("pin/"+u.id).set(h);await R("config/utenti/"+u.id).set(u);$("u-nome").value="";$("u-pin").value="";setPicked("u-ruoli",[]);$("u-reps").innerHTML=repChips([]);syncAddForm();umsg(`${nome} aggiunto: ${rolesLbl(u).toLowerCase()}.`,true)}
   catch(e){umsg(errText(e))}
 });
 function showJoinQR(code){$("qr-copy").textContent="Copia link";showQR("Ingresso camerieri","Ogni cameriere inquadra questo QR e tocca il suo nome.",linkWith({j:code}),code)}
@@ -121,13 +121,16 @@ $("u-list").addEventListener("click",async e=>{
         await R("config/utenti/"+id).update({ruolo:sel[0],ruoli:sel.length>1?sel.slice(1):null});umsg(`${u.nome}: ${sel.map(r=>ROLE_LBL[r]).join(" + ").toLowerCase()}.`,true);S.editUser=null;renderUsers();return}
       const v=$("u-edit").value.trim();
       if(S.editUser.mode==="pin"){if(!validPin(v)){umsg("Il PIN deve avere da 4 a 6 cifre.");return}
-        const salt=newCode()+newCode();await R("config/utenti/"+id).update({salt,hash:await hashPin(salt,v)});umsg("PIN cambiato.",true)}
+        const salt=newCode()+newCode(),h=await hashPin(salt,v),self=S.me&&S.me.id===id;
+        await R("config/utenti/"+id).update({salt,hash:null});await fdb("pin/"+id).set(h);
+        if(self){S.sessSig=id+"|"+salt+"|";lsSet("sess",JSON.stringify({uid:id,k:h}));await openSess(id,{h})}
+        umsg("PIN cambiato.",true)}
       else{if(!v){umsg("Scrivi il nome.");return}if(S.users.some(x=>x.id!==id&&norm(x.nome)===norm(v))){umsg("C'è già una persona con questo nome.");return}
         await R("config/utenti/"+id+"/nome").set(v);umsg("Nome cambiato.",true)}
       S.editUser=null;renderUsers();return}
     if(t.dataset.deluser){if(!armed(t))return;
       if(hasRole(u,"master")&&S.users.filter(x=>hasRole(x,"master")).length<2){umsg("Serve almeno un master.");return}
-      await R("config/utenti/"+id).remove();umsg(`${u.nome} rimosso.`,true)}
+      await R("config/utenti/"+id).remove();fdb("pin/"+id).remove().catch(()=>{});umsg(`${u.nome} rimosso.`,true)}
   }catch(err){umsg(errText(err))}
 });
 
