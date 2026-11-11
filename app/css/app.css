@@ -379,3 +379,10 @@ ul.kitems li .kin{flex:1;font-weight:700}
 .wpiatto{padding:8px 2px}
 .wpiatto .wpn{font-size:1.05rem}
 .btn.wcall{min-height:52px;padding:12px 26px;font-size:1.1rem}
+/* cassa: titoli delle sezioni (Menù, Piatti da soli) e dei reparti */
+.csec{display:flex;align-items:center;gap:12px;font-size:1.15rem;font-weight:800;margin:16px 0 4px;color:var(--ink)}
+.csec::after{content:"";flex:1;height:2px;background:var(--line);border-radius:2px}
+#c-sing-box,#x-sing-box{gap:0}
+.xgroup>.cgrp{display:flex;align-items:center;gap:8px;margin:12px 0 2px;padding-bottom:4px;border-bottom:2px solid var(--c);
+  font-size:.95rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--ink)}
+.xgroup>.cgrp::before{content:"";width:12px;height:12px;border-radius:3px;background:var(--c);flex:0 0 auto}

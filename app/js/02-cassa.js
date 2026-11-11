@@ -14,10 +14,10 @@ function stepperHtml(list,qty,attr){
 /* piatti venduti da soli: divisi per reparto */
 function singlesHtml(qty,attr){
   const sl=singlesList(),pOf=i=>S.portate.find(x=>x.id===i.pid)||{};
-  const key=i=>repNome(pOf(i).rep)||"",groups=[...new Set(sl.map(key))];
+  const key=i=>pOf(i).rep||"",groups=[...new Set(sl.map(key))];
   if(groups.length<2)return stepperHtml(sl,qty,attr);
   groups.sort((a,b)=>(a==="")-(b===""));
-  return groups.map(g=>`<div class="xgroup"><span class="label">${esc(g||"Altro")}</span>${stepperHtml(sl.filter(i=>key(i)===g),qty,attr)}</div>`).join("");
+  return groups.map(g=>`<div class="xgroup"><span class="label cgrp" style="--c:${g?repColor(g):"var(--line)"}">${esc(repNome(g)||"Altro")}</span>${stepperHtml(sl.filter(i=>key(i)===g),qty,attr)}</div>`).join("");
 }
 function paintTotal(prefix,b,paid,pay){
   const off=parsePrice($(prefix+"-off").value),toPay=r2(b.due+off);

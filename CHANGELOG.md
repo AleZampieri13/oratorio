@@ -1,6 +1,7 @@
 # Versioni
 
 ## 36
+- **Cassa:** titoli «Menù» e «Piatti da soli» più grandi con una linea; ogni reparto dei piatti da soli ha il suo titolo con il colore del reparto.
 - **Camerieri:** linguette dei reparti e «Chiama» più grandi; la linguetta aperta ha il colore del reparto, quelle finite diventano grigie (sempre apribili). «Portato» si annulla: dall'avviso o con «Non portato» sul piatto (per 3 minuti); le schede finite restano visibili 3 minuti.
 - **Ordine per reparto:** le frecce ↑↓ sono sui reparti (linguette del cameriere, cassa, listino); i piatti seguono il loro reparto.
 - **Bar per reparto:** se ci sono più reparti «Bar» (es. Bar e Caffetteria), nella pagina Bar si filtra per reparto (Tutti / …). In Persone si può assegnare un reparto anche a chi fa il bar: vede solo quello.
