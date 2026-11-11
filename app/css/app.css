@@ -371,3 +371,11 @@ ul.kitems li .kin{flex:1;font-weight:700}
 /* linguette del cameriere: un filo del colore del reparto */
 .rtabs button{border-left-width:5px}
 .lrephead{font-weight:800;margin-top:12px;padding-left:8px;border-left:5px solid}
+/* camerieri: linguette e «Chiama» più grandi, reparto finito in grigio */
+.rtabs{gap:8px}
+.rtabs button{min-height:52px;padding:12px 18px;font-size:1.05rem}
+.rtabs button.rdone{background:var(--wait-bg);color:var(--muted);border:1px solid var(--line)}
+.rtabs button.rdone[aria-pressed="true"]{outline:3px solid var(--muted);outline-offset:1px}
+.wpiatto{padding:8px 2px}
+.wpiatto .wpn{font-size:1.05rem}
+.btn.wcall{min-height:52px;padding:12px 26px;font-size:1.1rem}

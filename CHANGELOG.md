@@ -1,6 +1,7 @@
 # Versioni
 
 ## 36
+- **Camerieri:** linguette dei reparti e «Chiama» più grandi; la linguetta aperta ha il colore del reparto, quelle finite diventano grigie (sempre apribili). «Portato» si annulla: dall'avviso o con «Non portato» sul piatto (per 3 minuti); le schede finite restano visibili 3 minuti.
 - **Ordine per reparto:** le frecce ↑↓ sono sui reparti (linguette del cameriere, cassa, listino); i piatti seguono il loro reparto.
 - **Bar per reparto:** se ci sono più reparti «Bar» (es. Bar e Caffetteria), nella pagina Bar si filtra per reparto (Tutti / …). In Persone si può assegnare un reparto anche a chi fa il bar: vede solo quello.
 - **Accesso solo con il link o il QR:** link e QR contengono un codice; senza, il telefono vede «Telefono non autorizzato» e il database non risponde. In Evento: «Cambia codice di accesso» (poi tutti riaprono il link nuovo).
