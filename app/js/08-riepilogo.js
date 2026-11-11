@@ -59,7 +59,7 @@ function timesData(){
   const rows=S.portate.map(p=>{const cook=[],wait=[];
     O.forEach(o=>{const c=o.portate&&o.portate[p.id];if(!c)return;const ready=c.stato==="pronta"?c.t:c.stato==="servita"?c.tp:null;
       if(c.tc&&ready&&ready>=c.tc)cook.push(ready-c.tc);if(c.stato==="servita"&&c.tp&&c.t>=c.tp)wait.push(c.t-c.tp)});
-    return {tipo:"Portata",nome:p.nome,cook:st(cook),wait:st(wait)}});
+    return {tipo:"Piatto",nome:p.nome,cook:st(cook),wait:st(wait)}});
   repList().forEach(r=>{const cook=[];
     O.forEach(o=>Object.values(o.portate||{}).forEach(c=>{const v=c.rep&&c.rep[r.id];if(!v||!v.t)return;const call=c.tc||(c.stato==="chiamata"?c.t:null);if(call&&v.t>=call)cook.push(v.t-call)}));
     rows.push({tipo:"Reparto",nome:r.nome,cook:st(cook),wait:null})});
@@ -84,7 +84,7 @@ function renderEvent(){
     (T.valore>0?`<div><span class="label">Incassato in cassa</span><b>${money(T.cassa)}</b></div><div><span class="label">Totale</span><b>${money(T.valore)}</b></div>`:"");
   renderClose();renderTimes();
   const cnt=(k,st)=>O.filter(o=>o.portate&&o.portate[k]&&(o.portate[k].stato||"attesa")===st).length;
-  $("e-table").innerHTML=`<table><thead><tr><th>Portata</th><th>Da chiamare</th><th>In cucina</th><th>Pronte</th><th>Servite</th></tr></thead><tbody>`+
+  $("e-table").innerHTML=`<table><thead><tr><th>Piatto</th><th>Da chiamare</th><th>In preparazione</th><th>Pronti</th><th>Portati</th></tr></thead><tbody>`+
     S.portate.map(p=>`<tr><td>${esc(p.nome)}</td><td>${cnt(p.id,"attesa")}</td><td>${cnt(p.id,"chiamata")}</td><td>${cnt(p.id,"pronta")}</td><td>${cnt(p.id,"servita")}</td></tr>`).join("")+`</tbody></table>`;
   renderPrenList();
 }

@@ -61,27 +61,27 @@ I piatti si mettono in ordine con ↑↓ (dentro il listino e quindi in cassa e 
 
 ## 6. Passaggio al nuovo modello
 
-- Fatto **una sola volta, in automatico**, al primo avvio della nuova versione, **solo se non ci sono ordini aperti**. Se ci sono, il master vede: «Chiudi la serata con Nuovo evento, poi l'app aggiorna il listino».
-- Conversione del listino di oggi:
+- Si usa **lo stesso database** della serata vera (niente Firebase di prova).
+- Il nuovo listino si salva in un **posto nuovo** (`config/listino`); il listino della v35 (`config/menu`) **non viene toccato**. Così la v35 continua a funzionare e, se serve, si torna indietro ripubblicando la v35.
+- Al primo avvio, se `config/listino` non c'è, la nuova versione lo **prepara** convertendo il listino v35 (il master lo vede e lo sistema):
   - per ogni portata e ogni suo reparto → un piatto (nome = il piatto scritto nel reparto, se no il nome della portata); una portata senza reparto → piatto nel reparto «Cucina» (creato se manca);
   - ogni menù → i piatti delle portate che comprendeva;
   - ogni extra → piatto del suo reparto, o del reparto **Bar** (creato se manca), con il suo prezzo e gruppo;
-  - prezzi singoli e colori delle portate → al primo piatto di quella portata;
-  - porzioni: per portata → al primo piatto della portata; per extra → al piatto.
-- Il listino vecchio resta salvato in `config/menuV35` (si può tornare indietro).
+  - prezzi singoli e colori delle portate → al primo piatto di quella portata.
+- Le porzioni si reimpostano (come a ogni evento).
+- Ordini della v35 ancora aperti: il master vede «Chiudi la serata con Nuovo evento prima di usare la nuova versione».
 - Le persone non cambiano (i reparti assegnati restano).
-- Dopo il passaggio il master controlla e sistema i nomi (es. Sciatt, Pizzoccheri, Bresaola, Torta).
 
 ## 7. Prove e pubblicazione
 
-- **Serve un Firebase di prova** (guida, punto 3.6): il link di prova del ramo **non deve** usare il database vero, perché il passaggio del §6 cambierebbe il listino vero. Finché il Firebase di prova non c'è, la nuova versione si prova solo con la copia di prova e la serata simulata.
-- Serata simulata aggiornata al nuovo modello, con il menù valtellinese (Sciatt, Pizzoccheri, Bresaola, Torta, Acqua, Caffè), anche da 200 ordini, 4 casse, 21 camerieri.
-- Il sito vero resta alla v35 finché non approvate la prova con i telefoni sul link di prova (obiettivo: entro il 17-18 novembre). Se qualcosa non convince, la serata del 21 si fa con la v35.
+- Prima: copia di prova sul computer e serata simulata col menù valtellinese (Sciatt, Pizzoccheri, Bresaola, Torta, Acqua, Caffè), anche da 200 ordini, 4 casse, 21 camerieri.
+- Poi: link di prova del ramo (stesso database) per la prova con i telefoni, **senza serate in corso**. Obiettivo: entro il 17-18 novembre.
+- Se va bene si pubblica sul sito vero; se qualcosa non convince la serata del 21 si fa con la v35.
 
 ## 8. Prenotazioni e importazione
 
 - La **prenotazione** contiene: nominativo, quanti di ogni **menù**, quanti di ogni **piatto singolo**, **asporto sì/no**, note.
-- **Importazione:** per **ogni colonna del file** si sceglie cosa è: Nominativo, un menù, un piatto singolo, Tipo, Note, oppure «non usare». Riconoscimento automatico:
+- **Importazione:** per ogni campo (Nominativo, ogni menù, ogni piatto da solo, Tipo, Totale, Note) si sceglie la colonna del file; le colonne non usate sono elencate. Riconoscimento automatico:
   - Nominativo/Nome/Cognome…, Note/Allergie… come oggi;
   - menù: nome uguale al menù, oppure Adulti/Standard → il primo menù, Bambini/Ridotto → il menù bambini;
   - piatto: nome uguale al piatto, con o senza «SOLO» davanti (maiuscole, accenti e spazi non contano); un'abbreviazione (es. «PIZZ») vale solo se corrisponde a un piatto solo, altrimenti si sceglie a mano;
@@ -95,19 +95,18 @@ I piatti si mettono in ordine con ↑↓ (dentro il listino e quindi in cassa e 
 ## Come sono fatti i dati (per chi programma)
 
 ```
-config/menu/reparti   [{id, nome, bar?:true}]
-config/menu/piatti    [{id, nome, rep, prezzo, prezzoBimbi?, colore?, gruppo?}]   (ordine = ordine della lista)
-config/menu/varianti  [{id, nome, prezzo, piatti:[idPiatto,…]}]                     (i menù)
-config/menu/versione  2
+config/listino/reparti   [{id, nome, bar?:true}]
+config/listino/piatti    [{id, nome, rep, prezzo, prezzoBimbi?, colore?, gruppo?}]   (ordine = ordine della lista)
+config/listino/menu      [{id, nome, prezzo, piatti:[idPiatto,…]}]                     (i menù)
 config/scorte/<idPiatto>   porzioni totali del piatto
-config/menuV35        copia del listino com'era prima del passaggio
+config/menu          listino della v35, lasciato com'era
 
-ordini/<n>
+ordini/<n>   (v: 2)
   righe    [{id, nome, qta, prezzo}]               menù venduti (come oggi)
   singoli  [{pid, k:"a"|"b", nome, qta, prezzo}]   piatti venduti da soli
-  piatti   {<idPiatto>: {nome, rep, qta, stato:"attesa"|"chiamata"|"pronta"|"servita",
+  portate  {<idPiatto>: {nome, rep, qta, stato:"attesa"|"chiamata"|"pronta"|"servita",
                          t, tc?, tp?, da?, daId?, annull?}}
-  (spariscono: portate, bar, extra)
+  (il nodo si chiama ancora «portate», ma ogni voce è un piatto con un solo reparto; spariscono bar ed extra)
 
 prenotazioni/<id>  {nome, righe:[{id,nome,qta}], singoli:{<idPiatto>:qta}, asporto?:true, note, stato, ordine}
 ```

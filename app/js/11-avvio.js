@@ -2,9 +2,15 @@
 /* ---------- render ---------- */
 let rq=false;
 function schedule(){if(rq)return;rq=true;requestAnimationFrame(()=>{rq=false;checkEvents();renderAll()})}
+/* chi entra per primo con la v36 salva il listino convertito (una volta sola) */
+function tryConvert(){if(!S.listinoConv||!S.me||S.convTried)return;S.convTried=true;const L=S.listinoConv;
+  R("config/listino").transaction(cur=>cur?undefined:L).then(r=>{if(r&&r.committed)logChange("Listino della versione 36 preparato da quello di prima: controlla nomi e reparti dei piatti")},()=>{S.convTried=false})}
+function oldOrdersBanner(){const old=S.ordLoaded&&isBoss()&&ordersArr().some(o=>o.v!==2),t="Ci sono ordini fatti con la versione precedente: chiudi la serata con «Nuovo evento» (scheda Evento) prima di cominciare.";
+  if(old&&$("banner").hidden)showBanner(t);else if(!old&&$("banner").textContent===t)showBanner("")}
 function renderAll(){
   paintSoundBar();
   if(!S.me)return;
+  tryConvert();oldOrdersBanner();
   prefillNum();
   if(S.role==="cassa"){refreshStepLabels();renderRecent();renderTicket();renderSearch();renderSel();renderMine();renderStock();renderAsporto();if(S.editOrder!=null&&!orderByNum(S.editOrder)){closeEdit();$("c-msg").className="msg";$("c-msg").textContent="L'ordine che stavi modificando è stato annullato."}
     else if(S.editOrder!=null&&!S.editLocked&&isLocked(orderByNum(S.editOrder))){$("x-msg").className="msg err";$("x-msg").textContent=LOCK_MSG(S.editOrder)}
@@ -63,15 +69,15 @@ async function start(){
   R("config/file").on("value",s=>{const v=s.val();S.file=(Array.isArray(v)?v:Object.values(v||{})).filter(Boolean);if(S.role==="persone")renderUsers();if(!S.me&&S.joinCode)renderJoin();schedule()});
   R("config/iscrizione").on("value",s=>{S.invite=s.val()||null;S.inviteLoaded=true;if(!S.me&&!S.joinCode&&lsGet("joinmode")==="1"&&S.invite)S.joinCode=S.invite;if(S.usersLoaded&&!S.me)renderGate()});
   R("config/ingressiChiusi").on("value",s=>{S.ingressiChiusi=!!s.val();if(!S.me&&S.joinCode)renderJoin();if(S.role==="persone")renderJoinState()});
-  R("config/menu").on("value",s=>{const d=s.val()||{};
-    S.varianti=(Array.isArray(d.varianti)?d.varianti:Object.values(d.varianti||{})).filter(Boolean).map(v=>({...v,prezzo:v.prezzo||0}));if(!S.varianti.length)S.varianti=DEFAULT_VAR;
-    S.portate=(Array.isArray(d.portate)?d.portate:Object.values(d.portate||{})).filter(Boolean).map(p=>({...p,prezzo:p.prezzo||0,prezzoBimbi:p.prezzoBimbi||0,menu:p.menu?(Array.isArray(p.menu)?p.menu:Object.values(p.menu)).filter(Boolean):null}));if(!S.portate.length)S.portate=DEFAULT_PORT;S.newPorts=null;
-    S.extra=(Array.isArray(d.extra)?d.extra:Object.values(d.extra||{})).filter(Boolean).map(x=>({...x,prezzo:x.prezzo||0}));
-    S.reparti=toArr(d.reparti).filter(r=>r.id&&r.nome);S.portate=S.portate.map(p=>({...p,reparti:toArr(p.reparti).filter(x=>x.r)}));
+  /* listino v36 in config/listino; la prima volta nasce da quello della v35 (config/menu, che non si tocca) */
+  let v35=undefined,lst=undefined;
+  const onListino=()=>{if(v35===undefined||lst===undefined)return;
+    if(lst==null){S.listinoConv=convertV35(v35);applyListino(S.listinoConv);tryConvert()}else{S.listinoConv=null;applyListino(lst)}
     $("who-t").textContent=whoLbl();
-    renderSteppers();if(S.imp)renderImport();if(S.role==="listino")renderListino();if(S.role==="cucina")renderStockEditor();if(S.role==="bar")renderBarStock();schedule()});
+    renderSteppers();if(S.imp)renderImport();if(S.role==="listino")renderListino();if(S.role==="cucina"||S.role==="bar")renderStockEditor();schedule()};
+  R("config/menu").on("value",s=>{v35=s.val()||{};onListino()});
+  R("config/listino").on("value",s=>{lst=s.val();onListino()});
   R("config/scorte").on("value",s=>{S.scorte=s.val()||{};renderSteppers();schedule()});
-  R("config/scorteBar").on("value",s=>{S.scorteX=s.val()||{};renderSteppers();schedule()});
   R("config/cassa/postazioni").on("value",s=>{S.post=s.val()||{};schedule()});
   listenMap("offerte",S.offMap);
   listenMap("log",S.logMap);

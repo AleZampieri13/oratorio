@@ -55,9 +55,9 @@ function checkEvents(){
   S.seenCalls=callKeys;
   if(S.removedQ.length){const gone=S.removedQ.splice(0);
     const active=o=>{const cs=orderCourses(o).filter(c=>c.p.stato==="chiamata"||c.p.stato==="pronta");return sc?cs.some(c=>Object.keys(c.p.rep||{}).some(r=>sc.includes(r))):cs.length>0};
-    const hit=gone.filter(o=>S.role==="cucina"?active(o):S.role==="bar"?(o.bar&&(o.bar.stato==="chiamata"||o.bar.stato==="pronta")):S.role==="camerieri"?mineOrder(o):false);
+    const hit=gone.filter(o=>S.role==="cucina"?active(o):S.role==="bar"?orderCourses(o).some(c=>(c.p.stato==="chiamata"||c.p.stato==="pronta")&&Object.keys(c.p.rep||{}).some(r=>barReps().includes(r))):S.role==="camerieri"?mineOrder(o):false);
     if(hit.length){buzz();toast(hit.length>3?`${hit.length} ordini annullati: le loro schede sono sparite.`:hit.map(o=>`Ordine n. ${o.numero}${o.nome?" "+o.nome:""} annullato dalla cassa`).join("  ·  "),{ms:10000})}}
-  const barNew=new Set(ordersArr().filter(o=>o.bar&&o.bar.stato==="chiamata").map(o=>o.numero+":"+o.bar.t));
+  const barNew=new Set(barReps().length?repItems("chiamata",barReps()).map(c=>c.o.numero+":"+c.k+":"+c.t):[]);
   if(S.seenBar&&S.role==="bar"){for(const k of barNew)if(!S.seenBar.has(k)){buzz();break}}
   S.seenBar=barNew;
   if(S.role==="uscita"){const osc=oScope(),outKeys=new Set(flatCourses("pronta").filter(c=>!c.o.asportoSubito&&inOScope(c,osc)).map(c=>c.o.numero+":"+c.k+":"+c.t));

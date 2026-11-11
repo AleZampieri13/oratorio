@@ -13,7 +13,7 @@ App per gestire le serate a tavola dell'oratorio: cassa, camerieri, cucina divis
 | Master | Tutto: listino, persone, evento, chiusura cassa, archivio |
 | Cassa | Nuovi ordini, prenotazioni, modifica (prima che un cameriere prenda l'ordine), rettifica, offerte |
 | Capo camerieri | Camerieri, file, QR d'ingresso, sposta e condividi clienti |
-| Cameriere | I suoi clienti: chiama le portate (in qualsiasi ordine) e le porta |
+| Cameriere | I suoi clienti: apre il reparto che serve, chiama i piatti (uno o «Chiama tutto») e li porta |
 | Cucina | Chiamate da preparare. Con un reparto assegnato vede solo il suo reparto |
 | Uscita piatti | Piatti pronti, per fila: segna «Consegnato» se il cameriere se ne dimentica |
 | Bar | Bevande da preparare e scorte |

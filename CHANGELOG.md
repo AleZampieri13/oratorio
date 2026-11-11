@@ -1,5 +1,13 @@
 # Versioni
 
+## 36
+- **Piatti al posto delle portate.** Nel Listino ci sono i **reparti** (uno o più segnati «È un bar»), i **piatti** (ognuno con un solo reparto, prezzo da solo, gruppo in cassa, colore) e i **menù fissi** fatti di piatti. Acqua e caffè sono piatti del Bar e possono stare nei menù. Spariscono portate ed extra.
+- **Cameriere:** sulla scheda di ogni cliente i reparti sono linguette (un pallino dove c'è da chiamare); in ogni reparto si chiama un piatto alla volta o **«Chiama tutto»**. In cima i piatti pronti con «Porta».
+- **Cucina e bar:** le chiamate sono raggruppate per cliente, con «Pronto» per ogni piatto e «Tutto pronto». Il Bar vede i reparti bar; cucina e uscita «Tutti» solo gli altri. «Al banco» consegna le cose del bar a chi non ha cameriere.
+- **Cassa:** menù in alto, sotto i piatti da soli divisi per gruppo. Porzioni per piatto (cucina e bar).
+- **Prenotazioni:** l'import riconosce menù (Adulti/Bambini), piatti «SOLO …» e TIPO (presente/asporto); in cassa la prenotazione compila anche i piatti da soli e l'asporto. Nuovo pulsante **«Scarica il modello Excel»**.
+- Il listino nuovo sta in `config/listino`; al primo avvio nasce da quello della v35, che resta com'era in `config/menu` (si può tornare alla v35).
+
 ## 35
 - **Extra con gruppo e reparto** (Listino → Bevande ed extra): ogni extra ha un **gruppo** (es. Bevande, Dolci, Altro) con cui è diviso in cassa, e **«Lo prepara»**: il Bar oppure un reparto della cucina.
 - Gli extra di un reparto della cucina (es. «Patatine extra» al Fritto) sono una voce a parte sulla scheda del cameriere («Extra Fritto»), si chiamano quando si vuole, li vede solo quel reparto e poi li porta il cameriere o li consegna l'uscita. Il bar vede solo i suoi extra.

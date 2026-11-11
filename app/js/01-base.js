@@ -26,7 +26,10 @@ function repSnap(k){if(isXk(k)){const r=k.slice(2);return {[r]:{s:"chiamata",nom
   rs.forEach(x=>{o[x.r]={s:"chiamata",nome:repNome(x.r)};if(x.piatto)o[x.r].piatto=x.piatto});return o}
 function userReps(u){return toArr(u&&u.reparti).filter(id=>repList().some(r=>r.id===id))}
 function myReps(){if(!S.me||hasRole(S.me,"master")||!hasRole(S.me,"cucina"))return null;const rs=userReps(S.me);return rs.length?rs:null}
-function kScope(){const f=myReps();if(f)return f;return S.kRep&&repList().some(r=>r.id===S.kRep)?[S.kRep]:null}
+/* reparti segnati «è un bar»: li vede la pagina Bar; gli altri la cucina e l'uscita */
+function barReps(){return repList().filter(r=>r.bar).map(r=>r.id)}
+function kitchenReps(){return repList().filter(r=>!r.bar).map(r=>r.id)}
+function kScope(){const f=myReps();if(f)return f;if(S.kRep&&kitchenReps().includes(S.kRep))return [S.kRep];const k=kitchenReps();return k.length?k:null}
 function partsOf(p){const done=p&&(p.stato==="pronta"||p.stato==="servita");
   return Object.entries((p&&p.rep)||{}).map(([r,v])=>({r,nome:v.nome||repNome(r)||r,piatto:v.piatto||"",ok:done||v.s==="pronta"}))}
 function partsTxt(p,skip){const ps=partsOf(p);if(ps.length<2)return "";return ps.filter(x=>x.r!==skip).map(x=>`${esc(x.piatto||x.nome)} ${x.ok?"✓":"…"}`).join(" · ")}
@@ -38,7 +41,7 @@ const S={root:null,online:true,ordMap:{},prenMap:{},ordLoaded:false,varianti:DEF
   qty:{},eqty:{},editOrder:null,numDirty:false,openNum:null,lastNum:null,selPren:null,loginPick:null,pending:new Set(),
   kFilt:lsGet("kfiltro")||"",seenCalls:null,seenReady:null,sound:false,audio:null,wFilter:"mie",imp:null,editUser:null,cfg:null,invite:null,inviteLoaded:false,joinCode:null,
   extra:[],xqty:{},exqty:{},pay:"contanti",xpay:"contanti",dpay:"contanti",scorte:{},fondo:0,contato:null,offMap:{},stockWarn:null,sqty:{},esqty:{},aspMode:"subito",newPorts:null,logMap:{},scorteX:{},aspConfirm:null,seenBar:null,post:{},closeKey:"",file:null,joinFila:"",
-  reparti:[],kRep:lsGet("krep")||"",oRep:lsGet("orep")||"",seenOut:null,removedQ:[],annMap:{},editLocked:false};
+  reparti:[],L:null,wTab:{},kRep:lsGet("krep")||"",oRep:lsGet("orep")||"",seenOut:null,removedQ:[],annMap:{},editLocked:false};
 
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function lsSet(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){}}
@@ -102,7 +105,7 @@ function startSession(u){
   S.role=null;S.wFilter=hasRole(u,"master")?"tutte":"mie";S.seenReady=null;$("toast").hidden=true;
   if(/sessione è scaduta|QR d'iscrizione non è più valido/.test($("banner").textContent))showBanner("");
   closeEdit();resetForm();S.lastNum=null;S.openNum=null;$("w-prev").hidden=true;$("w-num").value="";
-  ["c-msg","w-msg","u-msg","l-vmsg","l-xmsg","l-pmsg","i-msg","k-stock-msg","b-stock-msg","d-msg"].forEach(id=>{$(id).textContent=""});
+  ["c-msg","w-msg","u-msg","l-vmsg","l-rmsg","l-pmsg","i-msg","k-stock-msg","b-stock-msg","d-msg"].forEach(id=>{$(id).textContent=""});
   $("c-last").innerHTML="";$("c-last-wrap").hidden=true;
   renderGate();
   S.seenCalls=null;S.seenBar=null;S.seenMyCalls=null;checkEvents();
@@ -256,7 +259,7 @@ const importo=rr=>Math.round(rr.reduce((a,r)=>a+r.qta*(r.prezzo||0),0)*100)/100;
 const r2=v=>Math.round(v*100)/100;
 function bill(qty,xq,paid,sq){const rr=buildRighe(qty),xx=buildExtra(xq),ss=buildSingoli(sq||{}),menu=importo(rr),ext=importo(xx),sing=importo(ss);
   return {rr,xx,ss,menu,ext,sing,tot:r2(menu+ext+sing),due:r2((paid?0:menu)+ext+sing),cop:cop(rr)}}
-function singChips(ss){return (ss||[]).map(r=>`<span class="chip">${r.qta} ${esc(r.k==="b"?r.nome.replace(/ bambini$/,"")+" singolo bambini":r.nome+" singolo")}</span>`).join("")}
+function singChips(ss){return (ss||[]).map(r=>`<span class="chip">${r.qta} ${esc(r.nome)}${r.k!=="b"?" (da solo)":""}</span>`).join("")}
 function extraChips(xx){return (xx||[]).map(r=>`<span class="chip extra-chip">${r.qta} ${esc(r.nome)}</span>`).join("")}
 /* porzioni */
 const PORT_COLORS=["#0f766e","#b45309","#7c3aed","#be123c","#1d4ed8","#4d7c0f","#a21caf","#0e7490"];
@@ -267,7 +270,7 @@ function leftTxt(l){return l<=0?"esaurito":l===1?"resta 1":"restano "+l}
 function isLocked(o){return !!o&&(!!o.cameriereId||orderCourses(o).some(c=>(c.p.stato||"attesa")!=="attesa")||(!!o.bar&&(o.bar.stato||"attesa")!=="attesa"))}
 const LOCK_MSG=n=>{const o=orderByNum(n),w=o&&o.cameriereId?nameOf(o.cameriereId,o.cameriere):"";
   return `L'ordine ${n} è già partito${w?` (l'ha preso ${w})`:" (è già in cucina o al bar)"}: non si può più modificare. Per aggiungere qualcosa crea un nuovo ordine. Solo il master può annullarlo.`};
-function orderDesc(rr,ss,xx){return [...(rr||[]).map(r=>`${r.qta} ${r.nome}`),...(ss||[]).map(s=>`${s.qta} ${s.nome} singolo`),...(xx||[]).map(x=>`${x.qta} ${x.nome}`)].join(", ")||"vuoto"}
+function orderDesc(rr,ss,xx){return [...(rr||[]).map(r=>`${r.qta} ${r.nome}`),...(ss||[]).map(s=>`${s.qta} ${s.nome}`),...(xx||[]).map(x=>`${x.qta} ${x.nome}`)].join(", ")||"vuoto"}
 async function burnOrder(n,o,back,how){
   await R("annullati/"+n).set({n,t:Date.now(),da:myName(),daId:S.me?S.me.id:"",nome:o.nome||"",restituiti:back,partito:isLocked(o)});
   await R("ordini/"+n).remove();

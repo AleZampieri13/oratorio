@@ -33,6 +33,8 @@
 
   function snap(key, val) { const v = clone(val); return { key, val: () => clone(v), exists: () => v != null }; }
 
+  /* solo per le prove: se la pagina che ospita i telefoni ha __wlog, registra chi scrive sugli ordini */
+  function wlog(path, v) { try { if (top.__wlog && /ordini/.test(path)) top.__wlog.push([new URLSearchParams(location.search).get("dev"), path, JSON.stringify(v).slice(0, 300), (new Error().stack || "").split(String.fromCharCode(10)).slice(2, 7).join(" | ")]); } catch (e) {} }
   function commit(newDb) {
     db = normalize(newDb);
     try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {}
@@ -51,10 +53,10 @@
   Ref.prototype._val = function () { return getAt(db, this._p); };
   /* prima di ogni scrittura rilegge i dati condivisi: così due "telefoni" non si sovrascrivono */
   const fresh = () => { db = load(); };
-  Ref.prototype.set = function (v) { fresh(); commit(setAt(db, this._p, clone(v))); return Promise.resolve(); };
+  Ref.prototype.set = function (v) { wlog(this._p.join("/"), v); fresh(); commit(setAt(db, this._p, clone(v))); return Promise.resolve(); };
   Ref.prototype.remove = function () { return this.set(null); };
   Ref.prototype.update = function (obj) {
-    fresh(); let d = db;
+    wlog(this._p.join("/"), obj); fresh(); let d = db;
     for (const k of Object.keys(obj)) d = setAt(d, [...this._p, ...split(k)], clone(obj[k]));
     commit(d); return Promise.resolve();
   };
@@ -62,7 +64,7 @@
     fresh(); const cur = clone(this._val());
     const nx = fn(cur);
     if (nx === undefined) return Promise.resolve({ committed: false, snapshot: snap(this.key, this._val()) });
-    commit(setAt(db, this._p, clone(nx)));
+    wlog(this._p.join("/"), nx); commit(setAt(db, this._p, clone(nx)));
     return Promise.resolve({ committed: true, snapshot: snap(this.key, this._val()) });
   };
   Ref.prototype.once = function (ev, cb) { const v = this._val(); return new Promise(res => later(() => { const s = snap(this.key, v); if (cb) cb(s); res(s); })); };

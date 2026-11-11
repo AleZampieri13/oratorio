@@ -11,6 +11,15 @@ function stepperHtml(list,qty,attr){
     <button ${attr}="${esc(v.id)}" data-d="-1" aria-label="Togli ${esc(v.nome)}">−</button><output>${qty[v.id]||0}</output>
     <button ${attr}="${esc(v.id)}" data-d="1" aria-label="Aggiungi ${esc(v.nome)}">+</button></span></div>`).join("");
 }
+/* piatti venduti da soli: divisi per gruppo, oppure per reparto se i gruppi non ci sono */
+function singlesHtml(qty,attr){
+  const sl=singlesList(),pOf=i=>S.portate.find(x=>x.id===i.pid)||{};
+  let key=i=>(pOf(i).gruppo||"").trim(),groups=[...new Set(sl.map(key))];
+  if(groups.length<2){key=i=>repNome(pOf(i).rep)||"";groups=[...new Set(sl.map(key))]}
+  if(groups.length<2)return stepperHtml(sl,qty,attr);
+  groups.sort((a,b)=>(a==="")-(b===""));
+  return groups.map(g=>`<div class="xgroup"><span class="label">${esc(g||"Altro")}</span>${stepperHtml(sl.filter(i=>key(i)===g),qty,attr)}</div>`).join("");
+}
 function paintTotal(prefix,b,paid,pay){
   const off=parsePrice($(prefix+"-off").value),toPay=r2(b.due+off);
   const el=$(prefix+"-total");
@@ -57,13 +66,13 @@ function stockProblems(rr,ss,xx){
 const isBoss=()=>!!S.me&&hasRole(S.me,"master");
 /* aggiorna le scritte «esaurito» quando altri ordini consumano le porzioni, senza toccare il resto del modulo */
 function refreshStepLabels(){
-  [["c-steppers",S.varianti,S.qty,"data-step"],["c-extra",null,S.xqty,"data-xstep"],["c-sing",singlesList(),S.sqty,"data-sstep"]].forEach(([id,l,q,a])=>{
-    const h=l?stepperHtml(l,q,a):extraStepsHtml(q,a);if($(id).dataset.h!==h){$(id).innerHTML=h;$(id).dataset.h=h}});
+  [["c-steppers",S.varianti,S.qty,"data-step"],["c-extra",null,S.xqty,"data-xstep"],["c-sing","s",S.sqty,"data-sstep"]].forEach(([id,l,q,a])=>{
+    const h=l==="s"?singlesHtml(q,a):l?stepperHtml(l,q,a):extraStepsHtml(q,a);if($(id).dataset.h!==h){$(id).innerHTML=h;$(id).dataset.h=h}});
 }
 function stockTxt(probs){return probs.map(x=>x.l<=0?`${x.p.nome}: esaurito`:`${x.p.nome}: ne restano solo ${x.l} (ne servono ${x.need})`).join(". ")}
 function stockBlockMsg(probs){
   const menuHit=probs.some(x=>!String(x.p.id).startsWith("x-")&&S.varianti.some(v=>applies(x.p,v.id)));
-  return stockTxt(probs)+". Togli dall'ordine quello che manca"+(menuHit?" (per i menù serve un menù che non comprende quella portata: il master lo crea in Listino)":"")+". Se ne hanno ancora, cucina o bar aggiungono le porzioni; altrimenti chiedi al master.";
+  return stockTxt(probs)+". Togli dall'ordine quello che manca"+(menuHit?" (per i menù serve un menù senza quel piatto: il master lo crea in Listino)":"")+". Se ne hanno ancora, cucina o bar aggiungono le porzioni; altrimenti chiedi al master.";
 }
 /* problemi di porzioni per una modifica: conta solo quello che si aggiunge rispetto all'ordine com'era */
 function stockProblemsDelta(o,rr,ss,xx){
@@ -77,7 +86,7 @@ function renderSteppers(){
   S.aspConfirm=null;$("c-create").textContent="Crea ordine";
   $("c-steppers").innerHTML=stepperHtml(S.varianti,S.qty,"data-step");
   $("c-extra-box").hidden=!S.extra.length;$("c-extra").innerHTML=extraStepsHtml(S.xqty,"data-xstep");
-  const sl=singlesList();$("c-sing-box").hidden=!sl.length;$("c-sing").innerHTML=stepperHtml(sl,S.sqty,"data-sstep");
+  const sl=singlesList();$("c-sing-box").hidden=!sl.length;$("c-sing").innerHTML=singlesHtml(S.sqty,"data-sstep");
   paintTotal("c",bill(S.qty,S.xqty,$("c-paid").checked,S.sqty),$("c-paid").checked,S.pay);
   $("c-asp-row").hidden=!$("c-asp").checked;$("c-aspmode").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.m===S.aspMode)));
   renderStock();
@@ -104,7 +113,7 @@ function renderSearch(){
   const hits=P.filter(p=>norm(p.nome).includes(q)).slice(0,8);
   box.hidden=false;
   box.innerHTML=hits.length?hits.map(p=>`<button data-pren="${esc(p.id)}" ${p.stato==="arrivata"?"disabled":""}>
-    <span><b>${esc(p.nome)}</b><div class="chips" style="margin-top:4px">${righeChips(righe(p))}</div></span>
+    <span><b>${esc(p.nome)}</b><div class="chips" style="margin-top:4px">${prenChips(p)}</div></span>
     ${p.stato==="arrivata"?`<span class="pill ready">Arrivati · n. ${esc(p.ordine)}</span>`:`<span class="pill wait">${cop(righe(p))} coperti</span>`}</button>`).join("")
     :'<div class="empty" style="padding:10px 12px">Nessuna prenotazione trovata. Puoi creare l\'ordine lo stesso.</div>';
 }
@@ -113,6 +122,7 @@ $("c-results").addEventListener("click",e=>{const b=e.target.closest("button[dat
 function selectPren(id){
   const p=S.prenMap[id];if(!p)return;
   S.selPren=id;S.qty={};righe(p).forEach(r=>{if(S.varianti.some(v=>v.id===r.id))S.qty[r.id]=r.qta});
+  S.sqty={};prenSing(p).forEach(x=>{if(singlesList().some(i=>i.id===x.id+"|a"))S.sqty[x.id+"|a"]=x.q});$("c-asp").checked=!!p.asporto;
   $("c-nome").value=p.nome||"";$("c-note").value=p.note||"";$("c-search").value="";$("c-paid").checked=false;S.stockWarn=null;
   renderSearch();renderSteppers();renderSel();$("c-msg").textContent="";
 }
@@ -188,7 +198,7 @@ $("c-fondo-save").addEventListener("click",()=>{if(!S.me||!hasRole(S.me,"master"
 async function createOrder(){
   const msg=$("c-msg");msg.className="msg err";
   const paid=$("c-paid").checked,b=bill(S.qty,S.xqty,paid,S.sqty);
-  if(!b.rr.length&&!b.ss.length&&!b.xx.length){msg.textContent="Aggiungi almeno un menù, una portata singola o un extra.";return}
+  if(!b.rr.length&&!b.ss.length&&!b.xx.length){msg.textContent="Aggiungi almeno un menù o un piatto.";return}
   if(!$("c-nome").value.trim()){msg.textContent="Scrivi il nominativo.";$("c-nome").classList.add("bad");$("c-nome").focus();return}
   let n=parseInt($("c-num").value,10);
   if(!(n>0)){msg.textContent="Scrivi un numero di biglietto valido.";return}
@@ -201,15 +211,15 @@ async function createOrder(){
     if(S.stockWarn!==key){S.stockWarn=key;msg.textContent=stockTxt(probs)+". Sei master: premi di nuovo «Crea ordine» per venderle lo stesso.";return}}
   const direct=$("c-asp").checked&&S.aspMode==="subito",ckey=JSON.stringify([S.qty,S.sqty,S.xqty,n]);
   if(direct&&S.aspConfirm!==ckey){S.aspConfirm=ckey;msg.className="msg err";
-    const what=[...b.rr.map(r=>`${r.qta} ${r.nome}`),...b.ss.map(s=>`${s.qta} ${s.nome} singolo`)].join(", ")||"solo bevande ed extra";
-    msg.textContent=`Asporto diretto: ${what} vanno subito in cucina e l'ordine non si potrà più cambiare. Controlla e premi «Conferma e manda in cucina».`;
+    const what=[...b.rr.map(r=>`${r.qta} ${r.nome}`),...b.ss.map(s=>`${s.qta} ${s.nome}`)].join(", ");
+    msg.textContent=`Asporto diretto: ${what} vanno subito in cucina e al bar e l'ordine non si potrà più cambiare. Controlla e premi «Conferma e manda in cucina».`;
     $("c-create").textContent="Conferma e manda in cucina";return}
   const auto=!S.numDirty,pren=S.selPren;
   const btn=$("c-create");btn.disabled=true;msg.className="msg";msg.textContent=S.online?"Creo l'ordine…":"Senza rete: l'ordine parte appena torna la connessione. Non chiudere la pagina.";
   const slow=setTimeout(()=>{msg.className="msg err";msg.textContent="Rete lenta: aspetto la connessione per confermare il numero. Non chiudere la pagina."},5000);
   const base={creato:Date.now(),creatoDa:myName(),creatoDaId:S.me?S.me.id:"",nome:$("c-nome").value.trim(),righe:b.rr,extra:b.xx,note:$("c-note").value.trim(),
     tavolo:"",prenotazione:pren||"",importoMenu:b.menu,importoExtra:b.ext,importo:b.tot,pagatoPrima:paid,incassato:b.due,offerta:off,ricevuto:ric>0?ric:0,metodo:toPay>0?S.pay:"",singoli:b.ss,importoSingoli:b.sing,
-    asporto:$("c-asp").checked,asportoSubito:$("c-asp").checked&&S.aspMode==="subito",portate:coursesFor(b.rr,b.ss,b.xx)};
+    asporto:$("c-asp").checked,asportoSubito:$("c-asp").checked&&S.aspMode==="subito",portate:coursesFor(b.rr,b.ss,b.xx),v:2};
   if(barX(b.xx).length)base.bar={stato:"attesa",t:Date.now()};
   if(base.asportoSubito){const now=Date.now();Object.entries(base.portate).forEach(([k,c])=>{c.stato="chiamata";c.t=now;c.da="Asporto";c.daId=S.me?S.me.id:"";const rs=repSnap(k);if(rs)c.rep=rs});if(base.bar)base.bar.stato="chiamata"}
   if(S.annMap[n]&&!auto){btn.disabled=false;clearTimeout(slow);msg.className="msg err";msg.textContent=`Il numero ${n} era di un ordine annullato. Usa ${nextNum()}.`;S.numDirty=false;prefillNum();return}
@@ -290,9 +300,9 @@ function renderFix(force){
   const c=fixCalc(o),pend=orderCourses(o).filter(x=>(x.p.stato||"attesa")==="attesa"&&!isXk(x.k));
   if(F.amt==null)$("x-fix").dataset.sugg=c.refund;
   const amt=F.amt!=null?F.amt:c.refund;
-  box.innerHTML=`<span class="label">Portate non ancora chiamate</span>
-    ${pend.length?`<div class="chips">${pend.map(x=>`<button class="tog" data-fixrm="${esc(x.k)}" aria-pressed="${!F.rm[x.k]}">${esc(x.l)}</button>`).join("")}</div><p class="hint">Tocca una portata per toglierla dall'ordine (es. dolce finito, non la vogliono).</p>`:'<div class="sub">Tutte le portate sono già state chiamate.</div>'}
-    ${c.noneCalled&&(righe(o).length||singoli(o).length)?`<span class="label">Coperti (nessuna portata ancora chiamata)</span>${fixStep(righe(o),F.q,"data-fq",r=>r.id)}${fixStep(singoli(o).map(s=>({...s,nome:s.nome+" singolo"})),F.sq,"data-fsq",s=>s.pid+"|"+s.k)}`:""}
+  box.innerHTML=`<span class="label">Piatti non ancora chiamati</span>
+    ${pend.length?`<div class="chips">${pend.map(x=>`<button class="tog" data-fixrm="${esc(x.k)}" aria-pressed="${!F.rm[x.k]}">${esc(x.l)}</button>`).join("")}</div><p class="hint">Tocca un piatto per toglierlo dall'ordine (es. dolce finito, non lo vogliono).</p>`:'<div class="sub">Tutti i piatti sono già stati chiamati.</div>'}
+    ${c.noneCalled&&(righe(o).length||singoli(o).length)?`<span class="label">Coperti (nessun piatto ancora chiamato)</span>${fixStep(righe(o),F.q,"data-fq",r=>r.id)}${fixStep(singoli(o).map(s=>({...s,nome:s.nome+" singolo"})),F.sq,"data-fsq",s=>s.pid+"|"+s.k)}`:""}
     ${extras(o).length?`<span class="label">Bevande ed extra</span>${fixStep(extras(o),F.xq,"data-fxq",x=>x.id)}`:""}
     <div class="sub">${c.desc.length?esc(c.desc.join(" · ")):"Scegli cosa togliere."}</div>
     <div class="payrow"><label class="label" for="x-fixamt">Da restituire (${PAY_LBL[o.metodo]||"contanti"})</label><input type="text" id="x-fixamt" inputmode="decimal" class="pricein" value="${amt?amt.toFixed(2).replace(".",","):""}" placeholder="0,00 €"></div>
@@ -311,7 +321,7 @@ async function saveFix(){
   const c=fixCalc(o),late=orderCourses(o).filter(x=>F.rm[x.k]&&(x.p.stato||"attesa")!=="attesa");
   if(late.length){m.textContent=`${late.map(x=>x.l).join(", ")}: è appena stato chiamato, non si può più togliere.`;F.rm={};renderFix(true);return}
   const reduced=Object.keys(F.q).some(k=>F.q[k]<(righe(o).find(r=>r.id===k)||{}).qta)||Object.keys(F.sq).length&&singoli(o).some(s=>F.sq[s.pid+"|"+s.k]!=null&&F.sq[s.pid+"|"+s.k]<s.qta);
-  if(reduced&&!c.noneCalled){m.textContent="Nel frattempo è stata chiamata una portata: i coperti non si possono più togliere.";F.q={};F.sq={};renderFix(true);return}
+  if(reduced&&!c.noneCalled){m.textContent="Nel frattempo è stato chiamato un piatto: i coperti non si possono più togliere.";F.q={};F.sq={};renderFix(true);return}
   if(!c.rr.length&&!c.ss.length&&!c.xx.length){m.textContent="Così non resta niente: per togliere tutto serve «Annulla ordine» (solo il master).";return}
   const amt=r2(Math.max(0,Math.min(F.amt!=null?F.amt:c.refund,o.incassato||0)));
   const upd={righe:c.rr,singoli:c.ss,extra:c.xx,importoMenu:importo(c.rr),importoSingoli:importo(c.ss),importoExtra:importo(c.xx)};
@@ -329,7 +339,7 @@ async function saveFix(){
 function renderEditSteppers(){
   $("x-steppers").innerHTML=stepperHtml(S.varianti,S.eqty,"data-estep");
   $("x-extra-box").hidden=!S.extra.length;$("x-extra").innerHTML=extraStepsHtml(S.exqty,"data-exstep");
-  const sl=singlesList();$("x-sing-box").hidden=!sl.length;$("x-sing").innerHTML=stepperHtml(sl,S.esqty,"data-esstep");
+  const sl=singlesList();$("x-sing-box").hidden=!sl.length;$("x-sing").innerHTML=singlesHtml(S.esqty,"data-esstep");
   paintTotal("x",bill(S.eqty,S.exqty,$("x-paid").checked,S.esqty),$("x-paid").checked,S.xpay);
 }
 $("x-steppers").addEventListener("click",e=>{const b=e.target.closest("button[data-estep]");if(!b)return;

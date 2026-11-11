@@ -75,7 +75,7 @@
 
   <!-- ACCESSO -->
   <section id="v-login" class="gate" hidden>
-    <div class="sub ver" style="order:99">Versione 35</div>
+    <div class="sub ver" style="order:99">Versione 36</div>
     <div class="stack">
       <div class="panel">
         <h2>Chi sei?</h2>
@@ -122,7 +122,7 @@
         <div class="sel" id="c-sel" hidden><span id="c-sel-t"></span><button class="btn small" id="c-sel-x">Togli</button></div>
         <input type="text" id="c-nome" placeholder="Nominativo *" aria-label="Nominativo (obbligatorio)" required>
         <div id="c-steppers"></div>
-        <details class="singles" id="c-sing-box" hidden><summary>Portate singole</summary><div id="c-sing"></div></details>
+        <div class="stack" id="c-sing-box" hidden><span class="label">Piatti da soli</span><div id="c-sing"></div></div>
         <div class="stack" id="c-extra-box" hidden><span class="label">Bevande ed extra</span><div id="c-extra"></div></div>
         <div class="stock" id="c-stock" hidden></div>
         <textarea id="c-note" placeholder="Note per la cucina (allergie, intolleranze…)" aria-label="Note per la cucina"></textarea>
@@ -148,7 +148,7 @@
           <div class="stack" id="x-body">
           <div class="stack"><label class="label" for="x-nome">Nominativo</label><input type="text" id="x-nome"></div>
           <div id="x-steppers"></div>
-          <details class="singles" id="x-sing-box" hidden><summary>Portate singole</summary><div id="x-sing"></div></details>
+          <div class="stack" id="x-sing-box" hidden><span class="label">Piatti da soli</span><div id="x-sing"></div></div>
           <label class="check"><input type="checkbox" id="x-paid"> Menù già pagato in anticipo</label>
           <div class="stack" id="x-extra-box" hidden><span class="label">Bevande ed extra</span><div id="x-extra"></div></div>
           <div class="totline" id="x-total" hidden></div>
@@ -218,7 +218,7 @@
       <button class="btn" id="k-sound" aria-pressed="false">Suono: spento</button>
     </div>
     <div class="kq" id="k-queue"></div>
-    <div class="section-head"><h2>Pronte, in attesa del cameriere</h2></div>
+    <div class="section-head"><h2>Pronti, in attesa del cameriere</h2></div>
     <div class="panel"><div class="list" id="k-ready"></div></div>
     <details class="panel bstock" id="k-stock-box"><summary>Porzioni</summary>
       <div id="k-stock"></div>
@@ -272,7 +272,7 @@
           <button class="btn primary big" id="u-add">Aggiungi</button>
         </div>
         <div class="msg" id="u-msg"></div>
-        <div class="sub ver">Versione 35</div>
+        <div class="sub ver">Versione 36</div>
       </div>
     </div>
   </section>
@@ -292,7 +292,7 @@
     <div class="kq" id="b-queue"></div>
     <div class="section-head"><h2>Pronte</h2></div>
     <div class="panel"><div class="list" id="b-ready"></div></div>
-    <details class="panel bstock" id="b-stock-box"><summary>Scorte</summary>
+    <details class="panel bstock" id="b-stock-box"><summary>Porzioni</summary>
       <div id="b-stock"></div>
       <div class="msg" id="b-stock-msg"></div>
     </details>
@@ -304,41 +304,31 @@
       <div class="stack">
         <div class="panel">
           <h2>Menù</h2>
-          <p class="hint">Ogni menù ha un prezzo e le portate che comprende: tocca una portata per toglierla o rimetterla. I prezzi si salvano da soli appena esci dal campo e valgono per gli ordini successivi.</p>
+          <p class="hint">Ogni menù è fisso: un prezzo e i piatti compresi (uno per coperto). Tocca un piatto per metterlo o toglierlo. Prezzi e nomi si salvano appena esci dal campo e valgono per gli ordini successivi.</p>
           <div id="l-var"></div>
           <button class="btn" id="l-saveprices">Salva prezzi menù</button>
           <span class="label">Componi un nuovo menù</span>
-          <div class="row"><input type="text" id="l-newvar" placeholder="Es. Menù senza secondo"><input type="text" id="l-newprice" inputmode="decimal" placeholder="€" class="pricein"></div>
+          <div class="row"><input type="text" id="l-newvar" placeholder="Es. Menù senza bresaola"><input type="text" id="l-newprice" inputmode="decimal" placeholder="€" class="pricein"></div>
           <div class="chips" id="l-newports"></div>
           <button class="btn primary" id="l-addvar">Aggiungi menù</button>
           <div class="msg" id="l-vmsg"></div>
         </div>
         <div class="panel">
-          <h2>Portate e prezzi singoli</h2>
-          <p class="hint">Il prezzo singolo serve per vendere la portata da sola, anche da asporto. Lascia vuoto se non si vende singola. Con ↑ ↓ scegli l'ordine suggerito ai camerieri: possono comunque chiamare le portate nell'ordine che vogliono.</p>
+          <h2>Piatti</h2>
+          <p class="hint">Ogni piatto ha <b>un reparto</b> che lo prepara (anche il Bar: acqua, caffè, vino…). <b>Prezzo da solo</b>: per venderlo fuori dal menù (vuoto = non si vende da solo). Il <b>gruppo</b> divide i piatti da soli in cassa (es. Bevande, Dolci). Con ↑ ↓ scegli l'ordine in cassa e sulla scheda del cameriere.</p>
           <div id="l-port"></div>
-          <button class="btn" id="l-saveport">Salva prezzi portate</button>
-          <span class="label">Aggiungi portata</span>
-          <div class="row"><input type="text" id="l-newport" placeholder="Es. Contorno"><button class="btn" id="l-addport">Aggiungi</button></div>
+          <span class="label">Aggiungi piatto</span>
+          <div class="row"><input type="text" id="l-newport" placeholder="Es. Pizzoccheri"><select id="l-newprep" aria-label="Reparto" style="width:auto"></select><input type="text" id="l-newpprice" inputmode="decimal" placeholder="€ da solo" class="pricein"><button class="btn" id="l-addport">Aggiungi</button></div>
           <div class="msg" id="l-pmsg"></div>
         </div>
       </div>
       <div class="stack">
         <div class="panel">
-          <h2>Bevande ed extra</h2>
-          <p class="hint">Si aggiungono a qualsiasi ordine in cassa. Il <b>gruppo</b> serve a dividerli in cassa (es. Bevande, Dolci). «Lo prepara»: il <b>Bar</b>, oppure un reparto della cucina (es. una porzione di patatine al Fritto): in quel caso il cameriere lo chiama come una portata e lo vede il reparto.</p>
-          <div id="l-extra"></div>
-          <button class="btn" id="l-saveextra">Salva extra</button>
-          <span class="label">Aggiungi extra</span>
-          <div class="row"><input type="text" id="l-newextra" placeholder="Es. Acqua 1 l"><input type="text" id="l-newextraprice" inputmode="decimal" placeholder="€" class="pricein"><button class="btn" id="l-addextra">Aggiungi</button></div>
-          <div class="msg" id="l-xmsg"></div>
-        </div>
-        <div class="panel">
-          <h2>Reparti cucina</h2>
-          <p class="hint">Ogni cuoco con un reparto vede solo le chiamate del suo reparto. Tocca le portate che il reparto prepara e, se vuoi, scrivi il piatto (es. «Patatine»). Una portata con più reparti diventa pronta quando hanno finito tutti.</p>
+          <h2>Reparti</h2>
+          <p class="hint">Ogni cuoco con un reparto (in Persone) vede solo le chiamate dei piatti del suo reparto. I reparti segnati <b>«È un bar»</b> li vede la pagina Bar, non la cucina né l'uscita.</p>
           <div id="l-rep"></div>
           <span class="label">Aggiungi reparto</span>
-          <div class="row"><input type="text" id="l-newrep" placeholder="Es. Fritto"><button class="btn" id="l-addrep">Aggiungi</button></div>
+          <div class="row"><input type="text" id="l-newrep" placeholder="Es. Fritto"><label class="check"><input type="checkbox" id="l-newrepbar"> È un bar</label><button class="btn" id="l-addrep">Aggiungi</button></div>
           <div class="msg" id="l-rmsg"></div>
         </div>
         <div class="panel">
@@ -375,6 +365,7 @@
           <div class="file" id="i-drop">
             <span style="font-weight:700">Importa l'Excel delle prenotazioni</span>
             <span class="hint">File .xlsx, .xls o .csv. Puoi ricaricarlo aggiornato: le prenotazioni con lo stesso nominativo vengono aggiornate, non duplicate.</span>
+            <button class="btn small" id="i-template" type="button" style="align-self:flex-start">Scarica il modello Excel</button>
             <input type="file" id="i-file" accept=".xlsx,.xls,.csv,.ods">
           </div>
           <div class="stack" id="i-map-wrap" hidden>

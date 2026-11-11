@@ -64,7 +64,7 @@ I file in `js/` sono numerati: il browser li carica in quell'ordine.
 | `06-avvisi.js` | Suoni, vibrazioni e avvisi |
 | `07-persone.js` | Persone, file, ingresso camerieri |
 | `08-riepilogo.js` | Riepilogo, tempi, chiusura cassa |
-| `09-listino.js` | Menù, portate, prezzi, reparti |
+| `09-listino.js` | Reparti, piatti, menù fissi, prezzi |
 | `10-evento.js` | Prenotazioni, Excel, nuovo evento, archivio |
 | `11-avvio.js` | Aggiornamento delle schermate e collegamento a Firebase |
 
@@ -163,7 +163,7 @@ Poi, con calma, sistemate il codice: in GitHub Desktop → **History** → tasto
 
 ## 6. La serata simulata
 
-È una pagina che apre insieme tutti i «telefoni» (casse, cucina, uscita, bar, camerieri) e fa girare una serata intera su un **database finto**, controllando che i conti tornino, che i numeri non si ripetano, che nessuna portata resti bloccata, eccetera.
+È una pagina che apre insieme tutti i «telefoni» (casse, cucina, uscita, bar, camerieri) e fa girare una serata intera su un **database finto**, controllando che i conti tornino, che i numeri non si ripetano, che nessun piatto resti bloccato, eccetera.
 
 - **Per lanciarla:** doppio clic su `test\AVVIA-SERATA-SIMULATA.bat`. Si apre il browser: in alto scegli quanti ordini, casse, camerieri e file, poi **Avvia la serata**.
 - «Serata n.» cambia la sequenza casuale: con lo stesso numero la serata si ripete identica (utile per rifare la stessa prova dopo una correzione).
@@ -177,7 +177,7 @@ Non prova la rete vera, i telefoni veri e due persone che premono nello stesso i
 ## 7. Prima di ogni serata: lista di controllo
 
 - [ ] La versione in basso nella schermata di accesso è quella giusta su tutti i telefoni
-- [ ] Listino e prezzi controllati; reparti assegnati alle portate
+- [ ] Listino controllato: ogni piatto nel suo reparto, menù e prezzi giusti, il Bar segnato «È un bar»
 - [ ] Porzioni impostate in Cucina → Porzioni (vanno rimesse a ogni nuovo evento)
 - [ ] Persone e PIN pronti; reparti assegnati ai cuochi; uscita piatti
 - [ ] Prenotazioni importate

@@ -346,3 +346,24 @@ input.bad{border-color:var(--danger);box-shadow:0 0 0 2px var(--danger-bg)}
 .xf{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
 .xf label{display:flex;flex-direction:column;gap:4px;min-width:0}
 .xf input,.xf select{width:100%;min-width:0}
+/* v36: scheda cameriere con i reparti come linguette */
+.wrep{display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);border-radius:var(--r);padding:8px}
+.rtabs{display:flex;flex-wrap:wrap;gap:6px}
+.rtabs button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:8px 14px;font-weight:700;cursor:pointer;min-height:40px;display:inline-flex;align-items:center;gap:6px}
+.rtabs button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.rdot{width:9px;height:9px;border-radius:50%;background:var(--call);display:inline-block}
+.rtabs button[aria-pressed="true"] .rdot{background:var(--accent-ink)}
+.wrows{display:flex;flex-direction:column}
+.wpiatto{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 2px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.wpiatto:last-child{border-bottom:0}
+.wpiatto .wpn{flex:1 1 120px;min-width:0}
+.wpiatto .wpn b{display:inline-block;min-width:1.6em}
+.wpiatto.servita .wpn{opacity:.55}
+.wpiatto .row{gap:6px;align-items:center}
+/* cucina e bar: più piatti nella stessa scheda */
+ul.kitems li{display:flex;align-items:center;gap:8px}
+ul.kitems li .kin{flex:1;font-weight:700}
+.lname{flex:1 1 140px;min-width:0;font-weight:700}
+.vrow .top .tog{flex:0 0 auto}
+#l-port .xedit .top{flex-wrap:wrap}
+#l-port .xedit .top .lname{flex:1 1 150px}
