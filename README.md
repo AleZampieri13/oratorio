@@ -47,7 +47,7 @@ La serata simulata non prova la rete vera né i telefoni veri: prima di una sera
 
 ## Pubblicare (Firebase Hosting)
 
-L'app è su **https://giovanichef.web.app** (progetto Firebase `giovanichef-65d46`, account personale dell'oratorio).
+L'app è su **https://giovanichef.web.app** (progetto Firebase `giovanichef-65d46`, account dell'oratorio (oratoriopare)).
 Dopo una modifica, dal terminale nella cartella del progetto:
 
 ```

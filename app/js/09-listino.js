@@ -9,6 +9,9 @@ function normL(L){
   const reparti=toArr(L&&L.reparti).filter(r=>r&&r.id&&r.nome).map(r=>{const o={id:r.id,nome:r.nome};if(r.bar)o.bar=true;if(r.colore)o.colore=r.colore;return o});
   const piatti=toArr(L&&L.piatti).filter(p=>p&&p.id&&p.nome).map(p=>{const o={id:p.id,nome:p.nome,rep:reparti.some(r=>r.id===p.rep)?p.rep:"",prezzo:p.prezzo||0,prezzoBimbi:p.prezzoBimbi||0};
     if(p.colore)o.colore=p.colore;if(p.gruppo)o.gruppo=p.gruppo;return o});
+  /* l'ordine conta per reparto (↑↓ sui reparti): i piatti seguono l'ordine del loro reparto */
+  const ri=id=>{const i=reparti.findIndex(r=>r.id===id);return i<0?999:i};
+  piatti.forEach((p,i)=>{p._i=i});piatti.sort((x,y)=>ri(x.rep)-ri(y.rep)||x._i-y._i);piatti.forEach(p=>{delete p._i});
   const menu=toArr(L&&L.menu).filter(m=>m&&m.id&&m.nome).map(m=>({id:m.id,nome:m.nome,prezzo:m.prezzo||0,piatti:toArr(m.piatti).filter(id=>piatti.some(p=>p.id===id))}));
   return {reparti,piatti,menu};
 }
@@ -30,6 +33,7 @@ function convertV35(d){
       if(!i&&p.colore)it.colore=p.colore;piatti.push(it);byPort[p.id].push(it.id)})});
   const barId=need("Bar",true);
   toArr(d.extra).forEach(x=>{if(!x||!x.id)return;const it={id:"e-"+x.id,nome:x.nome,rep:x.rep&&ok(x.rep)?x.rep:barId,prezzo:x.prezzo||0,prezzoBimbi:0};if(x.gruppo)it.gruppo=x.gruppo;piatti.push(it)});
+  reps.sort((x,y)=>(!!x.bar)-(!!y.bar));
   const menu=vars.filter(v=>v&&v.id).map(v=>({id:v.id,nome:v.nome,prezzo:v.prezzo||0,
     piatti:ports.filter(p=>p&&p.id&&(!p.menu||toArr(p.menu).includes(v.id))).flatMap(p=>byPort[p.id]||[])}));
   return normL({reparti:reps,piatti,menu});
@@ -66,10 +70,9 @@ function renderListinoInner(){
     :'<div class="empty">Nessun menù: in cassa si vendono solo i piatti da soli.</div>';
   $("l-newports").innerHTML=L.piatti.map(p=>`<button class="tog" data-np="${esc(p.id)}" aria-pressed="${S.newMenu.has(p.id)}">${esc(p.nome)}</button>`).join("");
   /* piatti */
-  $("l-port").innerHTML=L.piatti.length?L.piatti.map((p,i)=>`<div class="xedit">
+  $("l-port").innerHTML=L.piatti.length?L.piatti.map((p,i)=>`${i===0||L.piatti[i-1].rep!==p.rep?`<div class="lrephead" style="border-color:${repColor(p.rep)}">${esc(repNome(p.rep)||"Senza reparto")}</div>`:""}<div class="xedit">
       <div class="top"><span class="rcolbar" style="background:${repColor(p.rep)}" title="Colore del reparto ${esc(repNome(p.rep))}"></span>
         <input type="text" class="lname" id="lpn-${esc(p.id)}" value="${esc(p.nome)}" aria-label="Nome del piatto">
-        <button class="btn small" data-up="${i}" ${i?"":"disabled"} aria-label="Sposta su">↑</button><button class="btn small" data-down="${i}" ${i<L.piatti.length-1?"":"disabled"} aria-label="Sposta giù">↓</button>
         <button class="btn small danger" data-delp="${esc(p.id)}">Rimuovi</button></div>
       <div class="xf"><label><span class="label">Reparto</span><select id="lpr-${esc(p.id)}">${repOpts(p.rep)}</select></label>
         <label><span class="label">Prezzo da solo</span><input type="text" inputmode="decimal" id="lps-${esc(p.id)}" value="${euro(p.prezzo)}" placeholder="non si vende"></label>
@@ -77,9 +80,10 @@ function renderListinoInner(){
     :'<div class="empty">Nessun piatto. Aggiungine uno qui sotto.</div>';
   $("l-newprep").innerHTML=repOpts($("l-newprep").value||(L.reparti.find(r=>!r.bar)||L.reparti[0]||{}).id);
   /* reparti */
-  $("l-rep").innerHTML=L.reparti.length?L.reparti.map(r=>{const n=L.piatti.filter(p=>p.rep===r.id);
+  $("l-rep").innerHTML=L.reparti.length?L.reparti.map((r,i)=>{const n=L.piatti.filter(p=>p.rep===r.id);
     return `<div class="vrow"><div class="top"><input type="color" class="pcol" data-rcol="${esc(r.id)}" value="${repColor(r.id)}" aria-label="Colore del reparto ${esc(r.nome)}"><input type="text" class="lname" id="lrn-${esc(r.id)}" value="${esc(r.nome)}" aria-label="Nome del reparto">
       <button class="tog" data-repbar="${esc(r.id)}" aria-pressed="${!!r.bar}" title="Acceso: lo vede la pagina Bar">Bar</button>
+      <button class="btn small" data-rup="${i}" ${i?"":"disabled"} aria-label="Sposta su">↑</button><button class="btn small" data-rdown="${i}" ${i<L.reparti.length-1?"":"disabled"} aria-label="Sposta giù">↓</button>
       <button class="btn danger small" data-delrep="${esc(r.id)}">Rimuovi</button></div>
       <div class="sub">${n.length?n.map(p=>esc(p.nome)).join(", "):"Nessun piatto"}</div></div>`}).join("")
     :'<div class="empty">Nessun reparto: aggiungine almeno uno (es. Cucina, Bar).</div>';
@@ -121,8 +125,6 @@ $("l-addvar").addEventListener("click",async()=>{const L=S.L;
 
 /* ---------- piatti ---------- */
 $("l-port").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const L=S.L,list=[...L.piatti];
-  if(b.dataset.up){const i=+b.dataset.up;[list[i-1],list[i]]=[list[i],list[i-1]];saveL("piatti",list,"l-pmsg","Ordine salvato.");return}
-  if(b.dataset.down){const i=+b.dataset.down;[list[i+1],list[i]]=[list[i],list[i+1]];saveL("piatti",list,"l-pmsg","Ordine salvato.");return}
   if(b.dataset.delp){const p=L.piatti.find(x=>x.id===b.dataset.delp);if(!p)return;
     const only=L.menu.filter(m=>m.piatti.length===1&&m.piatti[0]===p.id);
     if(only.length){emsg("l-pmsg",`${p.nome} è l'unico piatto di ${only.map(m=>m.nome).join(", ")}: togli prima il menù.`);return}
@@ -157,6 +159,8 @@ $("l-addrep").addEventListener("click",()=>{const L=S.L,nome=$("l-newrep").value
   saveL("reparti",[...L.reparti,r],"l-rmsg",`Reparto ${nome} aggiunto.`,"Nuovo reparto "+nome)});
 $("l-newrep").addEventListener("keydown",e=>{if(e.key==="Enter")$("l-addrep").click()});
 $("l-rep").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const L=S.L;
+  if(b.dataset.rup||b.dataset.rdown){const list=[...L.reparti],i=+(b.dataset.rup||b.dataset.rdown),j=b.dataset.rup?i-1:i+1;if(j<0||j>=list.length)return;
+    [list[i],list[j]]=[list[j],list[i]];saveL("reparti",list,"l-rmsg","Ordine dei reparti salvato.",`Ordine dei reparti: ${list.map(r=>r.nome).join(", ")}`);return}
   if(b.dataset.repbar){const r=L.reparti.find(x=>x.id===b.dataset.repbar);if(!r)return;
     saveL("reparti",L.reparti.map(x=>{if(x.id!==r.id)return x;const y={...x};if(r.bar)delete y.bar;else y.bar=true;return y}),"l-rmsg",
       r.bar?`${r.nome}: ora lo vede la cucina.`:`${r.nome}: ora lo vede la pagina Bar.`,`Reparto ${r.nome}: ${r.bar?"cucina":"bar"}`);return}

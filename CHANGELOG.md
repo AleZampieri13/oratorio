@@ -1,6 +1,7 @@
 # Versioni
 
 ## 36
+- **Ordine per reparto:** le frecce ↑↓ sono sui reparti (linguette del cameriere, cassa, listino); i piatti seguono il loro reparto.
 - **Bar per reparto:** se ci sono più reparti «Bar» (es. Bar e Caffetteria), nella pagina Bar si filtra per reparto (Tutti / …). In Persone si può assegnare un reparto anche a chi fa il bar: vede solo quello.
 - **Accesso solo con il link o il QR:** link e QR contengono un codice; senza, il telefono vede «Telefono non autorizzato» e il database non risponde. In Evento: «Cambia codice di accesso» (poi tutti riaprono il link nuovo).
 - Pubblicata su Firebase Hosting: **giovanichef.web.app**.
