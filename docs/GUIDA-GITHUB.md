@@ -177,7 +177,7 @@ Non prova la rete vera, i telefoni veri e due persone che premono nello stesso i
 ## 7. Prima di ogni serata: lista di controllo
 
 - [ ] La versione in basso nella schermata di accesso è quella giusta su tutti i telefoni
-- [ ] Listino controllato: ogni piatto nel suo reparto, menù e prezzi giusti, il Bar segnato «È un bar»
+- [ ] Listino controllato: ogni piatto nel suo reparto, menù e prezzi giusti, il Bar segnato «Bar»
 - [ ] Porzioni impostate in Cucina → Porzioni (vanno rimesse a ogni nuovo evento)
 - [ ] Persone e PIN pronti; reparti assegnati ai cuochi; uscita piatti
 - [ ] Prenotazioni importate

@@ -81,7 +81,7 @@ function renderListinoInner(){
   /* reparti */
   $("l-rep").innerHTML=L.reparti.length?L.reparti.map(r=>{const n=L.piatti.filter(p=>p.rep===r.id);
     return `<div class="vrow"><div class="top"><input type="text" class="lname" id="lrn-${esc(r.id)}" value="${esc(r.nome)}" aria-label="Nome del reparto">
-      <button class="tog" data-repbar="${esc(r.id)}" aria-pressed="${!!r.bar}">È un bar</button>
+      <button class="tog" data-repbar="${esc(r.id)}" aria-pressed="${!!r.bar}" title="Acceso: lo vede la pagina Bar">Bar</button>
       <button class="btn danger small" data-delrep="${esc(r.id)}">Rimuovi</button></div>
       <div class="sub">${n.length?n.map(p=>esc(p.nome)).join(", "):"Nessun piatto"}</div></div>`}).join("")
     :'<div class="empty">Nessun reparto: aggiungine almeno uno (es. Cucina, Bar).</div>';

@@ -4,7 +4,7 @@ function barWho(o){return o.asportoSubito?"Asporto":ownerId(o)?nameOf(ownerId(o)
 function isBarCourse(o,k){const br=barReps();return courseReps(o,k).some(r=>br.includes(r))}
 function renderBar(){
   const sc=barReps();
-  if(!sc.length){$("b-sum").innerHTML="";$("b-queue").innerHTML='<div class="panel"><div class="empty">Nessun reparto bar: il master ne segna uno in Listino → Reparti («È un bar»).</div></div>';$("b-ready").innerHTML="";renderGive();return}
+  if(!sc.length){$("b-sum").innerHTML="";$("b-queue").innerHTML='<div class="panel"><div class="empty">Nessun reparto bar: il master ne segna uno in Listino → Reparti («Bar»).</div></div>';$("b-ready").innerHTML="";renderGive();return}
   $("b-sum").className="ksum";
   renderRepView(sc,{sum:"b-sum",queue:"b-queue",ready:"b-ready"});
   renderGive();
