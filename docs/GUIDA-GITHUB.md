@@ -1,24 +1,15 @@
-# Guida: GitHub e Netlify per Ordini Oratorio
+# Guida: GitHub e Firebase per Ordini Oratorio
 
 Questa guida è per chi non ha mai usato GitHub. Non serve scrivere comandi: si usa **GitHub Desktop**, un programma con le finestre.
 
 ---
 
-## 1. A cosa serve
+## 1. Come funziona oggi
 
-Oggi l'app si aggiorna così: zip → estrai → trascini la cartella su Netlify. Funziona, ma:
-- non resta traccia di cosa è cambiato tra una versione e l'altra;
-- se una versione nuova ha un problema, tornare indietro è scomodo;
-- per provare una modifica bisogna pubblicarla sul sito vero.
-
-Con GitHub:
-
-| Prima | Dopo |
-|---|---|
-| Zip in Download | Tutte le versioni salvate in un posto solo, con data e descrizione |
-| Trascini la cartella su Netlify | Premi «Push» e Netlify pubblica da solo in circa un minuto |
-| Per tornare indietro cerchi lo zip vecchio | Un clic su Netlify ripubblica la versione di prima |
-| Le prove si fanno sul sito vero | Ogni prova ha il suo link separato, il sito vero non cambia |
+- **Il sito** è su **https://giovanichef.web.app** (Firebase Hosting, progetto `giovanichef-65d46`, account dell'oratorio oratoriopare@gmail.com).
+- **Il codice** è su GitHub (repository privato): lì resta la storia di tutte le versioni.
+- **Pubblicare** = un comando dal terminale (lo lancia Claude, vedi punto 4). Mandare il codice su GitHub **non** pubblica niente da solo.
+- **Accesso:** il sito si apre solo con il link o il QR che contengono il codice di accesso.
 
 **Parole che incontrerai**
 
@@ -28,8 +19,7 @@ Con GitHub:
 | Commit | Una «fotografia» delle modifiche, con una frase che dice cosa è cambiato |
 | Push | Mandare i commit dal tuo computer a GitHub |
 | Branch (ramo) | Una copia di lavoro separata, per provare senza toccare la versione vera. Quella vera si chiama `main` |
-| Deploy | Netlify che mette online una versione |
-| Deploy Preview / Branch deploy | Un link di prova che Netlify crea per un ramo |
+| Deploy | Pubblicare una versione su giovanichef.web.app |
 
 ---
 
@@ -48,7 +38,8 @@ ordini-oratorio/
 ├── docs/                ← questa guida
 ├── README.md            ← descrizione del progetto
 ├── CHANGELOG.md         ← cosa è cambiato in ogni versione
-└── netlify.toml         ← dice a Netlify di pubblicare la cartella app/
+├── firebase.json        ← dice a Firebase di pubblicare la cartella app/
+└── database.rules.json  ← regole del database (chi può leggere e scrivere)
 ```
 
 I file in `js/` sono numerati: il browser li carica in quell'ordine.
@@ -60,7 +51,7 @@ I file in `js/` sono numerati: il browser li carica in quell'ordine.
 | `02-cassa.js` | Nuovo ordine, modifica, rettifica, annullo |
 | `03-camerieri.js` | Clienti del cameriere, chiamate, consegne |
 | `04-cucina.js` | Cucina con reparti e uscita piatti |
-| `05-bar.js` | Bar e scorte bevande |
+| `05-bar.js` | Bar per reparto e consegna al banco |
 | `06-avvisi.js` | Suoni, vibrazioni e avvisi |
 | `07-persone.js` | Persone, file, ingresso camerieri |
 | `08-riepilogo.js` | Riepilogo, tempi, chiusura cassa |
@@ -89,61 +80,38 @@ I file in `js/` sono numerati: il browser li carica in quell'ordine.
 3. **Lascia spuntato «Keep this code private»**: il codice contiene il collegamento al vostro Firebase, non deve essere pubblico.
 4. **Publish repository**. Ora su github.com trovi il progetto.
 
-### 3.4 Collega Netlify a GitHub
-1. Vai su **app.netlify.com** e apri il sito **giovanichef**.
-2. **Site configuration → Build & deploy → Continuous deployment → Link repository**.
-3. Scegli **GitHub**, autorizza Netlify, e scegli il repository `ordini-oratorio`.
-4. Impostazioni:
-   - **Branch to deploy:** `main`
-   - **Base directory:** vuoto
-   - **Build command:** vuoto
-   - **Publish directory:** `app` (è già scritto nel file `netlify.toml`, Netlify lo legge da solo)
-5. **Deploy**. Dopo un minuto apri giovanichef.netlify.app: in basso nella schermata di accesso deve esserci la versione nuova.
-
-> Da questo momento **non trascinare più cartelle** su Netlify: pubblica tutto quello che arriva su `main`.
-
-### 3.5 (Consigliato) Link di prova per ogni ramo
-In Netlify: **Site configuration → Build & deploy → Branches and deploy contexts**:
-- **Deploy Previews:** attivo
-- **Branch deploys:** «All»
-
-Così ogni ramo ha il suo indirizzo, tipo `prova-tavoli--giovanichef.netlify.app`.
-
-### 3.6 (Consigliato) Un Firebase di prova
-I link di prova, se non fai niente, usano **lo stesso database della serata vera**. Per provare senza rischi:
-1. Su **console.firebase.google.com** crea un secondo progetto, es. `giovanichef-prova`, e configuralo come il primo (Authentication → Anonimo; Realtime Database in Europa; stesse regole).
-2. Copia il suo blocco `firebaseConfig` (Impostazioni progetto → Le tue app).
-3. Incollalo in `app/js/config.js` al posto di `var CONFIG_PROVA = null;` (oppure chiedi a Claude di farlo).
-
-Da quel momento:
-- **giovanichef.netlify.app** → database vero
-- **qualsiasi altro indirizzo** (link di prova, computer) → database di prova, e il titolo della pagina comincia con «PROVA»
+### 3.4 Firebase sul computer
+Lo strumento di Firebase si avvia con `npx` e serve l'accesso con l'account dell'oratorio (già fatto il 11/11/2026). Se un giorno chiede di nuovo l'accesso:
+```
+npx.cmd -y firebase-tools@15.35.0 login:add
+```
+e scegli **oratoriopare@gmail.com** (non l'account della ditta).
 
 ---
 
 ## 4. Il lavoro di tutti i giorni
 
-### 4.1 Una modifica piccola, pubblicata subito
-1. La modifica viene fatta nella cartella (da te o da Claude).
-2. Apri GitHub Desktop: a sinistra vedi i file cambiati, a destra cosa è cambiato (rosso = tolto, verde = aggiunto).
-3. In basso a sinistra scrivi una frase chiara nel **Summary**, es. `Cassa: il resto si vede più grande`.
-4. **Commit to main**.
-5. **Push origin** (in alto).
-6. Dopo circa un minuto Netlify pubblica. Controlla il numero di versione in basso nella schermata di accesso.
+### 4.1 Pubblicare una modifica
+1. La modifica viene fatta nella cartella (da Claude o da te) e provata con la serata simulata.
+2. Commit e Push su GitHub (GitHub Desktop: **Commit to main**, poi **Push origin**), così resta la storia.
+3. Pubblicazione, dal terminale nella cartella del progetto:
+```
+npx.cmd -y firebase-tools@15.35.0 deploy --only hosting --project giovanichef-65d46 --account oratoriopare@gmail.com
+```
+   Se sono cambiate anche le regole del database, al posto di `hosting` scrivi `hosting,database`.
+4. Controlla su giovanichef.web.app che sia uscita la versione nuova (ricarica la pagina).
 
-### 4.2 Una modifica da provare prima
-1. In GitHub Desktop: **Current branch → New branch**, nome tipo `prova-uscita-piatti`.
-2. Fai le modifiche, poi **Commit to prova-uscita-piatti** e **Publish branch**.
-3. Netlify crea il link di prova (lo trovi in Netlify → Deploys). Provate con i telefoni.
-4. Se va bene: su github.com apri il repository → **Compare & pull request** → **Create pull request** → **Merge pull request**. Netlify pubblica sul sito vero.
-5. Se non va bene: in GitHub Desktop torna su `main`; il ramo si può cancellare (Branch → Delete).
+### 4.2 Tornare indietro (es. durante una serata)
+**Il modo più veloce:** console.firebase.google.com → progetto **giovanichef-65d46** → **Hosting** → sito **giovanichef** → **Cronologia delle release** → sulla versione che funzionava: **⋮ → Ripristina**. Il sito torna subito a quella versione.
 
-### 4.3 Tornare indietro (es. durante una serata)
-**Il modo più veloce (10 secondi):** Netlify → **Deploys** → clicca una versione precedente che funzionava → **Publish deploy**. Il sito torna subito a quella versione.
+Poi, con calma, sistemate il codice: in GitHub Desktop → **History** → tasto destro sul commit sbagliato → **Revert changes in commit** → Push, e ripubblicate.
 
-Poi, con calma, sistemate il codice: in GitHub Desktop → **History** → tasto destro sul commit sbagliato → **Revert changes in commit** → Push.
-
-> Ricorda: dopo un «Publish deploy» manuale, il prossimo Push su `main` ripubblica l'ultima versione del codice.
+### 4.3 Copia di sicurezza del database
+Prima di una serata (Claude lo fa per te):
+```
+npx.cmd -y firebase-tools@15.35.0 database:get / -o backupsackup-AAAA-MM-GG.json --project giovanichef-65d46 --account oratoriopare@gmail.com
+```
+La cartella `backups` resta solo sul computer (contiene anche il codice di accesso: non condividerla).
 
 ---
 
@@ -155,7 +123,7 @@ Poi, con calma, sistemate il codice: in GitHub Desktop → **History** → tasto
    - aggiorna il numero di versione (in `index.html` e in `sw.js`),
    - fa girare la **serata simulata** per controllare di non aver rotto niente,
    - aggiorna `CHANGELOG.md`.
-3. Tu controlli in GitHub Desktop cosa è cambiato, fai **Commit** e **Push**. Per le modifiche grosse usa un ramo (punto 4.2).
+3. Commit, Push e pubblicazione (punto 4.1): di solito li fa Claude, tu puoi controllare in GitHub Desktop cosa è cambiato.
 
 **Ogni volta che cambia l'app va aumentata la versione**, sia in `index.html` («Versione N», due punti) sia in `sw.js` (`ordini-oratorio-vN`). Così i telefoni capiscono che devono scaricare quella nuova.
 
@@ -182,7 +150,8 @@ Non prova la rete vera, i telefoni veri e due persone che premono nello stesso i
 - [ ] Persone e PIN pronti; reparti assegnati ai cuochi; uscita piatti
 - [ ] Prenotazioni importate
 - [ ] Fondo cassa inserito
-- [ ] QR dei camerieri pronto
+- [ ] QR dei camerieri pronto (generato da giovanichef.web.app)
+- [ ] Copia di sicurezza del database (punto 4.3)
 - [ ] Durante la serata: scaricare l'Excel un paio di volte come copia
 - [ ] A fine serata: chiusura cassa, poi «Nuovo evento» (la serata va in «Serate passate»)
 
@@ -192,7 +161,8 @@ Non prova la rete vera, i telefoni veri e due persone che premono nello stesso i
 
 | Problema | Cosa fare |
 |---|---|
-| Dopo un aggiornamento l'app non parte | Netlify → Deploys → versione precedente → **Publish deploy** |
+| Dopo un aggiornamento l'app non parte | Firebase → Hosting → Cronologia delle release → versione precedente → **Ripristina** |
+| Un telefono dice «Telefono non autorizzato» | Riaprire il link o il QR (Evento → «Mostra link e QR»), oppure incollare il link nella schermata |
 | Un telefono mostra ancora la versione vecchia | Chiudere e riaprire l'app con la rete; se non basta, ricaricare la pagina due volte |
 | GitHub Desktop dice «conflict» | Non toccare niente e chiedi a Claude: ti guida passo passo |
 | Hai fatto Push di qualcosa di sbagliato | History → Revert changes in commit → Push |

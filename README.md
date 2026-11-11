@@ -2,7 +2,7 @@
 
 App per gestire le serate a tavola dell'oratorio: cassa, camerieri, cucina divisa per reparti, uscita piatti e bar, tutti collegati in tempo reale dal telefono.
 
-- **Online:** https://giovanichef.netlify.app
+- **Online:** https://giovanichef.web.app (si apre solo con il link o il QR)
 - **Dati:** Firebase Realtime Database (progetto `giovanichef-65d46`)
 - **Versione attuale:** vedi in basso nella schermata di accesso, e `CHANGELOG.md`
 
@@ -21,9 +21,9 @@ App per gestire le serate a tavola dell'oratorio: cassa, camerieri, cucina divis
 ## Cartelle
 
 ```
-app/      ← il sito (Netlify pubblica solo questa cartella, vedi netlify.toml)
+app/      ← il sito (Firebase pubblica solo questa cartella, vedi firebase.json)
 test/     ← copia di prova con database finto + serata simulata
-docs/     ← GUIDA-GITHUB.md: come si lavora con GitHub e Netlify
+docs/     ← GUIDA-GITHUB.md: come si lavora con GitHub e Firebase
 ```
 
 Dentro `app/`: `index.html` (schermate), `css/app.css` (aspetto), `js/config.js` (collegamento Firebase), `js/01-…11-*.js` (funzionamento, un file per argomento, caricati in ordine), `sw.js` (funzionamento senza rete).
@@ -33,7 +33,7 @@ Dentro `app/`: `index.html` (schermate), `css/app.css` (aspetto), `js/config.js`
 1. Aumenta la versione in `app/index.html` (due volte «Versione N») e in `app/sw.js` (`ordini-oratorio-vN`).
 2. Aggiorna `CHANGELOG.md`.
 3. Fai girare la serata simulata (sotto) e controlla «0 non ok».
-4. Commit e Push su `main`: Netlify pubblica da solo. Dettagli in `docs/GUIDA-GITHUB.md`.
+4. Commit e Push su `main`, poi pubblicazione su Firebase (sotto). Dettagli in `docs/GUIDA-GITHUB.md`.
 
 ## Provare senza toccare i dati veri
 
@@ -53,7 +53,5 @@ Dopo una modifica, dal terminale nella cartella del progetto:
 ```
 npx.cmd -y firebase-tools@15.35.0 deploy --only hosting --project giovanichef-65d46 --account oratoriopare@gmail.com
 ```
-
-Netlify (giovanichef.netlify.app) non si usa più: i crediti sono finiti.
 
 **Accesso:** il sito si apre solo con il link o il QR (contengono il codice di accesso, `#k=…`). Le regole del database sono in `database.rules.json`; si pubblicano con `--only hosting,database`. Il codice si cambia da Evento → «Cambia codice di accesso».
