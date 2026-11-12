@@ -149,21 +149,21 @@ function renderUscita(){
   const ready=flatCourses("pronta").filter(c=>!c.o.asportoSubito&&inOScope(c,sc));
   $("o-ready").innerHTML=ready.length?ready.map(c=>{const stale=c.t&&(Date.now()-c.t)>5*60000,rf=righeFor(c.o,c.k),n=cop(rf),wn=kWho(c.o,c.o.portate[c.k]);
     const dis=S.pending.has(c.o.numero+"|"+c.k)?"disabled":"";
-    const parts=partsOf(c.o.portate[c.k]).map(x=>x.piatto||x.nome).join(" + ");
-    return `<article class="kcard ${stale?"late":""}"><div class="top"><span class="n nm">${c.o.numero}</span><span class="age">pronto ${ago(c.t)==="adesso"?"adesso":"da "+ago(c.t)}</span></div>
+    const pp=partsOf(c.o.portate[c.k]),parts=pp.length>1?pp.map(x=>x.piatto||x.nome).join(" + "):"";
+    return `<article class="kcard ${stale?"late":""}"><div class="top"><span class="n nm">${esc(wn)}</span><span class="age">pronto ${ago(c.t)==="adesso"?"adesso":"da "+ago(c.t)}</span></div>
+      <div class="what kcourse"><span class="label">${c.o.fila?esc(filaNome(c.o.fila))+" · ":""}n. ${c.o.numero}${c.o.nome?" · "+esc(c.o.nome):""}</span>${c.o.asporto&&wn!=="Asporto"?' <span class="pill asp">Asporto</span>':""}</div>
       <div class="what kcourse"><span style="color:${portColor(c.k)}">${esc(c.l)}</span> <span class="label">· ${n} ${n===1?"piatto":"piatti"}</span></div>
       ${parts?`<div class="kparts">${esc(parts)}</div>`:""}
-      <div class="who">${esc(wn)}${c.o.fila?" · "+esc(filaNome(c.o.fila)):""}${c.o.nome?" · "+esc(c.o.nome):""}</div>
       <ul>${rf.map(r=>`<li><b>${r.qta}</b>${esc(r.nome)}</li>`).join("")}</ul>
       ${c.o.note?`<div class="note">${esc(c.o.note)}</div>`:""}
       <button class="btn go big" ${dis} data-set="${c.o.numero}|${c.k}|servita">Consegnato</button></article>`}).join("")
     :'<div class="panel"><div class="empty">Niente da consegnare.</div></div>';
   const wip=flatCourses("chiamata").filter(c=>!c.o.asportoSubito&&inOScope(c,sc));
   $("o-wip").innerHTML=wip.length?wip.map(c=>{const pt=partsTxt(c.o.portate[c.k]);
-    return `<div class="li plain two"><span><b>n. ${c.o.numero}</b> · <b style="color:${portColor(c.k)}">${esc(c.l)}</b> · ${cop(righeFor(c.o,c.k))} piatti<div class="sub">${esc(kWho(c.o,c.o.portate[c.k]))}${c.o.fila?" · "+esc(filaNome(c.o.fila)):""} · chiamata ${ago(c.t)==="adesso"?"adesso":"da "+ago(c.t)}${pt?" · "+pt:""}</div></span></div>`}).join("")
+    return `<div class="li plain two"><span><b class="kwho">${esc(kWho(c.o,c.o.portate[c.k]))}</b> · <b style="color:${portColor(c.k)}">${esc(c.l)}</b> · ${cop(righeFor(c.o,c.k))} piatti<div class="sub">${c.o.fila?esc(filaNome(c.o.fila))+" · ":""}n. ${c.o.numero} · chiamata ${ago(c.t)==="adesso"?"adesso":"da "+ago(c.t)}${pt?" · "+pt:""}</div></span></div>`}).join("")
     :'<div class="empty">Niente in preparazione.</div>';
   const done=flatCourses("servita").filter(c=>!c.o.asportoSubito&&inOScope(c,sc)&&c.t&&Date.now()-c.t<3*60000).sort((a,b)=>b.t-a.t).slice(0,12);
-  $("o-done").innerHTML=done.length?done.map(c=>`<div class="li plain two"><span><b>n. ${c.o.numero}</b> · <b style="color:${portColor(c.k)}">${esc(c.l)}</b> · ${cop(righeFor(c.o,c.k))} piatti<div class="sub">${esc(kWho(c.o,c.o.portate[c.k]))} · consegnato ${ago(c.t)==="adesso"?"adesso":"da "+ago(c.t)}</div></span>
+  $("o-done").innerHTML=done.length?done.map(c=>`<div class="li plain two"><span><b class="kwho">${esc(kWho(c.o,c.o.portate[c.k]))}</b> · <b style="color:${portColor(c.k)}">${esc(c.l)}</b> · ${cop(righeFor(c.o,c.k))} piatti<div class="sub">n. ${c.o.numero} · consegnato ${ago(c.t)==="adesso"?"adesso":"da "+ago(c.t)}</div></span>
       <button class="btn small" ${S.pending.has(c.o.numero+"|"+c.k)?"disabled":""} data-unserve="${c.o.numero}|${c.k}">Non consegnato</button></div>`).join("")
     :'<div class="empty">Niente.</div>';
 }
