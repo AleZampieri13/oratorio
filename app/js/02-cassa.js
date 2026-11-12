@@ -49,7 +49,8 @@ function payPlan(b,off){
   const P=S.parts;if(!P.length)return {err:"Aggiungi le parti del conto."};
   for(const [k,p] of P.entries()){if(!(p.i>0))return {err:`Parte ${k+1}: scrivi l'importo.`};
     if(p.m==="offerto"&&!p.chi.trim())return {err:`Parte ${k+1}: scrivi chi la offre.`};
-    if(p.m==="contanti"&&p.r>0&&p.r<p.i)return {err:`Parte ${k+1}: mancano ${money(r2(p.i-p.r))}.`}}
+    if(p.m==="contanti"&&!(p.r>0))return {err:`Parte ${k+1}: scrivi quanto ha dato in contanti.`,partR:k};
+    if(p.m==="contanti"&&p.r<p.i)return {err:`Parte ${k+1}: mancano ${money(r2(p.i-p.r))}.`,partR:k}}
   const sum=r2(P.reduce((a,p)=>a+p.i,0));
   if(Math.round(sum*100)!==Math.round(toPay*100))return {err:sum<toPay?`Le parti fanno ${money(sum)}: mancano ${money(r2(toPay-sum))}.`:`Le parti fanno ${money(sum)}: ${money(r2(sum-toPay))} di troppo.`};
   const offerto=r2(P.filter(p=>p.m==="offerto").reduce((a,p)=>a+p.i,0));
@@ -98,7 +99,7 @@ $("c-partlist").addEventListener("click",e=>{const row=e.target.closest(".part")
   if(e.target.closest("button[data-prest]")){const p=S.parts[k];p.sel=p.sel||{};splitLines().forEach(l=>{p.sel[l.k]=(p.sel[l.k]||0)+Math.max(0,l.qta-assigned(l.k,-1))});recalcByItems();renderParts();repaintC();return}
   if(e.target.closest("button[data-prm]")){S.parts.splice(k,1);renderParts();repaintC()}});
 $("c-partlist").addEventListener("input",e=>{const row=e.target.closest(".part"),f=e.target.dataset.pf;if(!row||!f)return;const p=S.parts[+row.dataset.pi];
-  p[f]=f==="chi"?e.target.value:parsePrice(e.target.value);paintParts();repaintC()});
+  p[f]=f==="chi"?e.target.value:parsePrice(e.target.value);e.target.classList.remove("bad");if(/^Parte \d+: (scrivi quanto|mancano)/.test($("c-msg").textContent))$("c-msg").textContent="";paintParts();repaintC()});
 $("c-offby").addEventListener("input",()=>{if(/chi offre/.test($("c-msg").textContent))$("c-msg").textContent=""});
 /* descrizione dei pagamenti di un ordine (lista recenti, biglietto, Excel) */
 function pagamenti(o){return toArr(o&&o.pagamenti)}
@@ -290,7 +291,8 @@ async function createOrder(){
   let n=parseInt($("c-num").value,10);
   if(!(n>0)){msg.textContent="Scrivi un numero di biglietto valido.";return}
   const off=!S.split&&S.pay==="offerto"?0:parsePrice($("c-off").value),toPay=r2(b.due+off),plan=payPlan(b,off),ric=plan.ricevuto||0;
-  if(plan.err){msg.textContent=plan.err;if(plan.focus){if(plan.bad)$(plan.focus).classList.add("bad");$(plan.focus).focus()}return}
+  if(plan.err){msg.textContent=plan.err;if(plan.focus){if(plan.bad)$(plan.focus).classList.add("bad");$(plan.focus).focus()}
+    if(plan.partR!=null){const r=document.querySelector(`#c-partlist .part[data-pi="${plan.partR}"] input[data-pf="r"]`);if(r){r.classList.add("bad");r.focus()}}return}
   const probs=stockProblems(b.rr,b.ss,b.xx),key=JSON.stringify([S.qty,S.sqty,probs.map(x=>x.p.id)]);
   if(probs.length){
     if(!isBoss()){msg.textContent=stockBlockMsg(probs);return}

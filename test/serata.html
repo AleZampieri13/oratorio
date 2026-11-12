@@ -247,9 +247,9 @@ async function createOrder(o){
     if(STAT.contiDivisi%2===0){await click(n,'#c-smode button[data-smode="importi"]');await type(n,"#c-nparts","2");await click(n,"#c-equal");o.splitMode="importi"}
     else{/* per piatti: la parte 1 paga un menù (o il primo piatto), la parte 2 tutto il resto */
       await click(n,'#c-partlist .part[data-pi="0"] button[data-pq][data-d="1"]:not([disabled])');await click(n,'#c-partlist .part[data-pi="1"] button[data-prest]');o.splitMode="piatti";
-      o.p0=W(n).eval("S.parts[0].i");o.p0exp=W(n).eval("splitLines()[0].p")+parsePrice0(q(n,"#c-off").value)}
+      o.p0=W(n).eval("S.parts[0].i");await type(n,'#c-partlist .part[data-pi="0"] input[data-pf="r"]',String(Math.ceil(o.p0/10)*10||10));o.p0exp=W(n).eval("splitLines()[0].p")+parsePrice0(q(n,"#c-off").value)}
     await click(n,'#c-partlist .part[data-pi="1"] button[data-pm="pos"]');
-    const p0=W(n).eval("S.parts[0].i");await type(n,'#c-partlist .part[data-pi="0"] input[data-pf="r"]',String(Math.ceil(p0/10)*10))}
+    if(o.splitMode==="importi"){const p0=W(n).eval("S.parts[0].i");await type(n,'#c-partlist .part[data-pi="0"] input[data-pf="r"]',String(Math.ceil(p0/10)*10))}}
   const before=new Set(Object.keys(db().ordini||{}));
   for(let i=0;i<6;i++){
     const due=q(n,"#c-paybox").hidden?0:eur(txt(n,"#c-total"));o.due=due;
