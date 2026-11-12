@@ -394,3 +394,9 @@ ul.kitems li .kin{flex:1;font-weight:700}
 /* piatto in ritardo rispetto al suo «Pronto entro» */
 ul.kitems li.klate .kin{text-decoration:underline wavy var(--danger);text-underline-offset:4px}
 ul.kitems li.klate small{color:var(--danger);font-weight:700}
+/* cassa: conto diviso in parti */
+#c-parts .part{display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid var(--line);border-radius:var(--r)}
+#c-parts .part .row{gap:8px;align-items:center;flex-wrap:wrap}
+#c-parts .part .pricein{width:100px}
+#c-nparts{width:64px}
+#c-split button{padding:8px 14px}

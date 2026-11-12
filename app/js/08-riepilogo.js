@@ -3,7 +3,7 @@
 function totals(){
   const O=ordersArr();
   return {n:O.length,cop:O.reduce((a,o)=>a+cop(righe(o)),0),cassa:O.reduce((a,o)=>a+(o.incassato||0),0),
-    valore:O.reduce((a,o)=>a+(o.importo||0),0)};
+    valore:O.reduce((a,o)=>a+(o.importo||0),0),offerti:r2(O.reduce((a,o)=>a+(o.offerto||0),0))};
 }
 function postIds(){
   const D=Object.values(S.offMap);
@@ -81,6 +81,7 @@ function renderEvent(){
     (P.length?`<div><span class="label">Coperti prenotati</span><b>${pc}</b></div>`:"")+
     Object.keys(perX).map(n=>`<div><span class="label">${esc(n)}</span><b>${perX[n]}</b></div>`).join("")+
     (payTotals().offerte>0?`<div><span class="label">Offerte</span><b>${money(payTotals().offerte)}</b></div>`:"")+
+    (T.offerti>0?`<div><span class="label">Pasti offerti</span><b>${money(T.offerti)}</b></div>`:"")+
     (T.valore>0?`<div><span class="label">Incassato in cassa</span><b>${money(T.cassa)}</b></div><div><span class="label">Totale</span><b>${money(T.valore)}</b></div>`:"");
   renderClose();renderTimes();
   const cnt=(k,st)=>O.filter(o=>o.portate&&o.portate[k]&&(o.portate[k].stato||"attesa")===st).length;

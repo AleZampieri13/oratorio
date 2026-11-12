@@ -143,10 +143,19 @@
         <label class="check" id="c-paid-row" hidden><input type="checkbox" id="c-paid"></label>
         <div class="paybox" id="c-paybox" hidden>
           <div class="totline" id="c-total"></div>
-          <div class="payrow" id="c-pay-row"><span class="seg big" id="c-pay"><button data-pay="contanti">Contanti</button><button data-pay="pos">POS</button></span></div>
+          <div class="payrow"><span class="seg" id="c-split"><button data-split="0">Un pagamento</button><button data-split="1">Dividi il conto</button></span></div>
+          <div class="stack" id="c-one">
+          <div class="payrow" id="c-pay-row"><span class="seg big" id="c-pay"><button data-pay="contanti">Contanti</button><button data-pay="pos">POS</button><button data-pay="offerto">Offerto</button></span></div>
+          <div class="payrow" id="c-offby-row" hidden><label class="label" for="c-offby">Offerto da</label><input type="text" id="c-offby" placeholder="Es. Parrocchia – don Paolo"></div>
           <div class="payrow" id="c-cash"><label class="label" for="c-ric">Ricevuto</label>
             <span class="row" style="flex-wrap:nowrap"><input type="text" id="c-ric" inputmode="decimal" class="pricein" placeholder="0,00 €"><span class="resto" id="c-resto"></span></span></div>
-          <div class="payrow"><label class="label" for="c-off">Offerta</label>
+          </div>
+          <div class="stack" id="c-parts" hidden>
+            <div class="row"><span class="label">In parti uguali</span><input type="number" id="c-nparts" inputmode="numeric" min="2" max="20" value="2" class="pricein" aria-label="Quante parti"><button class="btn small" id="c-equal" type="button">Dividi</button><button class="btn small" id="c-addpart" type="button">+ Parte</button></div>
+            <div class="stack" id="c-partlist"></div>
+            <div class="sub" id="c-partsum"></div>
+          </div>
+          <div class="payrow" id="c-off-row"><label class="label" for="c-off">Offerta</label>
             <span class="row" style="flex-wrap:nowrap"><button class="btn small" id="c-off-resto" hidden>Il resto è un'offerta</button><input type="text" id="c-off" inputmode="decimal" class="pricein" placeholder="0,00 €"></span></div>
         </div>
         <button class="btn primary big" id="c-create">Crea ordine</button>

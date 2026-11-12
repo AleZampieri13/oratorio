@@ -165,8 +165,8 @@ async function setup(){
   // prenotazioni
   await tab("master","evento");
   const NP=Math.min(COGNOMI.length,Math.round(ORDERS*.2));
-  const rows=COGNOMI.slice(0,NP).map((f,i)=>{const solo=i%9===4;return `Famiglia ${f};${solo?0:2+Math.floor(rnd()*3)};${solo?0:Math.floor(rnd()*3)};${solo?3:0};0;0;${i%6===1?1:0};${solo?"ASPORTO":"PRESENTE"};${i%5===0?"celiaco":i%7===0?"allergia noci":""}`});
-  const WW=W("master"),dt=new WW.DataTransfer();dt.items.add(new WW.File(["NOMINATIVO;ADULTI;BAMBINI;SOLO SCIATT;SOLO PIZZOCCHERI;SOLO BRESAOLA;SOLO TORTA;TIPO;NOTE\n"+rows.join("\n")],"prenotazioni.csv",{type:"text/csv"}));
+  const rows=COGNOMI.slice(0,NP).map((f,i)=>{const solo=i%9===4;return `Famiglia ${f};${solo?0:2+Math.floor(rnd()*3)};${solo?0:Math.floor(rnd()*3)};${solo?3:0};0;0;${i%6===1?1:0};${solo?"ASPORTO":"PRESENTE"};${i===2?"Parrocchia":""};${i%5===0?"celiaco":i%7===0?"allergia noci":""}`});
+  const WW=W("master"),dt=new WW.DataTransfer();dt.items.add(new WW.File(["NOMINATIVO;ADULTI;BAMBINI;SOLO SCIATT;SOLO PIZZOCCHERI;SOLO BRESAOLA;SOLO TORTA;TIPO;OFFERTO;NOTE\n"+rows.join("\n")],"prenotazioni.csv",{type:"text/csv"}));
   const inp=q("master","#i-file");inp.files=dt.files;inp.dispatchEvent(new WW.Event("change"));
   await waitFor(()=>!q("master","#i-map-wrap").hidden,4000,"anteprima import");
   {const nAsp=Math.floor((NP+4)/9),pv=txt("master","#i-preview");
@@ -189,10 +189,11 @@ async function setup(){
 
 /* ---------------- SERVIZIO ---------------- */
 const L={};CASSE.forEach(c=>L[c.dev]={contanti:0,pos:0});
-const ORD=[],STAT={barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
+const ORD=[],STAT={contiDivisi:0,offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
 const queueFor={};CAM.forEach(c=>queueFor[c.dev]=[]);
 let noDessert=false;
 function plan(){
+  const offP=new Set(vals(db().prenotazioni).filter(p=>p.offerto).map(p=>p.nome));
   const fam=vals(db().prenotazioni).map(p=>p.nome),aspP=new Set(vals(db().prenotazioni).filter(p=>p.asporto).map(p=>p.nome));const out=[];
   for(let i=0;i<ORDERS;i++){
     const r=rnd(),o={cassa:CASSE[i%NCASSE].dev,pay:rnd()<.35?"pos":"contanti",extra:{},single:{},menu:{}};
@@ -203,9 +204,11 @@ function plan(){
     if(rnd()<.6)o.single[pick(["Acqua","Vino","Bibita"])]=1+Math.floor(rnd()*3);
     if(rnd()<.2)o.single["Patatine"]=1+Math.floor(rnd()*2);
     if(rnd()<.12)o.off=pick([2,5,10]);
+    if(!o.asp&&!o.pren){const z=rnd();if(z<.06){o.offer=true;o.off=0}else if(z<.16)o.split=true}
+    if(o.pren&&offP.has(o.pren)){o.offer=true;o.prenOffer=true;o.off=0}
     if((!o.asp||o.asp==="cameriere")&&!aspP.has(o.pren))o.waiter=pick(CAM).dev;
     out.push(o)}
-  while(fam.length){const pr=fam.shift();out.push({cassa:CASSE[0].dev,pay:"contanti",extra:{},single:{},menu:{},pren:pr,waiter:aspP.has(pr)?null:pick(CAM).dev})}
+  while(fam.length){const pr=fam.shift();out.push({cassa:CASSE[0].dev,pay:"contanti",extra:{},single:{},menu:{},pren:pr,waiter:aspP.has(pr)?null:pick(CAM).dev,...(offP.has(pr)?{offer:true,prenOffer:true}:{})})}
   return out;
 }
 /* quando i dolci finiscono il master crea i menù senza dolce */
@@ -235,12 +238,17 @@ async function createOrder(o){
   for(const [k,v] of Object.entries(o.menu))for(let i=0;i<v;i++)await click(n,`#c-steppers button[aria-label="Aggiungi ${menuName(k)}"]`);
   for(const [k,v] of Object.entries(o.single)){if(noDessert&&k==="Torta")continue;for(let i=0;i<v;i++)await click(n,`#c-sing button[aria-label="Aggiungi ${k}"]`)}
   if(o.asp){const c=q(n,"#c-asp");c.checked=true;c.dispatchEvent(new Event("change"));await sleep(STEP);if(o.asp==="cameriere")await click(n,'#c-aspmode button[data-m="cameriere"]')}
-  await click(n,`#c-pay button[data-pay="${o.pay}"]`);
+  if(o.offer){if(!o.prenOffer){await click(n,'#c-pay button[data-pay="offerto"]');await type(n,"#c-offby","Parrocchia")}
+    else check(q(n,'#c-pay button[data-pay="offerto"]').getAttribute("aria-pressed")==="true"&&q(n,"#c-offby").value==="Parrocchia",`Prenotazione «${o.pren}» offerta: in cassa è già «Offerto da Parrocchia»`)}
+  else await click(n,`#c-pay button[data-pay="${o.pay}"]`);
   if(o.off)await type(n,"#c-off",String(o.off));
+  if(o.split&&!q(n,"#c-paybox").hidden){await click(n,'#c-split button[data-split="1"]');await type(n,"#c-nparts","2");await click(n,"#c-equal");
+    await click(n,'#c-partlist .part[data-pi="1"] button[data-pm="pos"]');
+    const p0=W(n).eval("S.parts[0].i");await type(n,'#c-partlist .part[data-pi="0"] input[data-pf="r"]',String(Math.ceil(p0/10)*10))}
   const before=new Set(Object.keys(db().ordini||{}));
   for(let i=0;i<6;i++){
     const due=q(n,"#c-paybox").hidden?0:eur(txt(n,"#c-total"));o.due=due;
-    if(due>0&&o.pay==="contanti"&&eur(q(n,"#c-ric").value.replace(".",","))<due)await type(n,"#c-ric",String(Math.ceil(due/10)*10));
+    if(due>0&&o.pay==="contanti"&&!o.offer&&!o.split&&eur(q(n,"#c-ric").value.replace(".",","))<due)await type(n,"#c-ric",String(Math.ceil(due/10)*10));
     if(qa(n,"#c-steppers output,#c-sing output").every(x=>+x.textContent===0)){o.vuoto=true;break}
     await click(n,"#c-create");const m=txt(n,"#c-msg");
     if(/esaurito|ne restano solo/.test(m)){STAT.bloccatiPorzioni++;o.bloccato=m;await fixStock(n,m);continue}
@@ -252,7 +260,10 @@ async function createOrder(o){
     const c=q(n,"#c-asp");if(c.checked){c.checked=false;c.dispatchEvent(new Event("change"))}await sleep(STEP);return null}
   const nn=await waitFor(()=>(()=>{const O_=db().ordini||{};return Object.keys(O_).find(k=>!before.has(k)&&O_[k])})(),3000,"nuovo ordine").catch(()=>null);
   if(!nn){check(false,"Ordine creato: "+(o.nome||o.pren),txt(n,"#c-msg"));return null}
-  o.n=+nn;const real=await waitFor(()=>(db().ordini||{})[nn],3000,"ordine "+nn);o.due=r2((real.incassato||0)+(real.offerta||0));L[n][o.pay]=r2(L[n][o.pay]+o.due);
+  o.n=+nn;const real=await waitFor(()=>(db().ordini||{})[nn],3000,"ordine "+nn);o.due=r2((real.incassato||0)+(real.offerta||0));
+  if(real.pagamenti){vals(real.pagamenti).forEach(p=>{if(p.m!=="offerto")L[n][p.m==="pos"?"pos":"contanti"]=r2(L[n][p.m==="pos"?"pos":"contanti"]+p.i)});o.pay=real.metodo==="pos"?"pos":"contanti"}
+  else L[n][o.pay]=r2(L[n][o.pay]+o.due);
+  if(o.split)STAT.contiDivisi++;if(o.offer)STAT.offerti++;
   if(o.waiter)queueFor[o.waiter].push(o.n);ORD.push(o);return o;
 }
 async function waiterAdd(w,force){
@@ -306,20 +317,20 @@ async function service(){
 async function specialAfterCreate(o,S){
   const k=ORD.length;
   if(S.checkNext){S.checkNext=false;check(o.n===S.burned+1,`Dopo l'annullo il numero ${S.burned} non viene riusato (nuovo: ${o.n})`)}
-  if(k>=3&&!S.edited&&!o.asp&&o.waiter){S.edited=true;
+  if(k>=3&&!S.edited&&!o.asp&&o.waiter&&!o.split&&!o.offer){S.edited=true;
     queueFor[o.waiter]=queueFor[o.waiter].filter(x=>x!==o.n);
     await click(o.cassa,`#c-recent button[data-open="${o.n}"]`);await click(o.cassa,'#x-sing button[aria-label="Aggiungi Bibita"]');await click(o.cassa,"#x-save");
     const m=await waitFor(()=>/Incassa|Modifiche|non|Operazione/.test(txt(o.cassa,"#x-msg"))&&txt(o.cassa,"#x-msg"),3000,"esito modifica").catch(()=>txt(o.cassa,"#x-msg"));check(/Incassa altri 2,00/.test(m),`Modifica prima che il cameriere lo prenda: +1 Bibita sul n. ${o.n} → «Incassa altri 2,00 €»`,m);
     if(/Incassa altri/.test(m)){L[o.cassa][o.pay]=r2(L[o.cassa][o.pay]+2)}
     await click(o.cassa,"#x-close");queueFor[o.waiter].push(o.n)}
-  else if(k>=5&&!S.undo&&o.asp!=="subito"){S.undo=true;
+  else if(k>=5&&!S.undo&&o.asp!=="subito"&&!o.split&&!o.offer){S.undo=true;
     if(o.waiter)queueFor[o.waiter]=queueFor[o.waiter].filter(x=>x!==o.n);
     const b=await waitFor(()=>q(o.cassa,"#c-undo"),5000,"pulsante annulla").catch(()=>null);
-    if(b){await click(o.cassa,b);await click(o.cassa,"#c-undo");await waitFor(()=>db().annullati&&db().annullati[o.n],2000).catch(()=>null);
+    if(b){await click(o.cassa,b);await click(o.cassa,"#c-undo");await waitFor(()=>{const z=db();return z.annullati&&z.annullati[o.n]&&!(z.ordini||{})[o.n]},4000).catch(()=>null);
       check(!!(db().annullati&&db().annullati[o.n])&&!db().ordini[o.n],`Annullo entro un minuto: il n. ${o.n} è bruciato`);
       L[o.cassa][o.pay]=r2(L[o.cassa][o.pay]-o.due);o.annullato=true;S.burned=o.n;S.checkNext=true}
     else check(false,"Annullo entro un minuto: manca il pulsante")}
-  else if(k>=8&&!S.lock&&o.waiter&&!o.asp){S.lock=true;
+  else if(k>=8&&!S.lock&&o.waiter&&!o.asp&&!o.split&&!o.offer){S.lock=true;
     queueFor[o.waiter]=queueFor[o.waiter].filter(x=>x!==o.n);await sleep(STEP*2);await waiterAdd(o.waiter,o.n);await sleep(STEP*2);
     const btn=q(o.cassa,`#c-recent button[data-open="${o.n}"]`);
     check(btn&&btn.textContent==="Rettifica",`Appena ${o.waiter.slice(2)} prende il n. ${o.n}, in cassa «Modifica» diventa «Rettifica»`,btn&&btn.textContent);
@@ -338,7 +349,7 @@ async function specialAfterCreate(o,S){
 async function specialTick(t,S){
   const O=db().ordini||{};
   // rettifica dopo la partenza: tolgo il dolce (non ancora chiamato) a un ordine con il primo già chiamato
-  if(!S.dessertFix&&ORD.length>=25){const o=ORD.find(x=>!x.annullato&&x.waiter&&O[x.n]&&O[x.n].portate&&O[x.n].portate["p-dolce"]&&(O[x.n].portate["p-dolce"].stato||"attesa")==="attesa"&&vals(O[x.n].portate).some(p=>p.stato==="chiamata"||p.stato==="servita"));
+  if(!S.dessertFix&&ORD.length>=25){const o=ORD.find(x=>!x.annullato&&x.waiter&&!x.split&&!x.offer&&O[x.n]&&O[x.n].portate&&O[x.n].portate["p-dolce"]&&(O[x.n].portate["p-dolce"].stato||"attesa")==="attesa"&&vals(O[x.n].portate).some(p=>p.stato==="chiamata"||p.stato==="servita"));
     if(o){S.dessertFix=true;const m0=O[o.n],coperti=vals(m0.righe).reduce((a,r)=>a+r.qta,0)+vals(m0.singoli).filter(s=>s.pid==="p-dolce").reduce((a,s)=>a+s.qta,0);
       await type(o.cassa,"#c-opennum",String(o.n));await click(o.cassa,"#c-open");await click(o.cassa,'#x-fix button[data-fixrm="p-dolce"]');
       const sugg=eur(q(o.cassa,"#x-fixamt").value.replace(".",","));await click(o.cassa,"#x-fixsave");await sleep(STEP*2);
@@ -348,7 +359,7 @@ async function specialTick(t,S){
       await sleep(STEP*3);check(!/Torta|Dolce/.test(txt(o.waiter,`[data-card="${o.n}"] .cact`)),"Il cameriere non vede più la Torta (né il reparto Dolce) in quell'ordine",txt(o.waiter,`[data-card="${o.n}"] .cact`));
       await click(o.cassa,"#x-close")}}
   // il master annulla un ordine già in cucina
-  if(!S.annul&&ORD.length>=30){const target=ORD.find(o=>!o.annullato&&o.waiter&&O[o.n]&&vals(O[o.n].portate).some(p=>p.stato==="chiamata"));
+  if(!S.annul&&ORD.length>=30){const target=ORD.find(o=>!o.annullato&&o.waiter&&!o.split&&!o.offer&&O[o.n]&&vals(O[o.n].portate).some(p=>p.stato==="chiamata"));
     if(target){S.annul=true;const w=target.waiter;const KB=[...COOKS,"capocucina","bar"],before={w:toasts(w).length,k:KB.map(c=>toasts(c).length)};
       await tab("master","cassa");await type("master","#c-opennum",String(target.n));await click("master","#c-open");
       check(!q("master","#x-lockmsg").hidden&&!q("master","#x-del-row").hidden,`Master: il n. ${target.n} è in cucina, il pannello offre rettifica e annullo`);
@@ -438,6 +449,11 @@ async function closing(){
   await click("master","#e-export");
   const riep=Object.fromEntries((R.excel&&R.excel.riep||[]).map(r=>[r[0],r[1]]));
   const totC=r2(CASSE.reduce((a,c)=>a+L[c.dev].contanti,0)),totP=r2(CASSE.reduce((a,c)=>a+L[c.dev].pos,0));
+  {const offV=r2(O.reduce((a,o)=>a+(o.offerto||0),0)),divisi=O.filter(o=>vals(o.pagamenti).filter(p=>p.m!=="offerto").length>=2);
+   check(STAT.offerti>0&&offV>0&&Math.abs((riep["Pasti offerti (non incassati) €"]||0)-offV)<.01&&O.filter(o=>o.offerto>0).every(o=>o.offertoDa==="Parrocchia"&&(o.incassato||0)===0),
+     `Pasti offerti: ${STAT.offerti} ordini, ${offV} € «offerti da Parrocchia», non incassati e nell'Excel`,`riep ${riep["Pasti offerti (non incassati) €"]}, ${offV}`);
+   if(STAT.contiDivisi)check(divisi.length>0&&divisi.every(o=>Math.abs(vals(o.pagamenti).reduce((a,p)=>a+p.i,0)-((o.incassato||0)+(o.offerta||0)))<.01),
+     `Conti divisi: ${divisi.length} ordini pagati in due parti (contanti + POS), le parti tornano con il totale`)}
   check(Math.abs((riep["di cui contanti €"]||0)-totC)<.01&&Math.abs((riep["di cui POS €"]||0)-totP)<.01,`Excel: contanti ${riep["di cui contanti €"]} € e POS ${riep["di cui POS €"]} € tornano con le casse`);
   check(R.excel&&["Tempi","Annullati","Registro modifiche"].every(f=>R.excel.fogli.includes(f))&&R.excel.tempi.length>4,"Excel: fogli Tempi, Annullati e Registro modifiche");
   R.stats={...R.stats,...STAT,ordini:O.length,annullati:A.length,dolci,vini,incassi:L,totContanti:totC,totPos:totP};

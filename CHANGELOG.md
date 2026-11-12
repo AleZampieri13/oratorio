@@ -1,6 +1,9 @@
 # Versioni
 
 ## 36
+- **Conti separati:** in cassa «Dividi il conto»: in parti uguali o a importi, ogni parte con il suo pagamento (contanti con il suo resto, POS, offerto). L'ordine resta uno solo (un biglietto, una scheda per il cameriere).
+- **Pasto offerto:** terzo modo di pagare, «Offerto», con «Offerto da» obbligatorio (cassa e master). Non entra nei contanti né nel POS; nel riepilogo e nell'Excel c'è «Pasti offerti». Anche solo una parte del conto può essere offerta. Nel file delle prenotazioni la colonna OFFERTO (chi offre, o «sì») arriva in cassa già impostata.
+- Ogni ordine nuovo tiene l'elenco dei suoi pagamenti (anche modifiche e rettifiche): la chiusura cassa somma contanti e POS da lì. Nella rettifica di un conto pagato in contanti e POS si sceglie come restituire.
 - Se il master cambia ruoli o reparti di una persona già dentro, le sue schede si aggiornano subito (con un avviso).
 - **Permessi per ruolo nel database:** i PIN stanno in una parte del database che nessuno può leggere; all'accesso il database controlla il PIN (o il QR del cameriere) e da lì sa il ruolo. Ogni ruolo può scrivere solo quello che gli serve (es. listino: master e cassa; persone: master, e il capo per i camerieri; nuovo evento e archivio: master). Regole generate da `tools/regole.py`.
 - Serata simulata anche sull'emulatore di Firebase con le regole vere (`?emu=1`), con i controlli di cosa ogni ruolo non può fare.
