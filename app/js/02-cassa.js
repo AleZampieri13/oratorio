@@ -21,7 +21,17 @@ function singlesHtml(qty,attr){
 /* ---------- pagamenti: uno solo, diviso in parti, offerto ---------- */
 const PAY_LBL={contanti:"contanti",pos:"POS",offerto:"offerto",misto:"contanti e POS"};
 const eurIn=v=>v>0?v.toFixed(2).replace(".",","):"";
-function newPart(i){return {i:i||0,m:"contanti",r:0,chi:""}}
+function newPart(i){return {i:i||0,m:"contanti",r:0,chi:"",sel:{}}}
+/* «Per piatti»: le righe dell'ordine (menù e piatti da soli) con il prezzo di uno */
+function splitLines(){const b=bill(S.qty,{},$("c-paid").checked,S.sqty);
+  return [...b.rr.map(r=>({k:"v:"+r.id,nome:r.nome,qta:r.qta,p:$("c-paid").checked?0:(r.prezzo||0)})),...b.ss.map(s=>({k:"s:"+s.pid+"|"+s.k,nome:s.nome,qta:s.qta,p:s.prezzo||0}))]}
+function assigned(k,except){return S.parts.reduce((a,p,j)=>a+(j===except?0:((p.sel||{})[k]||0)),0)}
+/* importi delle parti dai piatti scelti; l'offerta libera si aggiunge alla parte 1 */
+function recalcByItems(){const L=splitLines(),off=parsePrice($("c-off").value);
+  S.parts.forEach((p,j)=>{p.sel=p.sel||{};L.forEach(l=>{const max=l.qta-assigned(l.k,j);if((p.sel[l.k]||0)>max)p.sel[l.k]=Math.max(0,max)});
+    Object.keys(p.sel).forEach(k=>{if(!L.some(l=>l.k===k))delete p.sel[k]});
+    p.i=r2(L.reduce((a,l)=>a+(p.sel[l.k]||0)*l.p,0)+(j===0?off:0))})}
+function partCosa(p){const L=splitLines();return L.filter(l=>(p.sel||{})[l.k]>0).map(l=>`${p.sel[l.k]} ${l.nome}`).join(", ")}
 /* parti uguali al centesimo: il resto dei centesimi va alle prime parti */
 function equalParts(tot,n){const c=Math.round(tot*100),q=Math.floor(c/n),x=c-q*n;return Array.from({length:n},(_,k)=>(q+(k<x?1:0))/100)}
 /* piano dei pagamenti dell'ordine nuovo; err = cosa manca */
@@ -34,6 +44,8 @@ function payPlan(b,off){
     if(toPay>0&&S.pay==="contanti"&&!(ric>0))return {err:"Scrivi quanto ti ha dato il cliente.",focus:"c-ric",bad:true};
     if(toPay>0&&ric>0&&ric<toPay)return {err:`Mancano ${money(r2(toPay-ric))}: controlla quanto hai ricevuto.`};
     return {pagamenti:toPay>0?[{i:toPay,m:S.pay,...(ric>0?{r:ric}:{})}]:[],incassato:due,offerta:off,offerto:0,offertoDa:"",ricevuto:ric>0?ric:0,metodo:toPay>0?S.pay:"",money:toPay}}
+  if(S.smode==="piatti"){recalcByItems();const left=splitLines().map(l=>({...l,q:l.qta-assigned(l.k,-1)})).filter(l=>l.q>0);
+    if(left.length)return {err:`Da assegnare a una parte: ${left.map(l=>l.q+" "+l.nome).join(", ")}.`}}
   const P=S.parts;if(!P.length)return {err:"Aggiungi le parti del conto."};
   for(const [k,p] of P.entries()){if(!(p.i>0))return {err:`Parte ${k+1}: scrivi l'importo.`};
     if(p.m==="offerto"&&!p.chi.trim())return {err:`Parte ${k+1}: scrivi chi la offre.`};
@@ -43,17 +55,30 @@ function payPlan(b,off){
   const offerto=r2(P.filter(p=>p.m==="offerto").reduce((a,p)=>a+p.i,0));
   if(offerto>due)return {err:"La parte offerta è più grande del conto dei pasti (l'offerta libera non si offre)."};
   const ms=[...new Set(P.filter(p=>p.m!=="offerto").map(p=>p.m))];
-  return {pagamenti:P.map(p=>({i:p.i,m:p.m,...(p.m==="contanti"&&p.r>0?{r:p.r}:{}),...(p.m==="offerto"?{chi:p.chi.trim()}:{})})),
+  return {pagamenti:P.map(p=>({i:p.i,m:p.m,...(p.m==="contanti"&&p.r>0?{r:p.r}:{}),...(p.m==="offerto"?{chi:p.chi.trim()}:{}),...(S.smode==="piatti"&&partCosa(p)?{cosa:partCosa(p)}:{})})),
     incassato:r2(due-offerto),offerta:off,offerto,offertoDa:[...new Set(P.filter(p=>p.m==="offerto").map(p=>p.chi.trim()))].join(", "),ricevuto:0,
     metodo:ms.length>1?"misto":ms[0]||"offerto",money:r2(sum-offerto)};
 }
-function partRow(p,k){return `<div class="part" data-pi="${k}"><div class="row"><span class="label">Parte ${k+1}</span>
-    <input type="text" inputmode="decimal" class="pricein" data-pf="i" value="${eurIn(p.i)}" placeholder="0,00 €" aria-label="Importo della parte ${k+1}">
+function partRow(p,k){const byI=S.smode==="piatti",L=byI?splitLines():[];
+  const items=byI?`<div class="plines">${L.map(l=>{const q=(p.sel||{})[l.k]||0,free=l.qta-assigned(l.k,k);
+      return `<div class="stepper pl"><span class="name">${esc(l.nome)} <span class="label">${l.p>0?money(l.p):""}${free-q>0?` · liberi ${free-q}`:""}</span></span><span class="ctl">
+        <button type="button" data-pq="${esc(l.k)}" data-d="-1" ${q?"":"disabled"} aria-label="Togli ${esc(l.nome)} dalla parte ${k+1}">−</button><output>${q}</output>
+        <button type="button" data-pq="${esc(l.k)}" data-d="1" ${free-q>0?"":"disabled"} aria-label="Aggiungi ${esc(l.nome)} alla parte ${k+1}">+</button></span></div>`}).join("")}
+      ${L.some(l=>l.qta-assigned(l.k,-1)>0)?`<button type="button" class="btn small" data-prest="${k}">Tutto il resto a questa parte</button>`:""}
+      ${k===0&&parsePrice($("c-off").value)>0?`<div class="sub">+ offerta ${money(parsePrice($("c-off").value))}</div>`:""}</div>`:"";
+  return `<div class="part" data-pi="${k}"><div class="row"><span class="label">Parte ${k+1}</span>
+    ${byI?`<b class="pamt">${money(p.i)}</b>`:`<input type="text" inputmode="decimal" class="pricein" data-pf="i" value="${eurIn(p.i)}" placeholder="0,00 €" aria-label="Importo della parte ${k+1}">`}
     <span class="seg">${["contanti","pos","offerto"].map(m=>`<button type="button" data-pm="${m}" aria-pressed="${p.m===m}">${m==="pos"?"POS":m[0].toUpperCase()+m.slice(1)}</button>`).join("")}</span>
     ${S.parts.length>1?`<button class="btn small" type="button" data-prm="${k}" aria-label="Togli la parte ${k+1}">✕</button>`:""}</div>
     ${p.m==="contanti"?`<div class="row"><span class="label">Ricevuto</span><input type="text" inputmode="decimal" class="pricein" data-pf="r" value="${eurIn(p.r)}" placeholder="0,00 €" aria-label="Ricevuto parte ${k+1}"><span class="resto" data-presto="${k}"></span></div>`:""}
+    ${items}
     ${p.m==="offerto"?`<div class="row"><span class="label">Offerto da</span><input type="text" data-pf="chi" value="${esc(p.chi)}" placeholder="Es. Parrocchia" aria-label="Chi offre la parte ${k+1}"></div>`:""}</div>`}
-function renderParts(){$("c-partlist").innerHTML=S.parts.map(partRow).join("");paintParts()}
+function renderParts(){if(S.smode==="piatti")recalcByItems();
+  $("c-smode").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.smode===S.smode)));$("c-eqrow").hidden=S.smode==="piatti";
+  $("c-smode-hint").textContent=S.smode==="piatti"?"Per ogni parte tocca + sui menù e sui piatti che paga: l'importo si calcola da solo.":"Scrivi l'importo di ogni parte, oppure dividi in parti uguali.";
+  $("c-partlist").innerHTML=S.parts.map(partRow).join("");paintParts()}
+$("c-smode").addEventListener("click",e=>{const b=e.target.closest("button[data-smode]");if(!b)return;S.smode=b.dataset.smode;
+  if(S.smode==="piatti")S.parts.forEach(p=>{p.sel={}});renderParts();repaintC()});
 function paintParts(){
   const b=bill(S.qty,{},$("c-paid").checked,S.sqty),toPay=r2(b.due+parsePrice($("c-off").value)),sum=r2(S.parts.reduce((a,p)=>a+(p.i||0),0)),d=r2(toPay-sum);
   $("c-partsum").innerHTML=`Parti: <b>${money(sum)}</b> su ${money(toPay)}${d>0?` · <span style="color:var(--danger)">mancano ${money(d)}</span>`:d<0?` · <span style="color:var(--danger)">${money(-d)} di troppo</span>`:" · ✓"}`;
@@ -61,14 +86,16 @@ function paintParts(){
     const r=r2(p.r-p.i);el.className="resto "+(r<0?"err":"ok");el.innerHTML=r<0?`<small>Mancano</small>${money(-r)}`:`<small>Resto</small>${money(r)}`});
 }
 $("c-split").addEventListener("click",e=>{const b=e.target.closest("button[data-split]");if(!b)return;S.split=b.dataset.split==="1";
-  if(S.split&&!S.parts.length){const bb=bill(S.qty,{},$("c-paid").checked,S.sqty),t=r2(bb.due+parsePrice($("c-off").value));S.parts=equalParts(t,2).map(newPart)}
+  if(S.split&&!S.parts.length){const bb=bill(S.qty,{},$("c-paid").checked,S.sqty),t=r2(bb.due+parsePrice($("c-off").value));S.parts=S.smode==="piatti"?[newPart(),newPart()]:equalParts(t,2).map(newPart)}
   renderSteppers()});
 $("c-equal").addEventListener("click",()=>{const n=Math.max(2,Math.min(20,parseInt($("c-nparts").value,10)||2)),b=bill(S.qty,{},$("c-paid").checked,S.sqty);
   const old=S.parts;S.parts=equalParts(r2(b.due+parsePrice($("c-off").value)),n).map((i,k)=>({...(old[k]||newPart()),i}));renderParts();repaintC()});
 $("c-addpart").addEventListener("click",()=>{const b=bill(S.qty,{},$("c-paid").checked,S.sqty),left=r2(b.due+parsePrice($("c-off").value)-S.parts.reduce((a,p)=>a+(p.i||0),0));
-  S.parts.push(newPart(left>0?left:0));renderParts();repaintC()});
+  S.parts.push(newPart(S.smode==="piatti"?0:(left>0?left:0)));renderParts();repaintC()});
 $("c-partlist").addEventListener("click",e=>{const row=e.target.closest(".part");if(!row)return;const k=+row.dataset.pi;
   const m=e.target.closest("button[data-pm]");if(m){S.parts[k].m=m.dataset.pm;renderParts();repaintC();return}
+  const q=e.target.closest("button[data-pq]");if(q){const p=S.parts[k];p.sel=p.sel||{};p.sel[q.dataset.pq]=Math.max(0,(p.sel[q.dataset.pq]||0)+Number(q.dataset.d));recalcByItems();renderParts();repaintC();return}
+  if(e.target.closest("button[data-prest]")){const p=S.parts[k];p.sel=p.sel||{};splitLines().forEach(l=>{p.sel[l.k]=(p.sel[l.k]||0)+Math.max(0,l.qta-assigned(l.k,-1))});recalcByItems();renderParts();repaintC();return}
   if(e.target.closest("button[data-prm]")){S.parts.splice(k,1);renderParts();repaintC()}});
 $("c-partlist").addEventListener("input",e=>{const row=e.target.closest(".part"),f=e.target.dataset.pf;if(!row||!f)return;const p=S.parts[+row.dataset.pi];
   p[f]=f==="chi"?e.target.value:parsePrice(e.target.value);paintParts();repaintC()});
@@ -91,7 +118,8 @@ function paintTotal(prefix,b,paid,pay){
   $("c-split").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String((x.dataset.split==="1")===!!S.split)));
   $("c-one").hidden=!!S.split;$("c-parts").hidden=!S.split;$("c-offby-row").hidden=!offAll;$("c-off-row").hidden=offAll;
   $("c-pay").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.pay===pay)));
-  if(S.split){if($("c-partlist").childElementCount!==S.parts.length)renderParts();else paintParts();$("c-cash").hidden=true}else paintCash(toPay,pay);
+  if(S.split){const sig=JSON.stringify([S.smode,S.smode==="piatti"?splitLines():0,S.parts.map(p=>[p.m,p.sel]),S.smode==="piatti"?$("c-off").value:0]);
+    if(sig!==S.partSig||$("c-partlist").childElementCount!==S.parts.length){S.partSig=sig;renderParts()}else paintParts();$("c-cash").hidden=true}else paintCash(toPay,pay);
   if(!S.aspConfirm)$("c-create").textContent=toPay<=0?"Crea ordine":offAll?"Crea ordine (offerto)":S.split?"Crea ordine (conto diviso)":`Incassa ${money(toPay)} e crea`;
 }
 function paintCash(toPay,pay){
@@ -184,7 +212,7 @@ function selectPren(id){
   renderSearch();renderSteppers();renderSel();$("c-msg").textContent="";
 }
 function renderSel(){const p=S.selPren&&S.prenMap[S.selPren];$("c-sel").hidden=!p;if(p)$("c-sel-t").textContent="Prenotazione: "+p.nome}
-function resetForm(){S.selPren=null;S.qty={};S.sqty={};S.split=false;S.parts=[];$("c-offby").value="";$("c-partlist").innerHTML="";$("c-asp").checked=false;S.aspMode="subito";S.pay="contanti";S.stockWarn=null;$("c-off").value="";$("c-ric").value="";$("c-nome").value="";$("c-note").value="";$("c-paid").checked=false;renderSel();renderSteppers()}
+function resetForm(){S.smode="piatti";S.selPren=null;S.qty={};S.sqty={};S.split=false;S.parts=[];$("c-offby").value="";$("c-partlist").innerHTML="";$("c-asp").checked=false;S.aspMode="subito";S.pay="contanti";S.stockWarn=null;$("c-off").value="";$("c-ric").value="";$("c-nome").value="";$("c-note").value="";$("c-paid").checked=false;renderSel();renderSteppers()}
 $("c-sel-x").addEventListener("click",resetForm);
 function canUndo(o){return !!o&&!o.asportoSubito&&Date.now()-(o.creato||0)<60000&&!isLocked(o)}
 function renderTicket(){
@@ -193,7 +221,7 @@ function renderTicket(){
   const o=orderByNum(S.lastNum);
   if(!o){$("c-last").innerHTML=S.undoMsg?`<b>${esc(S.undoMsg)}</b>`:"";return}
   const P=pagamenti(o),tp=r2((o.incassato||0)+(o.offerta||0)),resto=o.ricevuto?r2(o.ricevuto-tp):0;
-  const parts=P.length>1?`<div class="stack" style="gap:2px">${P.map((p,k)=>`<span class="sub">Parte ${k+1}: <b>${money(p.i)}</b> ${PAY_LBL[p.m]||""}${p.m==="contanti"&&p.r>p.i?` · resto <b>${money(r2(p.r-p.i))}</b>`:""}${p.chi?" · "+esc(p.chi):""}</span>`).join("")}</div>`:"";
+  const parts=P.length>1?`<div class="stack" style="gap:2px">${P.map((p,k)=>`<span class="sub">Parte ${k+1}: <b>${money(p.i)}</b> ${PAY_LBL[p.m]||""}${p.m==="contanti"&&p.r>p.i?` · resto <b>${money(r2(p.r-p.i))}</b>`:""}${p.chi?" · "+esc(p.chi):""}${p.cosa?` <span class="label">(${esc(p.cosa)})</span>`:""}</span>`).join("")}</div>`:"";
   $("c-last").innerHTML=`<div class="done-top"><span class="done-n"><small>Biglietto</small>${o.numero}</span>
     ${resto>0?`<span class="done-resto"><small>Resto</small>${money(resto)}</span>`:""}</div>
     <span class="sub">${o.nome?esc(o.nome)+" · ":""}${esc(payDesc(o))}${o.offerta>0?` (offerta ${money(o.offerta)})`:""}${o.asportoSubito?" · asporto mandato in cucina":""}</span>${parts}

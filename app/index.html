@@ -151,7 +151,9 @@
             <span class="row" style="flex-wrap:nowrap"><input type="text" id="c-ric" inputmode="decimal" class="pricein" placeholder="0,00 €"><span class="resto" id="c-resto"></span></span></div>
           </div>
           <div class="stack" id="c-parts" hidden>
-            <div class="row"><span class="label">In parti uguali</span><input type="number" id="c-nparts" inputmode="numeric" min="2" max="20" value="2" class="pricein" aria-label="Quante parti"><button class="btn small" id="c-equal" type="button">Dividi</button><button class="btn small" id="c-addpart" type="button">+ Parte</button></div>
+            <div class="payrow"><span class="label">Come dividere</span><span class="seg" id="c-smode"><button type="button" data-smode="piatti">Per piatti</button><button type="button" data-smode="importi">A importi</button></span></div>
+            <p class="hint" id="c-smode-hint"></p>
+            <div class="row" id="c-eqrow"><span class="label">In parti uguali</span><input type="number" id="c-nparts" inputmode="numeric" min="2" max="20" value="2" class="pricein" aria-label="Quante parti"><button class="btn small" id="c-equal" type="button">Dividi</button><button class="btn small" id="c-addpart" type="button">+ Parte</button></div>
             <div class="stack" id="c-partlist"></div>
             <div class="sub" id="c-partsum"></div>
           </div>

@@ -400,3 +400,6 @@ ul.kitems li.klate small{color:var(--danger);font-weight:700}
 #c-parts .part .pricein{width:100px}
 #c-nparts{width:64px}
 #c-split button{padding:8px 14px}
+#c-parts .plines{display:flex;flex-direction:column;gap:2px;padding-top:4px;border-top:1px dashed var(--line)}
+#c-parts .pamt{font-size:1.15rem;min-width:90px}
+#c-parts .stepper.pl .name{font-size:.95rem}
