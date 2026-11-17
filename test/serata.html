@@ -197,7 +197,7 @@ async function setup(){
 
 /* ---------------- SERVIZIO ---------------- */
 const L={};CASSE.forEach(c=>L[c.dev]={contanti:0,pos:0});
-const ORD=[],STAT={parz:0,scalati:0,aspTutto:0,aspConsegnati:0,cambi:0,scelteMosse:0,barVedeScelte:0,prontoUscita:0,aspUscita:0,contiDivisi:0,divisiPiatti:0,divisiPiattiKo:[],offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
+const ORD=[],STAT={divisi:0,parz:0,scalati:0,aspTutto:0,aspConsegnati:0,cambi:0,scelteMosse:0,barVedeScelte:0,prontoUscita:0,aspUscita:0,contiDivisi:0,divisiPiatti:0,divisiPiattiKo:[],offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
 const queueFor={};CAM.forEach(c=>queueFor[c.dev]=[]);
 let noDessert=false;
 function plan(){
@@ -248,8 +248,8 @@ async function fixStock(n,msg){
 async function createOrder(o){
   const n=o.cassa,menuName=m=>noDessert?m+" senza dolce":m;
   if(o.pren){await type(n,"#c-search",o.pren.replace("Famiglia ",""));await click(n,await waitFor(()=>qa(n,"#c-results button[data-pren]:not([disabled])").find(b=>b.querySelector("b").textContent===o.pren),3000,"prenotazione "+o.pren));
-    if(o.parz){await click(n,`#c-steppers button[aria-label="Togli ${noDessert?"Standard senza dolce":"Standard"}"]`);STAT.parz++}
-    if(o.rest){check(W(n).eval("Object.values(S.qty).reduce((a,b)=>a+b,0)")===1&&/in parte/.test(txt(n,"#c-sel")),`Prenotazione «${o.pren}» arrivata in parte: in cassa la ritrovo con solo quello che manca`);STAT.parz++}}
+    if(o.parz){await click(n,`#c-steppers button[aria-label="Togli ${noDessert?"Standard senza dolce":"Standard"}"]`);STAT.parz++;PARZ.noD=noDessert}
+    if(o.rest&&!PARZ.noD){check(W(n).eval("Object.values(S.qty).reduce((a,b)=>a+b,0)")===1&&/in parte/.test(txt(n,"#c-sel")),`Prenotazione «${o.pren}» arrivata in parte: in cassa la ritrovo con solo quello che manca`);STAT.parz++}}
   else await type(n,"#c-nome",o.nome);
   for(const [k,v] of Object.entries(o.menu))for(let i=0;i<v;i++)await click(n,`#c-steppers button[aria-label="Aggiungi ${menuName(k)}"]`);
   for(const [k,v] of Object.entries(o.single)){if(noDessert&&k==="Torta")continue;for(let i=0;i<v;i++)await click(n,`#c-sing button[aria-label="Aggiungi ${k}"]`)}
@@ -279,6 +279,11 @@ async function createOrder(o){
     await click(n,"#c-create");const m=txt(n,"#c-msg");
     if(/esaurito|ne restano solo/.test(m)){STAT.bloccatiPorzioni++;o.bloccato=m;await fixStock(n,m);continue}
     if(/Asporto diretto/.test(m)){STAT.confermeAsporto++;continue}
+    /* le porzioni finite hanno cambiato i menù: il conto diviso per piatti va rifatto, qui a importi uguali */
+    if(/Da assegnare a una parte|Parte \d+: scrivi l'importo/.test(m)&&o.split){await click(n,'#c-smode button[data-smode="importi"]');await type(n,"#c-nparts","2");await click(n,"#c-equal");
+      const p0=W(n).eval("S.parts[0].i");if(W(n).eval("S.parts[0].m")==="contanti")await type(n,'#c-partlist .part[data-pi="0"] input[data-pf="r"]',String(Math.ceil(p0/10)*10||10));
+      if(W(n).eval("S.parts[1].m")==="contanti"){const p1=W(n).eval("S.parts[1].i");await type(n,'#c-partlist .part[data-pi="1"] input[data-pf="r"]',String(Math.ceil(p1/10)*10||10))}
+      o.splitMode="importi";continue}
     if(/Aggiungi almeno/.test(m)){o.vuoto=true;q(n,"#c-sel-x")&&!q(n,"#c-sel").hidden&&q(n,"#c-sel-x").click();q(n,"#c-nome").value="";break}
     break}
   if(o.vuoto){log(`Ordine saltato (dopo aver tolto il finito non restava niente): ${o.nome||o.pren}`);
@@ -308,6 +313,7 @@ async function waiterAct(w){
   const c=pick(cand),own=[...c.querySelectorAll('button[data-set$="|chiamata"]:not([disabled])')],tabs=[...c.querySelectorAll("[data-wtab]")].filter(b=>b.querySelector(".rdot")&&b.getAttribute("aria-pressed")!=="true");
   if(tabs.length&&(!own.length||rnd()<.3)){await click(w,pick(tabs));STAT.cambiReparto++;return true}
   if(!own.length)return false;
+  const sp=c.querySelector("button[data-wsplit]");if(sp&&rnd()<.12){await click(w,sp);const ok=await waitFor(()=>q(w,"button[data-wsplitok]"),3000,"dividi");await click(w,ok);STAT.divisi++;return true}
   const plus=c.querySelector('.wsc button[data-d="1"]:not([disabled])');if(plus&&rnd()<.5){await click(w,plus);STAT.scelteMosse++;return true}
   const all=c.querySelector("button[data-callall]:not([disabled])");
   if(all&&rnd()<.5){await click(w,all);STAT.chiamateTutto++;STAT.chiamate++;return true}
@@ -468,11 +474,11 @@ async function closing(){
   check(!busy.length,"Cucine, bar e uscita: niente in coda a fine serata",busy.join(" | "));
   {const W_=W("master"),pasta=W_.eval(`S.portate.find(p=>p.nome==="Pasta").id`),withC=vals(db().ordini).filter(o=>vals(o.cambi).length);
    const ok=withC.every(o=>W_.eval(`(()=>{const o=orderByNum(${o.numero}),cc=cambi(o),pz=cc.filter(c=>c.da==="p-primo").reduce((a,c)=>a+c.q,0),pa=cc.filter(c=>c.a==="${pasta}").reduce((a,c)=>a+c.q,0),
-     men=righe(o).filter(r=>applies(portataCfg("p-primo"),r.id)).reduce((a,r)=>a+r.qta,0);return cop(righeFor(o,"${pasta}"))===pa&&cop(righeFor(o,"p-primo"))===men-pz&&(pa===0||!!o.portate["${pasta}"])&&Math.abs(o.importoMenu-(righe(o).reduce((a,r)=>a+r.qta*r.prezzo,0)-cc.reduce((a,c)=>a+(!c.a&&c.s>0?c.s*c.q:0),0)))<.01})()`));
+     men=righe(o).filter(r=>applies(portataCfg("p-primo"),r.id)).reduce((a,r)=>a+r.qta,0);return cop(righeAll(o,"${pasta}"))===pa&&cop(righeAll(o,"p-primo"))===men-pz&&(pa===0||!!o.portate["${pasta}"])&&Math.abs(o.importoMenu-(righe(o).reduce((a,r)=>a+r.qta*r.prezzo,0)-cc.reduce((a,c)=>a+(!c.a&&c.s>0?c.s*c.q:0),0)))<.01})()`));
    const scal=withC.filter(o=>vals(o.cambi).some(c=>c.a===""&&c.s===5)).length;
    check(STAT.scalati>0&&scal>0,`Togliere un piatto con «Scala»: ${scal} ordini con lo Sciatt tolto e 5 € in meno sul menù (gli altri pagano il menù intero)`);
    const ok2=withC.every(o=>W_.eval(`(()=>{const o=orderByNum(${o.numero}),cc=cambi(o);return S.portate.every(p=>{const men=righe(o).filter(r=>applies(p,r.id)).reduce((a,r)=>a+r.qta,0)+singoli(o).filter(s=>s.pid===p.id).reduce((a,s)=>a+s.qta,0);
-     return cop(righeFor(o,p.id))===men-cc.filter(c=>c.da===p.id).reduce((a,c)=>a+c.q,0)+cc.filter(c=>c.a===p.id).reduce((a,c)=>a+c.q,0)})})()`));
+     return cop(righeAll(o,p.id))===men-cc.filter(c=>c.da===p.id).reduce((a,c)=>a+c.q,0)+cc.filter(c=>c.a===p.id).reduce((a,c)=>a+c.q,0)})})()`));
    const senza=withC.filter(o=>vals(o.cambi).some(c=>c.a==="")).length;
    check(STAT.cambi>0&&withC.length>0&&ok&&ok2&&senza>0,`Cambi nel menù: ${withC.length} ordini (Pizzoccheri → Pasta, Caffè → Bibita, ${senza} con «senza Sciatt»); la cucina conta giusto ogni piatto, il prezzo resta quello del menù`)}
   {const W_=W("master"),acq=W_.eval(`S.portate.find(p=>p.nome==="Acqua").id`);
@@ -481,9 +487,14 @@ async function closing(){
    const friz=cs.filter(({p})=>vals(p.sc).some(x=>x.n==="Frizzante"&&x.q>0)).length;
    check(cs.length>0&&!bad.length&&friz>0&&STAT.barVedeScelte>0,`Acqua naturale / frizzante: ${cs.length} chiamate con la scelta (${friz} con frizzante, ${STAT.scelteMosse} cambi del cameriere); il bar la vede`,`sbagliate: ${bad.map(x=>x.o.numero).join(",")}`)}
   check(STAT.aspTutto>0&&STAT.aspConsegnati>0,`Uscita: l'asporto è una scheda sola con tutti i piatti (fino a ${STAT.aspTutto}) e «Consegnato tutto» (${STAT.aspConsegnati} asporti)`);
-  if(PARZ.nome){const p=vals(db().prenotazioni).find(x=>x.nome===PARZ.nome),os=vals(db().ordini).filter(o=>o.prenotazione===p.id);
+  if(PARZ.nome&&!PARZ.noD){const p=vals(db().prenotazioni).find(x=>x.nome===PARZ.nome),os=vals(db().ordini).filter(o=>o.prenotazione===p.id);
     const tot=os.reduce((a,o)=>a+((vals(o.righe).find(r=>r.id===PARZ.stdId)||{}).qta||0),0);
-    check(STAT.parz===2&&p.stato==="arrivata"&&Object.keys(p.arr||{}).length===2&&os.length===2&&(tot===PARZ.std||noDessert),`Arrivi in due volte: «${PARZ.nome}» ha due ordini (${os.map(o=>o.numero).join(" e ")}) e alla fine risulta arrivata`,JSON.stringify({parz:STAT.parz,st:p.stato,arr:p.arr,n:os.length,tot,std:PARZ.std}))}
+    check(STAT.parz>=2&&(p.stato==="arrivata"||noDessert)&&Object.keys(p.arr||{}).length===2&&os.length===2&&(tot===PARZ.std||noDessert),`Arrivi in due volte: «${PARZ.nome}» ha due ordini (${os.map(o=>o.numero).join(" e ")}) e alla fine risulta arrivata`,JSON.stringify({parz:STAT.parz,st:p.stato,arr:p.arr,n:os.length,tot,std:PARZ.std}))}
+  {const W_=W("master"),O_=vals(db().ordini).filter(o=>o.dopo&&Object.keys(o.dopo).length);
+   const ok=O_.every(o=>W_.eval(`(()=>{const o=orderByNum(${o.numero});const bs=[...new Set(Object.keys(o.portate).map(kBase))];
+     return bs.every(b=>Object.keys(o.portate).filter(k=>kBase(k)===b).reduce((a,k)=>a+cop(righeFor(o,k)),0)===cop(righeAll(o,b)))&&Object.keys(o.portate).every(k=>cop(righeFor(o,k))>0)})()`));
+   const served=O_.filter(o=>Object.entries(o.portate).some(([k,p])=>/~\d+$/.test(k)&&p.stato==="servita")).length;
+   check(STAT.divisi>0&&O_.length>0&&ok&&served>0,`«Una parte dopo»: ${O_.length} ordini con un piatto chiamato in due volte (es. 1 acqua adesso, 1 dopo); le quantità tornano e la seconda volta arriva (${served})`)}
   check(STAT.prontoUscita>0,`L'uscita segna «Pronto» da sola: ${STAT.prontoUscita} piatti`);
   check(STAT.aspUscita>0,"L'uscita vede anche gli asporti mandati subito in cucina");
   const nums=[...O.map(o=>o.numero),...A.map(a=>a.n)].sort((a,b)=>a-b);

@@ -19,7 +19,7 @@ const toArr=x=>(Array.isArray(x)?x:Object.values(x||{})).filter(Boolean);
 function repList(){return S.reparti||[]}
 function repNome(id){const r=repList().find(x=>x.id===id);return r?r.nome:""}
 function portReps(p){return toArr(p&&p.reparti).filter(x=>x.r&&repList().some(r=>r.id===x.r))}
-function repSnap(k){  const rs=portReps(S.portate.find(p=>p.id===k));if(!rs.length)return null;const o={};
+function repSnap(k){  const rs=portReps(portataCfg(k));if(!rs.length)return null;const o={};
   rs.forEach(x=>{o[x.r]={s:"chiamata",nome:repNome(x.r)};if(x.piatto)o[x.r].piatto=x.piatto});return o}
 function userReps(u){return toArr(u&&u.reparti).filter(id=>repList().some(r=>r.id===id))}
 function myReps(){if(!S.me||hasRole(S.me,"master")||!hasRole(S.me,"cucina"))return null;const rs=userReps(S.me).filter(r=>!barReps().includes(r));return rs.length?rs:null}
@@ -254,7 +254,10 @@ $("toast").addEventListener("click",e=>{const el=$("toast");el.hidden=true;
   });
 
 /* portate */
-function portataCfg(k){return S.portate.find(p=>p.id===k)}
+/* un piatto chiamato in più volte: la chiave «piatto~2» è la seconda volta, «piatto~3» la terza */
+function kBase(k){return String(k).split("~")[0]}
+function kRound(k){const m=/~(\d+)$/.exec(String(k));return m?+m[1]:1}
+function portataCfg(k){const b=kBase(k);return S.portate.find(p=>p.id===b)}
 function applies(p,vid){return !p||!Array.isArray(p.menu)||p.menu.includes(vid)}
 function coursesFor(rr,ss,xx,cc){const f={righe:rr,singoli:ss||[],cambi:cc||[]},out={};S.portate.forEach((p,i)=>{if(cop(righeFor(f,p.id))>0)out[p.id]={stato:"attesa",t:0,nome:p.nome,ord:i}});return out}
 /* cambi nel menù di un ordine: [{m:menù, da:piatto, a:piatto, q, dn, an}]. Il prezzo resta quello del menù. */
@@ -275,10 +278,17 @@ function scDefault(o,k){const s=scelteOf(k),n=cop(righeFor(o,k));return s.length
 function scTxt(p){return toArr(p&&p.sc).filter(x=>x&&x.q>0).map(x=>`${x.q} ${x.n}`).join(" · ")}
 function orderCourses(o){
   const ps=o.portate||{};
-  return Object.keys(ps).map(k=>{const c=portataCfg(k);const idx=S.portate.indexOf(c);return {k,l:(c&&c.nome)||ps[k].nome||k,ord:idx<0?100+(ps[k].ord||0):idx,p:ps[k]}}).sort((a,b)=>a.ord-b.ord);
+  return Object.keys(ps).map(k=>{const c=portataCfg(k);const idx=S.portate.indexOf(c),rn=kRound(k);return {k,l:((c&&c.nome)||ps[k].nome||k)+(rn>1?` · ${rn}ª volta`:""),ord:(idx<0?100+(ps[k].ord||0):idx)+(rn-1)/100,p:ps[k]}}).sort((a,b)=>a.ord-b.ord);
 }
 function singoli(o){const r=o&&o.singoli;return (Array.isArray(r)?r:Object.values(r||{})).filter(Boolean)}
-function righeFor(o,k){
+/* o.dopo = {"piatto~2": quanti, ...}: quelli tenuti per dopo; la prima volta prende il resto (almeno 1) */
+function righeFor(o,k){const b=kBase(k),full=righeAll(o,b),D=(o&&o.dopo)||{};
+  const ks=Object.keys(D).filter(x=>kBase(x)===b&&D[x]>0).sort((x,y)=>kRound(x)-kRound(y));if(!ks.length)return k===b?full:[];
+  const units=[];full.forEach(r=>{for(let i=0;i<r.qta;i++)units.push(r)});
+  const share={};let end=units.length;
+  ks.slice().reverse().forEach(x=>{const d=Math.min(D[x],Math.max(0,end-1));share[x]=units.slice(end-d,end);end-=d});share[b]=units.slice(0,end);
+  const by=new Map();(share[k]||[]).forEach(r=>{const g=by.get(r.id);if(g)g.qta++;else by.set(r.id,{...r,qta:1})});return [...by.values()]}
+function righeAll(o,k){
   const p=portataCfg(k),cc=cambi(o),menuN=id=>(righe(o).find(r=>r.id===id)||{}).nome||"Menù";
   const base=righe(o).filter(r=>applies(p,r.id)).map(r=>{const out=cc.filter(c=>c.m===r.id&&c.da===k).reduce((a,c)=>a+c.q,0);return out?{...r,qta:r.qta-out}:r}).filter(r=>r.qta>0);
   return [...base,...cc.filter(c=>c.a===k).map(c=>({id:"c-"+c.m+"-"+c.da,nome:`${menuN(c.m)} · al posto di ${piattoNome(c.da,c.dn)}`,qta:c.q})),...singoli(o).filter(s=>s.pid===k).map(s=>({id:"s-"+s.pid+s.k,nome:s.k==="b"?"singola bambini":"singola",qta:s.qta}))]}
@@ -299,8 +309,8 @@ function singChips(ss){return (ss||[]).map(r=>`<span class="chip">${r.qta} ${esc
 const PORT_COLORS=["#0f766e","#b45309","#7c3aed","#be123c","#1d4ed8","#4d7c0f","#a21caf","#0e7490"];
 /* colori per reparto: ogni piatto prende il colore del suo reparto (cucina, uscita, bar, cameriere) */
 function repColor(rid){const i=repList().findIndex(r=>r.id===rid);const r=repList()[i];return (r&&r.colore)||PORT_COLORS[(i<0?0:i)%PORT_COLORS.length]}
-function portColor(pid){const i=S.portate.findIndex(p=>p.id===pid);const p=S.portate[i];if(p&&p.rep)return repColor(p.rep);return (p&&p.colore)||PORT_COLORS[(i<0?0:i)%PORT_COLORS.length]}
-function usedFor(pid){return ordersArr().reduce((a,o)=>a+(o.portate&&o.portate[pid]?cop(righeFor(o,pid)):0),0)}
+function portColor(pid){const b=kBase(pid),i=S.portate.findIndex(p=>p.id===b);const p=S.portate[i];if(p&&p.rep)return repColor(p.rep);return (p&&p.colore)||PORT_COLORS[(i<0?0:i)%PORT_COLORS.length]}
+function usedFor(pid){return ordersArr().reduce((a,o)=>a+(Object.keys(o.portate||{}).some(k=>kBase(k)===pid)?cop(righeAll(o,pid)):0),0)}
 function stockLeft(pid){const lim=S.scorte[pid];return (lim==null||lim==="")?null:lim-usedFor(pid)}
 function leftTxt(l){return l<=0?"esaurito":l===1?"resta 1":"restano "+l}
 function isLocked(o){return !!o&&(!!o.cameriereId||orderCourses(o).some(c=>(c.p.stato||"attesa")!=="attesa"))}
@@ -325,7 +335,7 @@ function armed(btn,label){
 }
 /* tempo massimo di preparazione del piatto (Listino, «Pronto entro»); vuoto = 15 minuti */
 const MIN_DEF=15;
-function maxMin(pid){const p=S.portate.find(x=>x.id===pid);return p&&p.min>0?p.min:MIN_DEF}
+function maxMin(pid){const p=portataCfg(pid);return p&&p.min>0?p.min:MIN_DEF}
 function isLate(pid,t){return !!t&&Date.now()-t>maxMin(pid)*60000}
 function stockCls(left){return left==null?"":left<=0?"out":left<=10?"low":""}
 

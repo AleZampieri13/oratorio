@@ -28,7 +28,7 @@ function repItems(stato,sc){
 function renderRepView(sc,ids){
   const calls=repItems("chiamata",sc),ready=repItems("pronta",sc);
   const ports=S.portate.filter(p=>portReps(p).some(x=>sc.includes(x.r)));
-  $(ids.sum).innerHTML=ports.length?ports.map(p=>{const b=breakdown(calls.filter(c=>c.k===p.id)),l=stockLeft(p.id);
+  $(ids.sum).innerHTML=ports.length?ports.map(p=>{const b=breakdown(calls.filter(c=>kBase(c.k)===p.id)),l=stockLeft(p.id);
     return `<div class="${b.tot?"":"zero"}"><span class="label" style="color:${portColor(p.id)}">${esc(p.nome)}</span><b>${b.tot}</b><span class="brk">${b.tot?b.txt:"—"}</span>${l!=null?`<span class="left ${stockCls(l)}">${l<=0?"Esaurito":l===1?"Resta 1 porzione":"Restano "+l+" porzioni"}</span>`:""}</div>`}).join("")
     :'<div class="zero"><span class="label">Nessun piatto</span><span class="brk">A questo reparto non è assegnato nessun piatto: chiedi al master (Listino → Piatti).</span></div>';
   const groups=[];calls.forEach(c=>{let g=groups.find(x=>x.o.numero===c.o.numero);if(!g){g={o:c.o,t:c.t,items:[]};groups.push(g)}g.items.push(c);if(c.t<g.t)g.t=c.t});
@@ -72,16 +72,16 @@ async function setPart(n,k,r,to,opts){
 }
 document.addEventListener("click",e=>{const b=e.target.closest("button[data-rset]");if(b&&!b.disabled){const [n,k,r]=b.dataset.rset.split("|");setPart(Number(n),k,r,"pronta")}});
 document.addEventListener("click",async e=>{const b=e.target.closest("button[data-rsetall]");if(!b||b.disabled)return;b.disabled=true;
-  const [n,list]=b.dataset.rsetall.split("|"),its=list.split(",").map(x=>x.split("~"));
+  const [n,list]=b.dataset.rsetall.split("|"),its=list.split(",").map(x=>{const i=x.lastIndexOf("~");return [x.slice(0,i),x.slice(i+1)]});
   for(const [k,r] of its)await setPart(Number(n),k,r,"pronta",{silent:true});
   const o=orderByNum(Number(n));toast(`${o?kWho(o,null)+" · ":""}n. ${n}: tutto pronto`,{ms:4000})});
 document.addEventListener("click",e=>{const b=e.target.closest("button[data-runready]");if(!b||b.disabled)return;if(!armed(b,"Non pronto?"))return;
   const [n,k,r]=b.dataset.runready.split("|");setPart(Number(n),k,r,"chiamata")});
 function renderKitchen(){
   renderKReps();const sc=kScope();if(sc){renderKitchenRep(sc);return}
-  const f=kFilt(),inF=c=>!f||c.k===f;
+  const f=kFilt(),inF=c=>!f||kBase(c.k)===f;
   const calls=flatCourses("chiamata"),ready=flatCourses("pronta");
-  $("k-sum").innerHTML=S.portate.map(p=>{const b=breakdown(calls.filter(c=>c.k===p.id)),l=stockLeft(p.id);
+  $("k-sum").innerHTML=S.portate.map(p=>{const b=breakdown(calls.filter(c=>kBase(c.k)===p.id)),l=stockLeft(p.id);
     const cls=[b.tot?"":"zero",f===p.id?"kon":f?"dim":""].join(" ");
     return `<div class="${cls}" data-kf="${esc(p.id)}" role="button" tabindex="0"><span class="label" style="color:${portColor(p.id)}">${esc(p.nome)}</span><b>${b.tot}</b><span class="brk">${b.tot?b.txt:"—"}</span>${l!=null?`<span class="left ${stockCls(l)}">${l<=0?"Esaurito":l===1?"Resta 1 porzione":"Restano "+l+" porzioni"}</span>`:""}</div>`}).join("");
   const fp=S.portate.find(p=>p.id===f);

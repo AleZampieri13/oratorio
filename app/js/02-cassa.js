@@ -477,7 +477,7 @@ async function saveFix(){
   upd.importo=r2(upd.importoMenu+upd.importoSingoli+upd.importoExtra);
   const qm={};c.rr.forEach(r=>{qm[r.id]=r.qta});const cc=clampCambi(cambi(o),qm);if(cambi(o).length)upd.cambi=cc.length?cc:null;
   const need=coursesFor(c.rr,c.ss,c.xx,cc);
-  Object.keys(o.portate||{}).forEach(k=>{if((F.rm[k]||!need[k])&&(o.portate[k].stato||"attesa")==="attesa")upd["portate/"+k]=null});
+  Object.keys(o.portate||{}).forEach(k=>{if((F.rm[k]||!need[kBase(k)])&&(o.portate[k].stato||"attesa")==="attesa")upd["portate/"+k]=null});
   upd.incassato=r2((o.incassato||0)-amt);upd.stornato=r2((o.stornato||0)+amt);
   const sid=rid("s"),rm=refundM(o);upd["storni/"+sid]={t:Date.now(),da:myName(),daId:S.me?S.me.id:"",cosa:c.desc.join(", "),importo:amt,metodo:rm};
   if(o.pagamenti&&amt>0)upd["pagamenti/"+sid]={i:-amt,m:rm,t:Date.now()};
@@ -517,7 +517,7 @@ $("x-save").addEventListener("click",async()=>{
   upd.metodo=moved===0?(o.metodo||(nOff>0?"offerto":"")):(o.metodo&&o.metodo!=="offerto"&&o.metodo!==S.xpay&&(o.incassato||0)>0?"misto":S.xpay);
   if(o.pagamenti){const pid=rid("p");if(moved)upd["pagamenti/"+pid]={i:moved,m:S.xpay,t:Date.now()};if(nOff!==oOff)upd["pagamenti/"+pid+"o"]={i:r2(nOff-oOff),m:"offerto",t:Date.now()}}
   const need=coursesFor(b.rr,b.ss,b.xx,cc);Object.keys(need).forEach(k=>{if(!(o.portate&&o.portate[k]))upd["portate/"+k]=need[k]});
-  Object.keys(o.portate||{}).forEach(k=>{if(!need[k])upd["portate/"+k]=null});
+  Object.keys(o.portate||{}).forEach(k=>{if(!need[kBase(k)])upd["portate/"+k]=null});
   const diff=moved;
   const before=orderDesc(righe(o),singoli(o),extras(o),cambi(o)),after=orderDesc(b.rr,b.ss,b.xx,cc);
   try{
