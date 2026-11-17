@@ -211,7 +211,7 @@ function plan(){
     else{o.nome=pick(["Sig. ","Fam. ","Gruppo "])+pick(COGNOMI);o.menu.Standard=1+Math.floor(rnd()*4);if(rnd()<.4)o.menu.Bambini=1+Math.floor(rnd()*2)}
     if(rnd()<.6)o.single[pick(["Acqua","Vino","Bibita"])]=1+Math.floor(rnd()*3);
     if(rnd()<.2)o.single["Patatine"]=1+Math.floor(rnd()*2);
-    if(!o.asp&&!o.pren&&(o.menu.Standard||0)>=2&&rnd()<.3){o.cambi=[{da:"Pizzoccheri",a:"Pasta",q:o.menu.Standard>=3&&rnd()<.5?2:1}];if(rnd()<.4)o.cambi.push({da:"Caffè",a:"Bibita",q:1})}
+    if(!o.asp&&!o.pren&&(o.menu.Standard||0)>=2&&rnd()<.3){o.cambi=[{da:"Pizzoccheri",a:"Pasta",q:o.menu.Standard>=3&&rnd()<.5?2:1}];if(rnd()<.4)o.cambi.push({da:"Caffè",a:"Bibita",q:1});if(rnd()<.5)o.cambi.push({da:"Sciatt",a:"Niente",q:1})}
     if(rnd()<.12)o.off=pick([2,5,10]);
     if(!o.asp&&!o.pren){const z=rnd();if(z<.06){o.offer=true;o.off=0}else if(z<.16)o.split=true}
     if(o.pren&&offP.has(o.pren)){o.offer=true;o.prenOffer=true;o.off=0}
@@ -462,7 +462,10 @@ async function closing(){
   {const W_=W("master"),pasta=W_.eval(`S.portate.find(p=>p.nome==="Pasta").id`),withC=vals(db().ordini).filter(o=>vals(o.cambi).length);
    const ok=withC.every(o=>W_.eval(`(()=>{const o=orderByNum(${o.numero}),cc=cambi(o),pz=cc.filter(c=>c.da==="p-primo").reduce((a,c)=>a+c.q,0),pa=cc.filter(c=>c.a==="${pasta}").reduce((a,c)=>a+c.q,0),
      men=righe(o).filter(r=>applies(portataCfg("p-primo"),r.id)).reduce((a,r)=>a+r.qta,0);return cop(righeFor(o,"${pasta}"))===pa&&cop(righeFor(o,"p-primo"))===men-pz&&(pa===0||!!o.portate["${pasta}"])&&Math.abs(o.importoMenu-righe(o).reduce((a,r)=>a+r.qta*r.prezzo,0))<.01})()`));
-   check(STAT.cambi>0&&withC.length>0&&ok,`Cambi nel menù: ${withC.length} ordini (Pizzoccheri → Pasta, Caffè → Bibita); la cucina prepara la Pasta a parte, il prezzo resta quello del menù`)}
+   const ok2=withC.every(o=>W_.eval(`(()=>{const o=orderByNum(${o.numero}),cc=cambi(o);return S.portate.every(p=>{const men=righe(o).filter(r=>applies(p,r.id)).reduce((a,r)=>a+r.qta,0)+singoli(o).filter(s=>s.pid===p.id).reduce((a,s)=>a+s.qta,0);
+     return cop(righeFor(o,p.id))===men-cc.filter(c=>c.da===p.id).reduce((a,c)=>a+c.q,0)+cc.filter(c=>c.a===p.id).reduce((a,c)=>a+c.q,0)})})()`));
+   const senza=withC.filter(o=>vals(o.cambi).some(c=>c.a==="")).length;
+   check(STAT.cambi>0&&withC.length>0&&ok&&ok2&&senza>0,`Cambi nel menù: ${withC.length} ordini (Pizzoccheri → Pasta, Caffè → Bibita, ${senza} con «senza Sciatt»); la cucina conta giusto ogni piatto, il prezzo resta quello del menù`)}
   {const W_=W("master"),acq=W_.eval(`S.portate.find(p=>p.nome==="Acqua").id`);
    const cs=vals(db().ordini).flatMap(o=>Object.entries(o.portate||{}).filter(([k,p])=>k===acq&&p.stato&&p.stato!=="attesa").map(([k,p])=>({o,p})));
    const bad=cs.filter(({o,p})=>vals(p.sc).reduce((a,x)=>a+x.q,0)!==W_.eval(`cop(righeFor(orderByNum(${o.numero}),"${acq}"))`));

@@ -176,24 +176,24 @@ function cambiAlts(da){const p=portataCfg(da);return p&&p.rep?S.portate.filter(x
 function cambiFree(qty,cc,m,da){return (qty[m]||0)-cc.filter(c=>c.m===m&&c.da===da).reduce((a,c)=>a+c.q,0)}
 function cambiHtml(pre,qty,cc){
   const vn=id=>(S.varianti.find(v=>v.id===id)||{}).nome||"Menù",ms=S.varianti.filter(v=>(qty[v.id]||0)>0);
-  const das=m=>menuPiatti(m).filter(p=>cambiAlts(p.id).length&&cambiFree(qty,cc,m,p.id)>0);
+  const das=m=>menuPiatti(m).filter(p=>cambiFree(qty,cc,m,p.id)>0);
   const can=ms.some(v=>das(v.id).length);
   if(!can&&!cc.length)return "";
-  const list=cc.map((c,i)=>`<div class="li plain"><span>${ms.length>1?esc(vn(c.m))+": ":""}<b>${c.q}</b> ${esc(piattoNome(c.da,c.dn))} → <b>${esc(piattoNome(c.a,c.an))}</b></span><button type="button" class="btn small" data-cx="${i}" aria-label="Togli il cambio ${esc(piattoNome(c.da,c.dn))} → ${esc(piattoNome(c.a,c.an))}">✕</button></div>`).join("");
+  const list=cc.map((c,i)=>`<div class="li plain"><span>${ms.length>1?esc(vn(c.m))+": ":""}${c.a?`<b>${c.q}</b> ${esc(piattoNome(c.da,c.dn))} → <b>${esc(piattoNome(c.a,c.an))}</b>`:`<b>${c.q}</b> <b>senza</b> ${esc(piattoNome(c.da,c.dn))}`}</span><button type="button" class="btn small" data-cx="${i}" aria-label="Togli il cambio ${esc(cambioTxt(c))}">✕</button></div>`).join("");
   let form="";const F=S.cf&&S.cf.pre===pre?S.cf:null;
   if(F&&can){
     const mm=ms.filter(v=>das(v.id).length);if(!mm.some(v=>v.id===F.m))F.m=mm[0].id;
     const dd=das(F.m);if(!dd.some(p=>p.id===F.da))F.da=dd[0].id;
-    const aa=cambiAlts(F.da);if(!aa.some(p=>p.id===F.a))F.a=aa[0].id;
+    const aa=cambiAlts(F.da);if(F.a!==""&&!aa.some(p=>p.id===F.a))F.a=aa.length?aa[0].id:"";
     const free=cambiFree(qty,cc,F.m,F.da);F.q=Math.max(1,Math.min(free,F.q||1));
     const opt=(l,sel)=>l.map(x=>`<option value="${esc(x.id)}" ${x.id===sel?"selected":""}>${esc(x.nome)}</option>`).join("");
     form=`<div class="cform">${mm.length>1?`<label><span class="label">Nel menù</span><select data-cf="m">${opt(mm,F.m)}</select></label>`:""}
       <label><span class="label">Al posto di</span><select data-cf="da">${opt(dd,F.da)}</select></label>
-      <label><span class="label">Vuole</span><select data-cf="a">${opt(aa,F.a)}</select></label>
+      <label><span class="label">Vuole</span><select data-cf="a">${opt(aa,F.a)}<option value="" ${F.a===""?"selected":""}>Niente (lo togli dal menù)</option></select></label>
       <div class="stepper"><span class="name">Per quante persone</span><span class="ctl"><button type="button" data-cfq="-1" ${F.q>1?"":"disabled"} aria-label="Una persona in meno">−</button><output>${F.q}</output><button type="button" data-cfq="1" ${F.q<free?"":"disabled"} aria-label="Una persona in più">+</button></span></div>
       <div class="row"><button type="button" class="btn primary" data-cfok="1">Aggiungi il cambio</button><button type="button" class="btn" data-cfno="1">Chiudi</button></div></div>`}
-  return `<div class="cambi">${cc.length?`<span class="label">Cambi nel menù (stesso prezzo)</span>${list}`:""}
-    ${form||(can?`<button type="button" class="btn small" data-cadd="1" style="align-self:flex-start">+ Cambia un piatto del menù</button>`:"")}</div>`;
+  return `<div class="cambi">${cc.length?`<span class="label">Cambi nel menù (il prezzo resta quello del menù)</span>${list}`:""}
+    ${form||(can?`<button type="button" class="btn small" data-cadd="1" style="align-self:flex-start">+ Cambia o togli un piatto del menù</button>`:"")}</div>`;
 }
 function cambiState(pre){return pre==="c"?{qty:S.qty,get:()=>S.cambi,set:v=>{S.cambi=v},render:renderSteppers}:{qty:S.eqty,get:()=>S.ecambi,set:v=>{S.ecambi=v},render:renderEditSteppers}}
 ["c","x"].forEach(pre=>{const box=$(pre+"-cambi");
@@ -202,8 +202,8 @@ function cambiState(pre){return pre==="c"?{qty:S.qty,get:()=>S.cambi,set:v=>{S.c
     if(b.dataset.cadd){S.cf={pre};st.render();return}
     if(b.dataset.cfno){S.cf=null;st.render();return}
     if(b.dataset.cfq){S.cf.q=(S.cf.q||1)+Number(b.dataset.cfq);st.render();return}
-    if(b.dataset.cfok){const F=S.cf;if(!F||!F.da||!F.a||!(F.q>0))return;const cc=st.get().map(c=>({...c})),ex=cc.find(c=>c.m===F.m&&c.da===F.da&&c.a===F.a);
-      if(ex)ex.q+=F.q;else cc.push({m:F.m,da:F.da,a:F.a,q:F.q,dn:piattoNome(F.da),an:piattoNome(F.a)});
+    if(b.dataset.cfok){const F=S.cf;if(!F||!F.da||F.a==null||!(F.q>0))return;const cc=st.get().map(c=>({...c})),ex=cc.find(c=>c.m===F.m&&c.da===F.da&&c.a===F.a);
+      if(ex)ex.q+=F.q;else cc.push({m:F.m,da:F.da,a:F.a,q:F.q,dn:piattoNome(F.da),an:F.a?piattoNome(F.a):""});
       st.set(clampCambi(cc,st.qty));S.cf=null;S.stockWarn=null;st.render()}});
   box.addEventListener("change",e=>{const f=e.target.dataset.cf;if(!f||!S.cf)return;S.cf[f]=e.target.value;if(f==="m")S.cf.da=null;if(f!=="a"){S.cf.a=null;S.cf.q=1}cambiState(pre).render()})});
 function renderSteppers(){

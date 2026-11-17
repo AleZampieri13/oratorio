@@ -260,11 +260,13 @@ function coursesFor(rr,ss,xx,cc){const f={righe:rr,singoli:ss||[],cambi:cc||[]},
 /* cambi nel menù di un ordine: [{m:menù, da:piatto, a:piatto, q, dn, an}]. Il prezzo resta quello del menù. */
 function cambi(o){return toArr(o&&o.cambi).filter(c=>c&&c.q>0)}
 function piattoNome(id,fb){const p=portataCfg(id);return p?p.nome:(fb||id)}
-function cambiTxt(cc){return cc.map(c=>`${c.q} ${piattoNome(c.da,c.dn)} → ${piattoNome(c.a,c.an)}`).join(", ")}
-function cambiChips(cc){return cc.map(c=>`<span class="chip">${c.q} ${esc(piattoNome(c.da,c.dn))} → ${esc(piattoNome(c.a,c.an))}</span>`).join("")}
+/* un cambio senza piatto nuovo (a:"") vuol dire «senza»: il piatto si toglie dal menù */
+function cambioTxt(c){return c.a?`${c.q} ${piattoNome(c.da,c.dn)} → ${piattoNome(c.a,c.an)}`:`${c.q} senza ${piattoNome(c.da,c.dn)}`}
+function cambiTxt(cc){return cc.map(cambioTxt).join(", ")}
+function cambiChips(cc){return cc.map(c=>`<span class="chip">${esc(cambioTxt(c))}</span>`).join("")}
 /* tiene solo i cambi ancora possibili con queste quantità di menù */
 function clampCambi(cc,qty){const used={};return (cc||[]).map(c=>{const k=c.m+"|"+c.da,left=Math.max(0,(qty[c.m]||0)-(used[k]||0)),q=Math.min(c.q,left);used[k]=(used[k]||0)+q;return {...c,q}})
-  .filter(c=>c.q>0&&portataCfg(c.a)&&applies(portataCfg(c.da),c.m))}
+  .filter(c=>c.q>0&&(c.a===""||portataCfg(c.a))&&applies(portataCfg(c.da),c.m))}
 /* scelte di un piatto (es. Acqua: Naturale, Frizzante): il cameriere divide le quantità quando chiama */
 function scelteOf(k){const p=portataCfg(k),s=toArr(p&&p.scelte).map(String).filter(Boolean);return s.length>1?s:[]}
 function scDefault(o,k){const s=scelteOf(k),n=cop(righeFor(o,k));return s.length?s.map((x,i)=>({n:x,q:i?0:n})):null}
