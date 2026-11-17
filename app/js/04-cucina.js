@@ -159,6 +159,12 @@ function renderUscita(){
       <ul>${cs.map(c=>`<li><b>${cop(righeFor(o,c.k))}</b><span style="color:${portColor(c.k)};font-weight:700">${esc(c.l)}</span>${scTxt(c.p)?` <small class="ksc">${esc(scTxt(c.p))}</small>`:""}</li>`).join("")}</ul>
       ${o.note?`<div class="note">${esc(o.note)}</div>`:""}
       <button class="btn go big" ${cs.some(c=>S.pending.has(o.numero+"|"+c.k))?"disabled":""} data-ocons="${o.numero}">Consegnato tutto</button></article>`};
+  /* totali per piatto: pronti da consegnare e in preparazione */
+  const inSc=c=>inOScope(c,sc),rdy=flatCourses("pronta").filter(inSc),cal=flatCourses("chiamata").filter(inSc);
+  const ports=S.portate.filter(p=>!sc||portReps(p).some(x=>sc.includes(x.r)));
+  const tot=(L,id)=>L.filter(c=>kBase(c.k)===id).reduce((a,c)=>a+cop(righeFor(c.o,c.k)),0);
+  $("o-sum").innerHTML=ports.map(p=>{const r=tot(rdy,p.id),w=tot(cal,p.id);
+    return `<div class="${r||w?"":"zero"}"><span class="label" style="color:${portColor(p.id)}">${esc(p.nome)}</span><b>${r}</b><span class="brk">${r===1?"pronto":"pronti"}${w?` · ${w} in preparazione`:""}</span></div>`}).join("");
   $("o-ready").innerHTML=(ready.length||aspR.length)?aspR.map(aspCard).join("")+ready.map(c=>{const stale=c.t&&(Date.now()-c.t)>5*60000,rf=righeFor(c.o,c.k),n=cop(rf),wn=kWho(c.o,c.o.portate[c.k]);
     const dis=S.pending.has(c.o.numero+"|"+c.k)?"disabled":"";
     const pp=partsOf(c.o.portate[c.k]),parts=pp.length>1?pp.map(x=>x.piatto||x.nome).join(" + "):"";

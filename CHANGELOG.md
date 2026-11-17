@@ -1,6 +1,8 @@
 # Versioni
 
 ## 36
+- **Uscita:** in alto i totali per piatto (pronti da consegnare e in preparazione). Nelle schede di cucina, bar e uscita il tasto è sempre in fondo, alla stessa altezza; in cassa i tasti «Modifica» / «Rettifica» sono allineati.
+- **Camerieri:** «Da chiamare» elenca i piatti (colorati come il loro reparto) invece del numero. Un piatto da chiamare in parte ha il nome sopra e quantità e tasti sotto.
 - **Cassa:** scritte più grandi, riquadri come nelle altre pagine. Tutte le pagine possono essere larghe fino a 1400 px.
 - **Camerieri:** in fondo alla pagina il tasto viola «Storico» apre i propri clienti finiti (tocca un cliente per vedere piatti e orari). Nome del piatto e tasti restano sulla stessa riga; le scelte (Naturale / Frizzante) sono in colonna con − e + allineati.
 - **Chiamare una parte:** sulla scheda del cameriere, se un piatto da chiamare ha 2 o più porzioni, il numero ha − e +: parte dal totale; se lo abbassi, «Chiama 1» chiama solo quelle e le altre diventano una riga a parte («Acqua · 2ª volta») da chiamare quando vogliono. «Unisci» le rimette insieme finché non sono chiamate. «Chiama tutto» non chiama le parti tenute per dopo.

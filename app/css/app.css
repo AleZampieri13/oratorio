@@ -208,7 +208,8 @@ input.bad{border-color:var(--danger);box-shadow:0 0 0 2px var(--danger-bg)}
 .kreps{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px}
 .kreps .seg{flex-wrap:wrap}
 .kparts{font-size:.95rem;font-weight:700;color:var(--muted)}
-.recact{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.recact{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:nowrap}
+.recact .btn{min-width:7.5em}
 .callmore{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .rprow{display:flex;gap:8px;align-items:center}
 .rprow .label{min-width:84px}
@@ -465,3 +466,11 @@ ul.kitems li.klate small{color:var(--danger);font-weight:700}
 #c-parts .stepper.pl .name{font-size:.95rem}
 .kcard .top .age{flex:none;white-space:nowrap}
 .kcard .top{flex-direction:column;align-items:flex-start;gap:2px}
+/* schede di cucina, bar e uscita: il tasto sempre in fondo, alla stessa altezza */
+.kcard>.btn.big:last-child{margin-top:auto}
+.osum div{cursor:default}
+/* camerieri: piatto da chiamare in parte → nome sopra, quantità e tasti sotto */
+.wpiatto.wpart{grid-template-columns:minmax(0,1fr)}
+.wpart .wpn{font-weight:700}
+.wpart .wbar{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.wleft b{font-weight:800}
