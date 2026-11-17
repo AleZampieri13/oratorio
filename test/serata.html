@@ -135,6 +135,12 @@ async function setup(){
    const P_=vals(Lx.piatti);check(P_.length===9&&["Acqua","Caffè","Vino","Bibita"].every(n=>P_.find(x=>x.nome===n).rep===rid("Bar"))&&P_.find(x=>x.nome==="Patatine").rep===rid("Fritto")&&vals(Lx.reparti).filter(r=>r.bar).length===1,
      "Piatti: ognuno con il suo reparto (acqua, caffè, vino al Bar; patatine al Fritto)")
    check(!db().config.menu,"La versione 36 non scrive nel listino della v35 (config/menu)")}
+  // un altro primo (solo per i cambi nel menù) e le scelte dell'acqua
+  await type("master","#l-newport","Pasta");await setSel("#l-newprep",rid("Primo"));await type("master","#l-newpprice","");await click("master","#l-addport");
+  await waitFor(()=>vals(db().config.listino.piatti).some(x=>x.nome==="Pasta"),3000,"piatto Pasta");
+  await type("master","#lpc-"+pid("Acqua"),"Naturale, Frizzante");
+  await waitFor(()=>vals(vals(db().config.listino.piatti).find(x=>x.nome==="Acqua").scelte).length===2,3000,"scelte dell'acqua");
+  check(vals(vals(db().config.listino.piatti).find(x=>x.nome==="Acqua").scelte).join()==="Naturale,Frizzante","Listino: l'Acqua ha le scelte Naturale e Frizzante (le decide il cameriere)");
   {// passaggio dal listino della v35: portata con due reparti, portata senza reparto, extra del bar e del Fritto
    const v35={varianti:[{id:"std",nome:"Standard",prezzo:15},{id:"bimbi",nome:"Bambini",prezzo:9}],reparti:[{id:"r1",nome:"Fritto"},{id:"r2",nome:"Secondo"}],
      portate:[{id:"antipasto",nome:"Antipasto",prezzo:4,reparti:[{r:"r1",piatto:"Sciatt"}]},{id:"secondo",nome:"Secondo",menu:["std"],reparti:[{r:"r2",piatto:"Bresaola"},{r:"r1",piatto:"Patatine"}]},{id:"dolce",nome:"Dolce",prezzo:3,colore:"#ff0000"}],
@@ -190,7 +196,7 @@ async function setup(){
 
 /* ---------------- SERVIZIO ---------------- */
 const L={};CASSE.forEach(c=>L[c.dev]={contanti:0,pos:0});
-const ORD=[],STAT={prontoUscita:0,aspUscita:0,contiDivisi:0,divisiPiatti:0,divisiPiattiKo:[],offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
+const ORD=[],STAT={cambi:0,scelteMosse:0,barVedeScelte:0,prontoUscita:0,aspUscita:0,contiDivisi:0,divisiPiatti:0,divisiPiattiKo:[],offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
 const queueFor={};CAM.forEach(c=>queueFor[c.dev]=[]);
 let noDessert=false;
 function plan(){
@@ -204,6 +210,7 @@ function plan(){
     else{o.nome=pick(["Sig. ","Fam. ","Gruppo "])+pick(COGNOMI);o.menu.Standard=1+Math.floor(rnd()*4);if(rnd()<.4)o.menu.Bambini=1+Math.floor(rnd()*2)}
     if(rnd()<.6)o.single[pick(["Acqua","Vino","Bibita"])]=1+Math.floor(rnd()*3);
     if(rnd()<.2)o.single["Patatine"]=1+Math.floor(rnd()*2);
+    if(!o.asp&&!o.pren&&(o.menu.Standard||0)>=2&&rnd()<.3){o.cambi=[{da:"Pizzoccheri",a:"Pasta",q:o.menu.Standard>=3&&rnd()<.5?2:1}];if(rnd()<.4)o.cambi.push({da:"Caffè",a:"Bibita",q:1})}
     if(rnd()<.12)o.off=pick([2,5,10]);
     if(!o.asp&&!o.pren){const z=rnd();if(z<.06){o.offer=true;o.off=0}else if(z<.16)o.split=true}
     if(o.pren&&offP.has(o.pren)){o.offer=true;o.prenOffer=true;o.off=0}
@@ -238,6 +245,10 @@ async function createOrder(o){
   else await type(n,"#c-nome",o.nome);
   for(const [k,v] of Object.entries(o.menu))for(let i=0;i<v;i++)await click(n,`#c-steppers button[aria-label="Aggiungi ${menuName(k)}"]`);
   for(const [k,v] of Object.entries(o.single)){if(noDessert&&k==="Torta")continue;for(let i=0;i<v;i++)await click(n,`#c-sing button[aria-label="Aggiungi ${k}"]`)}
+  for(const cb of (o.cambi||[])){if(!q(n,"#c-cambi button[data-cadd]"))break;await click(n,"#c-cambi button[data-cadd]");
+    const selT=async(f,t)=>{const e=q(n,`#c-cambi select[data-cf="${f}"]`);if(!e)return;const op=[...e.options].find(x=>x.textContent.startsWith(t));if(!op)return;e.value=op.value;e.dispatchEvent(new Event("change",{bubbles:true}));await sleep(STEP)};
+    await selT("m","Standard");await selT("da",cb.da);await selT("a",cb.a);for(let i=1;i<cb.q;i++)await click(n,'#c-cambi button[data-cfq="1"]');
+    await click(n,'#c-cambi button[data-cfok]');STAT.cambi++}
   if(o.asp){const c=q(n,"#c-asp");c.checked=true;c.dispatchEvent(new Event("change"));await sleep(STEP);if(o.asp==="cameriere")await click(n,'#c-aspmode button[data-m="cameriere"]')}
   if(o.offer){if(!o.prenOffer){await click(n,'#c-pay button[data-pay="offerto"]');await type(n,"#c-offby","Parrocchia")}
     else check(q(n,'#c-pay button[data-pay="offerto"]').getAttribute("aria-pressed")==="true"&&q(n,"#c-offby").value==="Parrocchia",`Prenotazione «${o.pren}» offerta: in cassa è già «Offerto da Parrocchia»`)}
@@ -289,6 +300,7 @@ async function waiterAct(w){
   const c=pick(cand),own=[...c.querySelectorAll('button[data-set$="|chiamata"]:not([disabled])')],tabs=[...c.querySelectorAll("[data-wtab]")].filter(b=>b.querySelector(".rdot")&&b.getAttribute("aria-pressed")!=="true");
   if(tabs.length&&(!own.length||rnd()<.3)){await click(w,pick(tabs));STAT.cambiReparto++;return true}
   if(!own.length)return false;
+  const plus=c.querySelector('.wsc button[data-d="1"]:not([disabled])');if(plus&&rnd()<.5){await click(w,plus);STAT.scelteMosse++;return true}
   const all=c.querySelector("button[data-callall]:not([disabled])");
   if(all&&rnd()<.5){await click(w,all);STAT.chiamateTutto++;STAT.chiamate++;return true}
   STAT.chiamate++;await click(w,rnd()<.75?own[0]:pick(own));return true;
@@ -300,7 +312,7 @@ async function cookAct(n){
   for(let i=0;i<3;i++){const b=q(n,"#k-queue button[data-rsetall]:not([disabled])")||q(n,"#k-queue button[data-rset]:not([disabled])");if(!b||rnd()<.35)break;if(b.dataset.rsetall)STAT.tuttoPronto++;await click(n,b);STAT.pronti++}
   if(!unreadyDone&&n==="fritto"&&STAT.pronti>30){const u=q(n,"#k-ready button[data-runready]");if(u){await click(n,u);await click(n,u);unreadyDone=true;log("Il Fritto annulla un «pronto» (ripensamento)")}}
 }
-async function barAct(){if(/Patatine|Pizzoccheri/.test(txt("bar","#b-queue")+txt("bar","#b-ready")))STAT.barVedePatatine++;if(/Acqua|Caffè|Vino|Bibita/.test(txt("bar","#b-queue")))STAT.barLavora++;
+async function barAct(){if(/Frizzante|Naturale/.test(txt("bar","#b-queue")))STAT.barVedeScelte++;if(/Patatine|Pizzoccheri/.test(txt("bar","#b-queue")+txt("bar","#b-ready")))STAT.barVedePatatine++;if(/Acqua|Caffè|Vino|Bibita/.test(txt("bar","#b-queue")))STAT.barLavora++;
   for(let i=0;i<3;i++){const b=q("bar","#b-queue button[data-rsetall]:not([disabled])")||q("bar","#b-queue button[data-rset]:not([disabled])");if(!b||rnd()<.3)break;await click("bar",b)}}
 async function uscitaAct(){const b=q("uscita",'#o-ready button[data-set$="|servita"]:not([disabled])');if(b&&rnd()<.25){await click("uscita",b);STAT.consegnateUscita++}
   const r=q("uscita",'#o-wip button[data-oready]:not([disabled])');if(r&&rnd()<.08){const [n,k]=r.dataset.oready.split("|");await click("uscita",r);await sleep(30);
@@ -443,6 +455,15 @@ async function closing(){
   await waitFor(()=>screens.every(([d,s,re])=>re.test(txt(d,s))),3000).catch(()=>null);
   const busy=screens.filter(([d,s,re])=>!re.test(txt(d,s))).map(([d,s])=>`${d}: ${txt(d,s).slice(0,120)}`);
   check(!busy.length,"Cucine, bar e uscita: niente in coda a fine serata",busy.join(" | "));
+  {const W_=W("master"),pasta=W_.eval(`S.portate.find(p=>p.nome==="Pasta").id`),withC=vals(db().ordini).filter(o=>vals(o.cambi).length);
+   const ok=withC.every(o=>W_.eval(`(()=>{const o=orderByNum(${o.numero}),cc=cambi(o),pz=cc.filter(c=>c.da==="p-primo").reduce((a,c)=>a+c.q,0),pa=cc.filter(c=>c.a==="${pasta}").reduce((a,c)=>a+c.q,0),
+     men=righe(o).filter(r=>applies(portataCfg("p-primo"),r.id)).reduce((a,r)=>a+r.qta,0);return cop(righeFor(o,"${pasta}"))===pa&&cop(righeFor(o,"p-primo"))===men-pz&&(pa===0||!!o.portate["${pasta}"])&&Math.abs(o.importoMenu-righe(o).reduce((a,r)=>a+r.qta*r.prezzo,0))<.01})()`));
+   check(STAT.cambi>0&&withC.length>0&&ok,`Cambi nel menù: ${withC.length} ordini (Pizzoccheri → Pasta, Caffè → Bibita); la cucina prepara la Pasta a parte, il prezzo resta quello del menù`)}
+  {const W_=W("master"),acq=W_.eval(`S.portate.find(p=>p.nome==="Acqua").id`);
+   const cs=vals(db().ordini).flatMap(o=>Object.entries(o.portate||{}).filter(([k,p])=>k===acq&&p.stato&&p.stato!=="attesa").map(([k,p])=>({o,p})));
+   const bad=cs.filter(({o,p})=>vals(p.sc).reduce((a,x)=>a+x.q,0)!==W_.eval(`cop(righeFor(orderByNum(${o.numero}),"${acq}"))`));
+   const friz=cs.filter(({p})=>vals(p.sc).some(x=>x.n==="Frizzante"&&x.q>0)).length;
+   check(cs.length>0&&!bad.length&&friz>0&&STAT.barVedeScelte>0,`Acqua naturale / frizzante: ${cs.length} chiamate con la scelta (${friz} con frizzante, ${STAT.scelteMosse} cambi del cameriere); il bar la vede`,`sbagliate: ${bad.map(x=>x.o.numero).join(",")}`)}
   check(STAT.prontoUscita>0,`L'uscita segna «Pronto» da sola: ${STAT.prontoUscita} piatti`);
   check(STAT.aspUscita>0,"L'uscita vede anche gli asporti mandati subito in cucina");
   const nums=[...O.map(o=>o.numero),...A.map(a=>a.n)].sort((a,b)=>a-b);

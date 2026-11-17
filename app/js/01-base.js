@@ -41,7 +41,7 @@ const S={root:null,online:true,ordMap:{},prenMap:{},ordLoaded:false,varianti:DEF
   qty:{},eqty:{},editOrder:null,numDirty:false,openNum:null,lastNum:null,selPren:null,loginPick:null,pending:new Set(),
   kFilt:lsGet("kfiltro")||"",seenCalls:null,seenReady:null,sound:false,audio:null,wFilter:"mie",imp:null,editUser:null,cfg:null,invite:null,inviteLoaded:false,joinCode:null,
   extra:[],pay:"contanti",xpay:"contanti",dpay:"contanti",scorte:{},fondo:0,contato:null,offMap:{},stockWarn:null,sqty:{},esqty:{},aspMode:"subito",newPorts:null,logMap:{},aspConfirm:null,seenBar:null,post:{},closeKey:"",file:null,joinFila:"",
-  reparti:[],L:null,wTab:{},split:false,parts:[],smode:"piatti",kRep:lsGet("krep")||"",bRep:lsGet("brep")||"",oRep:lsGet("orep")||"",seenOut:null,removedQ:[],annMap:{},editLocked:false};
+  reparti:[],L:null,wTab:{},wSc:{},cambi:[],ecambi:[],cf:null,split:false,parts:[],smode:"piatti",kRep:lsGet("krep")||"",bRep:lsGet("brep")||"",oRep:lsGet("orep")||"",seenOut:null,removedQ:[],annMap:{},editLocked:false};
 
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function lsSet(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){}}
@@ -256,14 +256,28 @@ $("toast").addEventListener("click",e=>{const el=$("toast");el.hidden=true;
 /* portate */
 function portataCfg(k){return S.portate.find(p=>p.id===k)}
 function applies(p,vid){return !p||!Array.isArray(p.menu)||p.menu.includes(vid)}
-function coursesFor(rr,ss,xx){const out={};S.portate.forEach((p,i)=>{if(rr.some(r=>applies(p,r.id))||(ss||[]).some(s=>s.pid===p.id))out[p.id]={stato:"attesa",t:0,nome:p.nome,ord:i}});return out}
+function coursesFor(rr,ss,xx,cc){const f={righe:rr,singoli:ss||[],cambi:cc||[]},out={};S.portate.forEach((p,i)=>{if(cop(righeFor(f,p.id))>0)out[p.id]={stato:"attesa",t:0,nome:p.nome,ord:i}});return out}
+/* cambi nel menù di un ordine: [{m:menù, da:piatto, a:piatto, q, dn, an}]. Il prezzo resta quello del menù. */
+function cambi(o){return toArr(o&&o.cambi).filter(c=>c&&c.q>0)}
+function piattoNome(id,fb){const p=portataCfg(id);return p?p.nome:(fb||id)}
+function cambiTxt(cc){return cc.map(c=>`${c.q} ${piattoNome(c.da,c.dn)} → ${piattoNome(c.a,c.an)}`).join(", ")}
+function cambiChips(cc){return cc.map(c=>`<span class="chip">${c.q} ${esc(piattoNome(c.da,c.dn))} → ${esc(piattoNome(c.a,c.an))}</span>`).join("")}
+/* tiene solo i cambi ancora possibili con queste quantità di menù */
+function clampCambi(cc,qty){const used={};return (cc||[]).map(c=>{const k=c.m+"|"+c.da,left=Math.max(0,(qty[c.m]||0)-(used[k]||0)),q=Math.min(c.q,left);used[k]=(used[k]||0)+q;return {...c,q}})
+  .filter(c=>c.q>0&&portataCfg(c.a)&&applies(portataCfg(c.da),c.m))}
+/* scelte di un piatto (es. Acqua: Naturale, Frizzante): il cameriere divide le quantità quando chiama */
+function scelteOf(k){const p=portataCfg(k);return toArr(p&&p.scelte).map(String).filter(Boolean)}
+function scDefault(o,k){const s=scelteOf(k),n=cop(righeFor(o,k));return s.length?s.map((x,i)=>({n:x,q:i?0:n})):null}
+function scTxt(p){return toArr(p&&p.sc).filter(x=>x&&x.q>0).map(x=>`${x.q} ${x.n}`).join(" · ")}
 function orderCourses(o){
   const ps=o.portate||{};
   return Object.keys(ps).map(k=>{const c=portataCfg(k);const idx=S.portate.indexOf(c);return {k,l:(c&&c.nome)||ps[k].nome||k,ord:idx<0?100+(ps[k].ord||0):idx,p:ps[k]}}).sort((a,b)=>a.ord-b.ord);
 }
 function singoli(o){const r=o&&o.singoli;return (Array.isArray(r)?r:Object.values(r||{})).filter(Boolean)}
 function righeFor(o,k){
-  const p=portataCfg(k);return [...righe(o).filter(r=>applies(p,r.id)),...singoli(o).filter(s=>s.pid===k).map(s=>({id:"s-"+s.pid+s.k,nome:s.k==="b"?"singola bambini":"singola",qta:s.qta}))]}
+  const p=portataCfg(k),cc=cambi(o),menuN=id=>(righe(o).find(r=>r.id===id)||{}).nome||"Menù";
+  const base=righe(o).filter(r=>applies(p,r.id)).map(r=>{const out=cc.filter(c=>c.m===r.id&&c.da===k).reduce((a,c)=>a+c.q,0);return out?{...r,qta:r.qta-out}:r}).filter(r=>r.qta>0);
+  return [...base,...cc.filter(c=>c.a===k).map(c=>({id:"c-"+c.m+"-"+c.da,nome:`${menuN(c.m)} · al posto di ${piattoNome(c.da,c.dn)}`,qta:c.q})),...singoli(o).filter(s=>s.pid===k).map(s=>({id:"s-"+s.pid+s.k,nome:s.k==="b"?"singola bambini":"singola",qta:s.qta}))]}
 function stOf(o,k){return (o.portate&&o.portate[k]&&o.portate[k].stato)||"attesa"}
 function buildRighe(qty){return S.varianti.map(v=>({id:v.id,nome:v.nome,qta:qty[v.id]||0,prezzo:v.prezzo||0})).filter(r=>r.qta>0)}
 function singlesList(){return S.portate.flatMap(p=>[p.prezzo>0?{id:p.id+"|a",pid:p.id,k:"a",nome:p.nome,prezzo:p.prezzo}:null,p.prezzoBimbi>0?{id:p.id+"|b",pid:p.id,k:"b",nome:p.nome+" bambini",prezzo:p.prezzoBimbi}:null]).filter(Boolean)}
@@ -288,7 +302,7 @@ function leftTxt(l){return l<=0?"esaurito":l===1?"resta 1":"restano "+l}
 function isLocked(o){return !!o&&(!!o.cameriereId||orderCourses(o).some(c=>(c.p.stato||"attesa")!=="attesa"))}
 const LOCK_MSG=n=>{const o=orderByNum(n),w=o&&o.cameriereId?nameOf(o.cameriereId,o.cameriere):"";
   return `L'ordine ${n} è già partito${w?` (l'ha preso ${w})`:" (è già in cucina o al bar)"}: non si può più modificare. Per aggiungere qualcosa crea un nuovo ordine. Solo il master può annullarlo.`};
-function orderDesc(rr,ss,xx){return [...(rr||[]).map(r=>`${r.qta} ${r.nome}`),...(ss||[]).map(s=>`${s.qta} ${s.nome}`),...(xx||[]).map(x=>`${x.qta} ${x.nome}`)].join(", ")||"vuoto"}
+function orderDesc(rr,ss,xx,cc){return ([...(rr||[]).map(r=>`${r.qta} ${r.nome}`),...(ss||[]).map(s=>`${s.qta} ${s.nome}`),...(xx||[]).map(x=>`${x.qta} ${x.nome}`)].join(", ")||"vuoto")+((cc||[]).length?` (cambi: ${cambiTxt(cc)})`:"")}
 async function burnOrder(n,o,back,how){
   await R("annullati/"+n).set({n,t:Date.now(),da:myName(),daId:S.me?S.me.id:"",nome:o.nome||"",restituiti:back,partito:isLocked(o)});
   await R("ordini/"+n).remove();

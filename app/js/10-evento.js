@@ -148,8 +148,8 @@ function exportExcel(title){
   const qtyOf=(o,v)=>{const r=righe(o).find(x=>x.id===v.id);return r?r.qta:0};
   const XN=[...new Set([...S.extra.map(x=>x.nome),...O.flatMap(o=>extras(o).map(x=>x.nome))])];
   const xOf=(o,n)=>{const r=extras(o).find(x=>x.nome===n);return r?r.qta:0};
-  const ord=[["Numero","Nominativo",...V.map(v=>v.nome),"Coperti","Piatti da soli","Asporto",...XN,"Importo menù €","Importo piatti da soli €","Importo extra €","Importo totale €","Incassato in cassa €","Restituito con rettifiche €","Offerta €","Ricevuto €","Pagamenti","Pasto offerto €","Offerto da","Ora","Creato da","Fila","Dove","Note",...S.portate.map(p=>p.nome)]];
-  O.forEach(o=>ord.push([o.numero,o.nome||"",...V.map(v=>qtyOf(o,v)),cop(righe(o)),singoli(o).map(s=>`${s.qta} ${s.nome}`).join(", "),o.asporto?(o.asportoSubito?"Sì, subito":"Sì"):"No",...XN.map(n=>xOf(o,n)),o.importoMenu!=null?o.importoMenu:(o.importo||0),o.importoSingoli||0,o.importoExtra||0,o.importo||0,
+  const ord=[["Numero","Nominativo",...V.map(v=>v.nome),"Coperti","Piatti da soli","Cambi nel menù","Asporto",...XN,"Importo menù €","Importo piatti da soli €","Importo extra €","Importo totale €","Incassato in cassa €","Restituito con rettifiche €","Offerta €","Ricevuto €","Pagamenti","Pasto offerto €","Offerto da","Ora","Creato da","Fila","Dove","Note",...S.portate.map(p=>p.nome)]];
+  O.forEach(o=>ord.push([o.numero,o.nome||"",...V.map(v=>qtyOf(o,v)),cop(righe(o)),singoli(o).map(s=>`${s.qta} ${s.nome}`).join(", "),cambiTxt(cambi(o)),o.asporto?(o.asportoSubito?"Sì, subito":"Sì"):"No",...XN.map(n=>xOf(o,n)),o.importoMenu!=null?o.importoMenu:(o.importo||0),o.importoSingoli||0,o.importoExtra||0,o.importo||0,
     o.incassato||0,o.stornato||0,o.offerta||0,o.ricevuto||"",payDesc(o),o.offerto||0,o.offertoDa||"",fmtTime(o.creato),nameOf(o.creatoDaId,o.creatoDa),o.fila?filaNome(o.fila):"",o.dove||o.tavolo||"",o.note||"",
     ...S.portate.map(p=>o.portate&&o.portate[p.id]?(o.portate[p.id].stato||"attesa"):"—")]));
   const SP=S.portate.filter(p=>P.some(x=>(x.singoli||{})[p.id]));

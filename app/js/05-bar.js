@@ -30,7 +30,7 @@ function renderGive(){
   const busy=left.some(c=>c.p.stato==="chiamata"||c.p.stato==="pronta");
   const note=o.asporto?"Asporto: di solito lo consegna la cassa.":(o.fila||ownerId(o))?(busy?`Lo segue ${barWho(o)}: controlla che non l'abbia già preso.`:`Lo segue ${barWho(o)}.`):"";
   box.innerHTML=`${o.nome?`<div class="who"><b>${esc(o.nome)}</b></div>`:""}
-    <ul>${left.map(c=>`<li><b>${cop(righeFor(o,c.k))}</b> ${esc(c.l)}</li>`).join("")}</ul>
+    <ul>${left.map(c=>`<li><b>${cop(righeFor(o,c.k))}</b> ${esc(c.l)}${scTxt(c.p)?` <small>(${esc(scTxt(c.p))})</small>`:""}</li>`).join("")}</ul>
     ${note?`<div class="note">${note}</div>`:""}
     <button class="btn go big" id="b-dato" data-n="${o.numero}">Dato</button>`;
 }

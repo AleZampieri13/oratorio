@@ -345,6 +345,19 @@ input.bad{border-color:var(--danger);box-shadow:0 0 0 2px var(--danger-bg)}
 .xedit .top .pricein{width:88px;flex:0 0 auto}
 .xf{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
 .xf label{display:flex;flex-direction:column;gap:4px;min-width:0}
+.xf label.wide{grid-column:1 / -1}
+/* scelte del cameriere (es. naturale / frizzante) */
+.wsc{flex-basis:100%;display:flex;flex-wrap:wrap;gap:4px 16px}
+.wsc .stepper{border:0;padding:2px 0;gap:8px}
+.wsc .stepper .name{font-size:.95rem}
+.wsc .stepper .ctl button{width:40px;height:40px;font-size:1.3rem}
+.wscd{flex-basis:100%}
+.ksc{font-weight:700}
+/* cambi nel menù */
+.cambi{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.cambi .li{padding:6px 0}
+.cform{display:flex;flex-direction:column;gap:8px;border:1px dashed var(--line);border-radius:12px;padding:10px}
+.cform label{display:flex;flex-direction:column;gap:4px}
 .xf input,.xf select{width:100%;min-width:0}
 /* v36: scheda cameriere con i reparti come linguette */
 .wrep{display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);border-radius:var(--r);padding:8px}

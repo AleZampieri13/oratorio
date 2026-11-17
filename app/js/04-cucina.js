@@ -1,7 +1,8 @@
 /* Cucina con reparti e uscita piatti */
 /* ---------- CUCINA ---------- */
 function breakdown(items){
-  const by={};items.forEach(c=>righeFor(c.o,c.k).forEach(r=>{by[r.nome]=(by[r.nome]||0)+r.qta}));
+  const by={};items.forEach(c=>{const sc=toArr(((c.o.portate||{})[c.k]||{}).sc).filter(x=>x&&x.q>0);
+    if(sc.length)sc.forEach(x=>{by[x.n]=(by[x.n]||0)+x.q});else righeFor(c.o,c.k).forEach(r=>{by[r.nome]=(by[r.nome]||0)+r.qta})});
   const tot=Object.values(by).reduce((a,b)=>a+b,0);
   return {tot,txt:Object.entries(by).map(([n,q])=>`${q} ${esc(n)}`).join(" · ")};
 }
@@ -35,13 +36,13 @@ function renderRepView(sc,ids){
   $(ids.queue).innerHTML=groups.length?groups.map(g=>{const o=g.o,late=g.items.some(c=>isLate(c.k,c.t)),wn=kWho(o,g.items[0].p),many=g.items.length>1;
     return `<article class="kcard ${late?"late":""}"><div class="top"><span class="n nm">${esc(wn)}</span><span class="age">${ago(g.t)}</span></div>
       <div class="what kcourse"><span class="label">n. ${o.numero}${o.nome?" · "+esc(o.nome):""}</span>${o.asporto&&wn!=="Asporto"?' <span class="pill asp">Asporto</span>':""}</div>
-      <ul class="kitems">${g.items.map(c=>{const q=cop(righeFor(o,c.k));return `<li class="${isLate(c.k,c.t)?"klate":""}"><b>${q}</b><span class="kin" style="color:${portColor(c.k)}">${esc(c.l)}${isLate(c.k,c.t)?` <small>· ${ago(c.t)}</small>`:""}</span>${many?`<button class="btn small" ${dis(c)} data-rset="${o.numero}|${c.k}|${esc(c.r)}">Pronto</button>`:""}</li>`}).join("")}</ul>
+      <ul class="kitems">${g.items.map(c=>{const q=cop(righeFor(o,c.k));return `<li class="${isLate(c.k,c.t)?"klate":""}"><b>${q}</b><span class="kin" style="color:${portColor(c.k)}">${esc(c.l)}${scTxt(c.p)?` <small class="ksc">${esc(scTxt(c.p))}</small>`:""}${isLate(c.k,c.t)?` <small>· ${ago(c.t)}</small>`:""}</span>${many?`<button class="btn small" ${dis(c)} data-rset="${o.numero}|${c.k}|${esc(c.r)}">Pronto</button>`:""}</li>`}).join("")}</ul>
       ${o.note?`<div class="note">${esc(o.note)}</div>`:""}
       ${many?`<button class="btn primary big" data-rsetall="${o.numero}|${g.items.map(c=>c.k+"~"+c.r).join(",")}">Tutto pronto</button>`
         :`<button class="btn primary big" ${dis(g.items[0])} data-rset="${o.numero}|${g.items[0].k}|${esc(g.items[0].r)}">Pronto</button>`}</article>`}).join("")
     :'<div class="panel"><div class="empty">Niente da preparare.</div></div>';
   $(ids.ready).innerHTML=ready.length?ready.map(c=>{const wn=kWho(c.o,c.p),q=cop(righeFor(c.o,c.k)),stale=c.p.t&&(Date.now()-c.p.t)>5*60000;
-    return `<div class="li plain two ${stale?"stale":""}"><span><b class="kwho">${esc(wn)}</b> · <b style="color:${portColor(c.k)}">${q} ${esc(c.l)}</b><div class="sub">n. ${c.o.numero}${c.o.nome?" · "+esc(c.o.nome):""} · pronto ${ago(c.t)==="adesso"?"adesso":"da "+ago(c.t)}</div></span>
+    return `<div class="li plain two ${stale?"stale":""}"><span><b class="kwho">${esc(wn)}</b> · <b style="color:${portColor(c.k)}">${q} ${esc(c.l)}</b>${scTxt(c.p)?` <small>(${esc(scTxt(c.p))})</small>`:""}<div class="sub">n. ${c.o.numero}${c.o.nome?" · "+esc(c.o.nome):""} · pronto ${ago(c.t)==="adesso"?"adesso":"da "+ago(c.t)}</div></span>
       <span class="row"><button class="btn small go" ${S.pending.has(c.o.numero+"|"+c.k)?"disabled":""} data-set="${c.o.numero}|${c.k}|servita">Portato</button><button class="btn small" ${dis(c)} data-runready="${c.o.numero}|${c.k}|${esc(c.r)}">Annulla</button></span></div>`}).join("")
     :'<div class="empty">Nessuno.</div>';
   paintStockLeft();
@@ -92,6 +93,7 @@ function renderKitchen(){
     return `<article class="kcard ${late?"late":""}"><div class="top"><span class="n nm">${esc(wn)}</span><span class="age">${ago(c.t)}</span></div>
       <div class="what kcourse"><span style="color:${portColor(c.k)}">${esc(c.l)}</span> <span class="label">· n. ${c.o.numero}</span>${c.o.asporto&&wn!=="Asporto"?' <span class="pill asp">Asporto</span>':""}</div>
       <ul>${rf.map(r=>`<li><b>${r.qta}</b>${esc(r.nome)}</li>`).join("")}</ul>
+      ${scTxt(c.o.portate[c.k])?`<div class="kparts ksc">${esc(scTxt(c.o.portate[c.k]))}</div>`:""}
       ${c.o.note?`<div class="note">${esc(c.o.note)}</div>`:""}
       ${pt?`<div class="kparts">Reparti: ${pt}</div>`:""}
       <button class="btn primary big" ${dis(c)} data-set="${c.o.numero}|${c.k}|pronta">${pt?"Tutto pronto":"Pronta"}</button></article>`}).join("")
@@ -154,6 +156,7 @@ function renderUscita(){
       <div class="what kcourse"><span class="label">${c.o.fila?esc(filaNome(c.o.fila))+" · ":""}n. ${c.o.numero}${c.o.nome?" · "+esc(c.o.nome):""}</span>${c.o.asporto&&wn!=="Asporto"?' <span class="pill asp">Asporto</span>':""}</div>
       <div class="what kcourse"><span style="color:${portColor(c.k)}">${esc(c.l)}</span> <span class="label">· ${n} ${n===1?"piatto":"piatti"}</span></div>
       ${parts?`<div class="kparts">${esc(parts)}</div>`:""}
+      ${scTxt(c.o.portate[c.k])?`<div class="kparts ksc">${esc(scTxt(c.o.portate[c.k]))}</div>`:""}
       <ul>${rf.map(r=>`<li><b>${r.qta}</b>${esc(r.nome)}</li>`).join("")}</ul>
       ${c.o.note?`<div class="note">${esc(c.o.note)}</div>`:""}
       <button class="btn go big" ${dis} data-set="${c.o.numero}|${c.k}|servita">Consegnato</button></article>`}).join("")

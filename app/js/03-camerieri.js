@@ -73,8 +73,8 @@ async function setStato(n,k,to,opts){
   const node=o&&o.portate&&o.portate[k];
   if(to==="pronta"&&!sil){f.tc=(node&&node.t)||null;f.annull=null}
   if(to==="servita"&&!sil&&prev==="pronta")f.tp=(node&&node.t)||null;
-  if(to==="chiamata"&&!sil){f.da=myName();f.daId=S.me?S.me.id:"";f.annull=null;f.rep=repSnap(k)}
-  if(to==="attesa")f.rep=null;
+  if(to==="chiamata"&&!sil){f.da=myName();f.daId=S.me?S.me.id:"";f.annull=null;f.rep=repSnap(k);f.sc=o?wScFor(o,k):null}
+  if(to==="attesa"){f.rep=null;f.sc=null}
   const path=`ordini/${n}/portate/${k}`,expect=(opts&&opts.expect)||prev;
   try{
     const ok=await transStato(path,expect,f);
@@ -106,11 +106,20 @@ function repOfC(o,c){return courseReps(o,c.k)[0]||""}
 /* linguette nell'ordine dei piatti del listino (↑↓): il reparto del primo piatto viene per primo */
 function wReps(o){const rs=[];orderCourses(o).forEach(c=>{const r=repOfC(o,c);if(!rs.includes(r))rs.push(r)});return rs}
 const isTodo=c=>(c.p.stato||"attesa")==="attesa";
+/* scelte (es. naturale / frizzante) decise dal cameriere prima di chiamare: restano sul telefono finché chiama */
+function wScFor(o,k){const s=scelteOf(k);if(!s.length)return null;const n=cop(righeFor(o,k)),st=S.wSc[o.numero+"|"+k];
+  const q=st&&st.n===n&&st.q.length===s.length?st.q:s.map((x,i)=>i?0:n);return s.map((x,i)=>({n:x,q:q[i]}))}
+function wScHtml(o,c){const sc=wScFor(o,c.k);if(!sc)return "";const n=o.numero,tot=sc.reduce((a,y)=>a+y.q,0);
+  return `<div class="wsc">${sc.map((x,i)=>`<span class="stepper sm"><span class="name">${esc(x.n)}</span><span class="ctl"><button type="button" data-wsc="${n}|${esc(c.k)}|${i}" data-d="-1" ${x.q?"":"disabled"} aria-label="Meno ${esc(x.n)}">−</button><output>${x.q}</output><button type="button" data-wsc="${n}|${esc(c.k)}|${i}" data-d="1" ${x.q<tot?"":"disabled"} aria-label="Più ${esc(x.n)}">+</button></span></span>`).join("")}</div>`}
+function wScMove(n,k,i,d){const o=orderByNum(n);if(!o)return;const sc=wScFor(o,k);if(!sc)return;const q=sc.map(x=>x.q),tot=q.reduce((a,b)=>a+b,0);
+  if(d>0){let j=-1;q.forEach((v,x)=>{if(x!==i&&v>0&&(j<0||v>q[j]))j=x});if(j<0)return;q[j]--;q[i]++}
+  else{if(!q[i])return;const j=i===0?1:0;q[i]--;q[j]++}
+  S.wSc[n+"|"+k]={n:tot,q}}
 function cardAction(o){
   const cs=orderCourses(o),n=o.numero,act=canAct(o),dis=k=>S.pending.has(n+"|"+k)||!act?"disabled":"";
   const out=[];
   const ready=cs.filter(c=>c.p.stato==="pronta");
-  ready.forEach(c=>{const q=cop(righeFor(o,c.k));out.push(`<button class="btn go big" ${dis(c.k)} data-set="${n}|${c.k}|servita">Porta ${q} ${esc(c.l)}</button>`)});
+  ready.forEach(c=>{const q=cop(righeFor(o,c.k)),sx=scTxt(c.p);out.push(`<button class="btn go big" ${dis(c.k)} data-set="${n}|${c.k}|servita">Porta ${q} ${esc(c.l)}${sx?` <small>(${esc(sx)})</small>`:""}</button>`)});
   if(ready.length>1&&act)out.push(`<button class="btn go" data-carryall="${n}">Portati tutti i pronti (${ready.length})</button>`);
   const left=cs.filter(isTodo).length;
   if(!cs.length)return out.join("")||`<div class="wait big ok">Finito</div>`;
@@ -127,7 +136,8 @@ function cardAction(o){
     else if(st==="chiamata"){const late=isLate(c.k,c.p.t);right=`<span class="pill ${late?"out":"call"}">in preparazione · ${ago(c.p.t)}</span>${act?`<button class="btn small" ${dis(c.k)} data-uncall="${n}|${c.k}">Annulla</button>`:""}`}
     else if(st==="pronta")right='<span class="pill ready">pronto</span>';
     else right=`<span class="pill wait">portato ✓</span>${act&&c.p.t&&Date.now()-c.p.t<3*60000?`<button class="btn small" ${dis(c.k)} data-unserve="${n}|${c.k}">Non portato</button>`:""}`;
-    return `<div class="wpiatto ${st}"><span class="wpn"><b>${q}</b> ${esc(c.l)}</span><span class="row">${right}</span></div>`}).join("");
+    const scx=st==="attesa"?(act?wScHtml(o,c):""):scTxt(c.p)?`<div class="sub wscd">${esc(scTxt(c.p))}</div>`:"";
+    return `<div class="wpiatto ${st}"><span class="wpn"><b>${q}</b> ${esc(c.l)}</span><span class="row">${right}</span>${scx}</div>`}).join("");
   const all=todo.length>1&&act?`<button class="btn primary big" data-callall="${n}|${esc(cur)}">Chiama tutto ${esc(repNome(cur))} (${todo.length})</button>`:"";
   out.push(`<div class="wrep">${tabs}<div class="wrows">${rows}</div>${all}</div>`);
   return out.join("");
@@ -171,6 +181,7 @@ $("w-tables").addEventListener("click",async e=>{
     const done=await setMany(n,orderCourses(o).filter(c=>c.p.stato==="pronta").map(c=>c.k),"servita");
     if(done.length)toast(`${done.length} piatti portati · ${whereTxt(o)}`,{ms:10000,action:{label:"Annulla",fn:()=>done.forEach(k=>unserve(n,k))}});return}
   if(t.dataset.unserve){const [n,k]=t.dataset.unserve.split("|");await unserve(Number(n),k);return}
+  if(t.dataset.wsc){const [n,k,i]=t.dataset.wsc.split("|");wScMove(Number(n),k,Number(i),Number(t.dataset.d));renderWaiterLists();return}
   if(t.dataset.uncall){if(!armed(t,"Annullo?"))return;const [n,k]=t.dataset.uncall.split("|");const o=orderByNum(Number(n));
     if(!o||!o.portate||!o.portate[k]||o.portate[k].stato!=="chiamata"){renderWaiterLists();return}
     await setStato(Number(n),k,"attesa",{silent:true});const c=(orderCourses(o).find(x=>x.k===k)||{}).l||k;toast(`${c} non più chiamato · ${whereTxt(o)}`,{ms:4000});return}
