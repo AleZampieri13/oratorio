@@ -107,7 +107,7 @@ function repOfC(o,c){return courseReps(o,c.k)[0]||""}
 function wReps(o){const rs=[];orderCourses(o).forEach(c=>{const r=repOfC(o,c);if(!rs.includes(r))rs.push(r)});return rs}
 const isTodo=c=>(c.p.stato||"attesa")==="attesa";
 /* scelte (es. naturale / frizzante) decise dal cameriere prima di chiamare: restano sul telefono finché chiama */
-function wScFor(o,k){const s=scelteOf(k);if(!s.length)return null;const n=cop(righeFor(o,k)),st=S.wSc[o.numero+"|"+k];
+function wScFor(o,k){const s=scelteOf(k);if(!s.length)return null;const n=wNowOf(o,k),st=S.wSc[o.numero+"|"+k];
   const q=st&&st.n===n&&st.q.length===s.length?st.q:s.map((x,i)=>i?0:n);return s.map((x,i)=>({n:x,q:q[i]}))}
 function wScHtml(o,c){const sc=wScFor(o,c.k);if(!sc)return "";const n=o.numero,tot=sc.reduce((a,y)=>a+y.q,0);
   return `<div class="wsc">${sc.map((x,i)=>`<span class="stepper sm"><span class="name">${esc(x.n)}</span><span class="ctl"><button type="button" data-wsc="${n}|${esc(c.k)}|${i}" data-d="-1" ${x.q?"":"disabled"} aria-label="Meno ${esc(x.n)}">−</button><output>${x.q}</output><button type="button" data-wsc="${n}|${esc(c.k)}|${i}" data-d="1" ${x.q<tot?"":"disabled"} aria-label="Più ${esc(x.n)}">+</button></span></span>`).join("")}</div>`}
@@ -121,13 +121,17 @@ function canMerge(o,k){if(kRound(k)<2||stOf(o,k)!=="attesa")return null;const b=
 function wSplitHtml(o,c,q){const W_=S.wSplit;if(!W_||W_.n!==o.numero||W_.k!==c.k)return "";const x=Math.max(1,Math.min(q-1,W_.x||1));W_.x=x;
   return `<div class="wsplit"><span class="stepper sm"><span class="name">Adesso</span><span class="ctl"><button type="button" data-wsx="-1" ${x>1?"":"disabled"} aria-label="Uno in meno adesso">−</button><output>${x}</output><button type="button" data-wsx="1" ${x<q-1?"":"disabled"} aria-label="Uno in più adesso">+</button></span></span>
     <span class="sub">dopo: <b>${q-x}</b></span><button type="button" class="btn small primary" data-wsplitok="${o.numero}|${esc(c.k)}">Dividi</button><button type="button" class="btn small" data-wsplitno="1">Chiudi</button></div>`}
-async function splitCourse(n,k,now){const o=orderByNum(n);if(!o||!o.portate||!o.portate[k]||stOf(o,k)!=="attesa"){S.wSplit=null;renderWaiterLists();return}
+/* quante porzioni chiamare adesso: parte dal totale; se si abbassa, il resto diventa «2ª volta» */
+function wNowOf(o,k){const q=cop(righeFor(o,k)),st=S.wNow[o.numero+"|"+k];return st&&st.q===q?Math.max(1,Math.min(q,st.x)):q}
+function wQtyHtml(o,c,q){const x=wNowOf(o,c.k),key=`${o.numero}|${esc(c.k)}`;
+  return `<span class="wqty"><button type="button" data-wq="${key}" data-d="-1" ${x>1?"":"disabled"} aria-label="Una ${esc(c.l)} in meno adesso">−</button><b>${x}</b><button type="button" data-wq="${key}" data-d="1" ${x<q?"":"disabled"} aria-label="Una ${esc(c.l)} in più adesso">+</button></span>`}
+async function splitCourse(n,k,now,opts){const o=orderByNum(n);if(!o||!o.portate||!o.portate[k]||stOf(o,k)!=="attesa"){S.wSplit=null;renderWaiterLists();return}
   const q=cop(righeFor(o,k)),later=q-now;if(!(now>=1&&later>=1))return;
   const b=kBase(k),D=o.dopo||{},used=[...Object.keys(o.portate),...Object.keys(D)].filter(x=>kBase(x)===b).map(kRound),nk=b+"~"+(Math.max(1,...used)+1),upd={};
   upd["dopo/"+nk]=later;if(k!==b)upd["dopo/"+k]=(D[k]||0)-later;
   upd["portate/"+nk]={stato:"attesa",t:0,nome:(portataCfg(b)||{}).nome||o.portate[k].nome||"",ord:o.portate[k].ord||0};
-  try{await R("ordini/"+n).update(upd);S.wSplit=null;const pn=(portataCfg(b)||{}).nome||"";toast(`${pn}: ${now} adesso, ${later} dopo · ${whereTxt(o)}`,{ms:5000})}
-  catch(e){$("w-msg").textContent=errText(e)}}
+  try{await R("ordini/"+n).update(upd);S.wSplit=null;delete S.wNow[n+"|"+k];if(!(opts&&opts.silent)){const pn=(portataCfg(b)||{}).nome||"";toast(`${pn}: ${now} adesso, ${later} dopo · ${whereTxt(o)}`,{ms:5000})}return true}
+  catch(e){$("w-msg").textContent=errText(e);return false}}
 async function mergeCourse(n,k){const o=orderByNum(n),t=o&&canMerge(o,k);if(!t)return;const D=o.dopo||{},upd={["dopo/"+k]:null,["portate/"+k]:null};
   if(kRound(t)>1)upd["dopo/"+t]=(D[t]||0)+(D[k]||0);
   try{await R("ordini/"+n).update(upd);toast(`${(portataCfg(k)||{}).nome||""}: di nuovo insieme · ${whereTxt(o)}`,{ms:4000})}catch(e){$("w-msg").textContent=errText(e)}}
@@ -148,14 +152,15 @@ function cardAction(o){
       return `<button role="tab" class="${ok?"rdone":""}" data-wtab="${n}|${esc(r)}" aria-pressed="${sel}" style="${sty}">${esc(repNome(r)||"Altro")}${todo?'<span class="rdot" aria-label="da chiamare"></span>':ok?" ✓":""}</button>`}).join("")}</div>`:"";
   const mine=cs.filter(c=>repOfC(o,c)===cur),todo=mine.filter(isTodo);
   const rows=mine.map(c=>{const st=c.p.stato||"attesa",q=cop(righeFor(o,c.k));let right="";
-    if(st==="attesa")right=act?`<button class="btn primary wcall" ${dis(c.k)} data-set="${n}|${c.k}|chiamata">Chiama</button>`:'<span class="pill wait">da chiamare</span>';
+    const part=st==="attesa"&&act&&q>=2,x=part?wNowOf(o,c.k):q;
+    if(st==="attesa")right=act?(x<q?`<button class="btn primary wcall" ${dis(c.k)} data-callpart="${n}|${esc(c.k)}">Chiama ${x}</button>`:`<button class="btn primary wcall" ${dis(c.k)} data-set="${n}|${c.k}|chiamata">Chiama</button>`):'<span class="pill wait">da chiamare</span>';
     else if(st==="chiamata"){const late=isLate(c.k,c.p.t);right=`<span class="pill ${late?"out":"call"}">in preparazione · ${ago(c.p.t)}</span>${act?`<button class="btn small" ${dis(c.k)} data-uncall="${n}|${c.k}">Annulla</button>`:""}`}
     else if(st==="pronta")right='<span class="pill ready">pronto</span>';
     else right=`<span class="pill wait">portato ✓</span>${act&&c.p.t&&Date.now()-c.p.t<3*60000?`<button class="btn small" ${dis(c.k)} data-unserve="${n}|${c.k}">Non portato</button>`:""}`;
-    const mg=st==="attesa"&&act?canMerge(o,c.k):null,spl=st==="attesa"&&act&&q>=2&&!(S.wSplit&&S.wSplit.n===n&&S.wSplit.k===c.k);
-    if(st==="attesa"&&act)right=(spl?`<button class="btn small" data-wsplit="${n}|${esc(c.k)}">Una parte dopo</button>`:"")+(mg?`<button class="btn small" data-wmerge="${n}|${esc(c.k)}">Unisci</button>`:"")+right;
-    const scx=(st==="attesa"?(act?wSplitHtml(o,c,q)+wScHtml(o,c):""):scTxt(c.p)?`<div class="sub wscd">${esc(scTxt(c.p))}</div>`:"");
-    return `<div class="wpiatto ${st}"><span class="wpn"><b>${q}</b> ${esc(c.l)}</span><span class="row">${right}</span>${scx}</div>`}).join("");
+    const mg=st==="attesa"&&act?canMerge(o,c.k):null;
+    if(mg)right=`<button class="btn small" data-wmerge="${n}|${esc(c.k)}">Unisci</button>`+right;
+    const scx=(st==="attesa"?(act?wScHtml(o,c):""):scTxt(c.p)?`<div class="sub wscd">${esc(scTxt(c.p))}</div>`:"")+(x<q?`<div class="sub wscd">Adesso ${x}, le altre ${q-x} restano da chiamare dopo</div>`:"");
+    return `<div class="wpiatto ${st}"><span class="wpn">${part?wQtyHtml(o,c,q):`<b>${q}</b>`} ${esc(c.l)}</span><span class="row">${right}</span>${scx}</div>`}).join("");
   const todo1=todo.filter(c=>kRound(c.k)===1);
   const all=todo1.length>1&&act?`<button class="btn primary big" data-callall="${n}|${esc(cur)}">Chiama tutto ${esc(repNome(cur))} (${todo1.length})</button>`:"";
   out.push(`<div class="wrep">${tabs}<div class="wrows">${rows}</div>${all}</div>`);
@@ -193,6 +198,7 @@ $("w-tables").addEventListener("click",async e=>{
   if(t.dataset.wtab){const [n,r]=t.dataset.wtab.split("|");S.wTab[n]=r;renderWaiterLists();return}
   if(t.dataset.callall){const [n,r]=t.dataset.callall.split("|"),o=orderByNum(Number(n));if(!o||!canAct(o))return;
     const ks=orderCourses(o).filter(c=>repOfC(o,c)===r&&isTodo(c)&&kRound(c.k)===1).map(c=>c.k);t.disabled=true;
+    for(const k of ks){const y=orderByNum(Number(n)),x=y?wNowOf(y,k):0;if(y&&x<cop(righeFor(y,k)))await splitCourse(Number(n),k,x,{silent:true})}
     const done=await setMany(Number(n),ks,"chiamata");
     if(done.length){const x=orderByNum(Number(n))||o;toast(`${repNome(r)}: chiamati ${done.length} piatti · ${whereTxt(x)}`,{ms:5000,action:{label:"Annulla",fn:()=>{done.forEach(k=>{const y=orderByNum(Number(n));if(y&&y.portate&&y.portate[k]&&y.portate[k].stato==="chiamata")setStato(Number(n),k,"attesa",{silent:true})})}}})}
     return}
@@ -200,6 +206,10 @@ $("w-tables").addEventListener("click",async e=>{
     const done=await setMany(n,orderCourses(o).filter(c=>c.p.stato==="pronta").map(c=>c.k),"servita");
     if(done.length)toast(`${done.length} piatti portati · ${whereTxt(o)}`,{ms:10000,action:{label:"Annulla",fn:()=>done.forEach(k=>unserve(n,k))}});return}
   if(t.dataset.unserve){const [n,k]=t.dataset.unserve.split("|");await unserve(Number(n),k);return}
+  if(t.dataset.wq){const [n,k]=t.dataset.wq.split("|"),o=orderByNum(Number(n));if(!o)return;const q=cop(righeFor(o,k));
+    S.wNow[n+"|"+k]={q,x:Math.max(1,Math.min(q,wNowOf(o,k)+Number(t.dataset.d)))};renderWaiterLists();return}
+  if(t.dataset.callpart){const [n,k]=t.dataset.callpart.split("|"),o=orderByNum(Number(n));if(!o||!canAct(o))return;t.disabled=true;const x=wNowOf(o,k);
+    if(x<cop(righeFor(o,k))&&!(await splitCourse(Number(n),k,x,{silent:true})))return;await setStato(Number(n),k,"chiamata");return}
   if(t.dataset.wsplit){const [n,k]=t.dataset.wsplit.split("|");S.wSplit={n:Number(n),k,x:1};renderWaiterLists();return}
   if(t.dataset.wsx){if(S.wSplit){S.wSplit.x=(S.wSplit.x||1)+Number(t.dataset.wsx)}renderWaiterLists();return}
   if(t.dataset.wsplitno){S.wSplit=null;renderWaiterLists();return}

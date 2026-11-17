@@ -355,6 +355,10 @@ input.bad{border-color:var(--danger);box-shadow:0 0 0 2px var(--danger-bg)}
 .wsc .stepper .name{font-size:.95rem}
 .wsc .stepper .ctl button{width:40px;height:40px;font-size:1.3rem}
 .wscd{flex-basis:100%}
+.wqty{display:inline-flex;align-items:center;gap:4px;margin-right:4px;vertical-align:middle}
+.wqty button{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:1.2rem;font-weight:700;cursor:pointer}
+.wqty button:disabled{opacity:.35}
+.wqty b{min-width:1.4em;text-align:center}
 .wsplit{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:6px 8px;border:1px dashed var(--line);border-radius:10px}
 .wsplit .stepper{border:0;padding:0;gap:8px}
 .wsplit .stepper .ctl button{width:40px;height:40px;font-size:1.3rem}

@@ -313,7 +313,8 @@ async function waiterAct(w){
   const c=pick(cand),own=[...c.querySelectorAll('button[data-set$="|chiamata"]:not([disabled])')],tabs=[...c.querySelectorAll("[data-wtab]")].filter(b=>b.querySelector(".rdot")&&b.getAttribute("aria-pressed")!=="true");
   if(tabs.length&&(!own.length||rnd()<.3)){await click(w,pick(tabs));STAT.cambiReparto++;return true}
   if(!own.length)return false;
-  const sp=c.querySelector("button[data-wsplit]");if(sp&&rnd()<.12){await click(w,sp);const ok=await waitFor(()=>q(w,"button[data-wsplitok]"),3000,"dividi");await click(w,ok);STAT.divisi++;return true}
+  const sp=c.querySelector('button[data-wq][data-d="-1"]:not([disabled])');if(sp&&rnd()<.12){const key=sp.dataset.wq;await click(w,sp);
+    const cp=await waitFor(()=>q(w,`button[data-callpart="${key}"]`),3000,"chiama una parte");await click(w,cp);STAT.divisi++;STAT.chiamate++;return true}
   const plus=c.querySelector('.wsc button[data-d="1"]:not([disabled])');if(plus&&rnd()<.5){await click(w,plus);STAT.scelteMosse++;return true}
   const all=c.querySelector("button[data-callall]:not([disabled])");
   if(all&&rnd()<.5){await click(w,all);STAT.chiamateTutto++;STAT.chiamate++;return true}
