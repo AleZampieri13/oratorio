@@ -252,7 +252,8 @@ function renderWaiterLists(){
 function renderWHist(recent){
   const H=ordersArr().filter(o=>!o.asportoSubito&&(seesAll()?(ownerId(o)||o.fila):mineOrder(o))&&orderDone(o)).sort((a,b)=>recent(b)-recent(a));
   $("w-histbox").hidden=!H.length;if(!H.length){$("w-hist").innerHTML="";return}
-  $("w-hist-sub").textContent=`${H.length} ${H.length===1?"cliente finito":"clienti finiti"} · ${H.reduce((a,o)=>a+cop(righe(o)),0)} coperti`;
+  const show=!!S.wHistShow;$("w-histbtn").setAttribute("aria-expanded",String(show));$("w-hist").hidden=!show;
+  $("w-histbtn").innerHTML=`<span>Storico</span><small>${H.length} ${H.length===1?"cliente finito":"clienti finiti"} · ${H.reduce((a,o)=>a+cop(righe(o)),0)} coperti</small><span class="chev" aria-hidden="true">${show?"▴":"▾"}</span>`;
   const open=S.wHistOpen||(S.wHistOpen=new Set());
   const html=H.map(o=>{const who=seesAll()?nameOf(ownerId(o),o.cameriere):"";
     return `<details class="whist" data-h="${o.numero}" ${open.has(o.numero)?"open":""}><summary><span class="n">${o.numero}</span><span class="wh-main"><b>${esc(o.nome||"Senza nome")}</b><span class="sub">${cop(righe(o))} coperti${who?" · "+esc(who):""} · finito alle ${fmtTime(recent(o))}</span></span></summary>
@@ -260,6 +261,7 @@ function renderWHist(recent){
       ${o.note?`<div class="note">${esc(o.note)}</div>`:""}</details>`}).join("");
   if($("w-hist").dataset.h!==html){$("w-hist").innerHTML=html;$("w-hist").dataset.h=html}
 }
+$("w-histbtn").addEventListener("click",()=>{S.wHistShow=!S.wHistShow;renderWaiterLists()});
 $("w-hist").addEventListener("toggle",e=>{const d=e.target.closest&&e.target.closest("details[data-h]");if(!d)return;const n=Number(d.dataset.h),s=S.wHistOpen||(S.wHistOpen=new Set());if(d.open)s.add(n);else s.delete(n);
   $("w-hist").dataset.h="";},true);
 /* compatibilità con il resto dell'app */

@@ -26,7 +26,7 @@ body{margin:0;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-a
 }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.4}
-.wrap{max-width:1100px;margin:0 auto;padding-inline:16px;padding-block:0 48px}
+.wrap{max-width:1400px;margin:0 auto;padding-inline:16px;padding-block:0 48px}
 header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px 10px;border-bottom:1px solid var(--line);margin-bottom:16px}
 .brand{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .brand h1{font-family:var(--f-display);font-weight:800;font-size:1.35rem;margin:0;letter-spacing:-.01em}
@@ -350,7 +350,8 @@ input.bad{border-color:var(--danger);box-shadow:0 0 0 2px var(--danger-bg)}
 .sclist .row{gap:8px;align-items:center;flex-wrap:nowrap}
 .sclist .scdot{width:1.2em;text-align:center;font-weight:800;color:var(--muted)}
 /* scelte del cameriere (es. naturale / frizzante) */
-.wsc{flex-basis:100%;display:flex;flex-wrap:wrap;gap:4px 16px}
+.wsc{flex-basis:100%;display:grid;grid-template-columns:max-content auto;justify-content:start;align-items:center;gap:4px 14px;padding:2px 0 4px}
+.wsc .stepper{display:contents}
 .wsc .stepper{border:0;padding:2px 0;gap:8px}
 .wsc .stepper .name{font-size:.95rem}
 .wsc .stepper .ctl button{width:40px;height:40px;font-size:1.3rem}
@@ -363,10 +364,34 @@ input.bad{border-color:var(--danger);box-shadow:0 0 0 2px var(--danger-bg)}
 .whist .wh-main{display:flex;flex-direction:column;gap:2px;min-width:0}
 .whist ul{margin:8px 0 2px;padding-left:18px}
 .whist li{padding:2px 0}
-/* cassa: tutto lo schermo in larghezza e scritte più grandi */
-body:has(#p-cassa:not([hidden])) .wrap{max-width:none}
-#p-cassa{zoom:1.08}
-@media (min-width:900px){#p-cassa{zoom:1.18}#p-cassa .grid2{gap:28px}}
+/* cassa: scritte più grandi, riquadri uguali al resto */
+#p-cassa{font-size:1.1rem}
+#p-cassa .stepper .name{font-size:1.2rem}
+#p-cassa .label{font-size:.86rem}
+#p-cassa input[type=text],#p-cassa input[type=search],#p-cassa input[type=number],#p-cassa textarea{font-size:1.1rem}
+#p-cassa .btn{font-size:1.08rem}
+#p-cassa .btn.small{font-size:1rem}
+#p-cassa .chip{font-size:1rem}
+#p-cassa .sub,#p-cassa .hint,#p-cassa .li .sub{font-size:1rem}
+#p-cassa h2{font-size:1.3rem}
+#p-cassa .csec{font-size:1.3rem}
+#p-cassa .totline b{font-size:1.9rem}
+#p-cassa .msg{font-size:1.05rem}
+/* camerieri: nome del piatto e tasti sulla stessa riga, senza andare a capo */
+.wpiatto{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center}
+.wpiatto .wpn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wpiatto .row{flex-wrap:nowrap}
+.wpiatto .wsc,.wpiatto .wscd,.wpiatto .wsplit{grid-column:1 / -1}
+/* storico: un tasto colorato al centro, le righe dello stesso colore */
+:root{--hist:#5b3fa8;--hist-bg:#ece6fb}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--hist:#c3b0ff;--hist-bg:#2a2140}}
+:root[data-theme="dark"]{--hist:#c3b0ff;--hist-bg:#2a2140}
+.histbtn{align-self:center;display:flex;align-items:center;gap:10px;background:var(--hist-bg);color:var(--hist);border-color:var(--hist);border-radius:999px;padding:10px 20px;margin-top:12px;white-space:nowrap;max-width:100%}
+.histbtn span:first-child{font-size:1.05rem}
+.histbtn small{font-weight:600;opacity:.85;overflow:hidden;text-overflow:ellipsis}
+.whist{background:var(--hist-bg);border-color:transparent;border-left:4px solid var(--hist)}
+.whist summary .n{color:var(--hist)}
+.whist .wh-main b,.whist .wh-main .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wqty{display:inline-flex;align-items:center;gap:4px;margin-right:4px;vertical-align:middle}
 .wqty button{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:1.2rem;font-weight:700;cursor:pointer}
 .wqty button:disabled{opacity:.35}

@@ -1,8 +1,8 @@
 # Versioni
 
 ## 36
-- **Cassa:** scritte più grandi e tutta la larghezza dello schermo.
-- **Camerieri:** in fondo alla pagina lo «Storico» dei propri clienti finiti (tocca per vedere piatti e orari).
+- **Cassa:** scritte più grandi, riquadri come nelle altre pagine. Tutte le pagine possono essere larghe fino a 1400 px.
+- **Camerieri:** in fondo alla pagina il tasto viola «Storico» apre i propri clienti finiti (tocca un cliente per vedere piatti e orari). Nome del piatto e tasti restano sulla stessa riga; le scelte (Naturale / Frizzante) sono in colonna con − e + allineati.
 - **Chiamare una parte:** sulla scheda del cameriere, se un piatto da chiamare ha 2 o più porzioni, il numero ha − e +: parte dal totale; se lo abbassi, «Chiama 1» chiama solo quelle e le altre diventano una riga a parte («Acqua · 2ª volta») da chiamare quando vogliono. «Unisci» le rimette insieme finché non sono chiamate. «Chiama tutto» non chiama le parti tenute per dopo.
 - **Prenotazione arrivata in parte:** se in cassa togli dalla prenotazione chi non è ancora arrivato, la prenotazione resta «Arrivati in parte · restano N coperti». Quando arrivano gli altri la cerchi di nuovo e trovi solo quello che manca: secondo ordine, secondo biglietto. Se annulli uno dei due ordini, la prenotazione torna come prima.
 - **Cambi nel menù:** in cassa (nuovo ordine e modifica) «+ Cambia un piatto del menù»: al posto di un piatto un altro dello stesso reparto, per quante persone serve (es. 1 Pizzoccheri → Pasta), oppure «Niente» per toglierlo (es. 1 senza Torta); quando si toglie si può scegliere «Scala» e quanto togliere a persona dal prezzo del menù (proposto: il prezzo da solo del piatto). Si possono fare più cambi nello stesso ordine. Il prezzo resta quello del menù; cucina e porzioni contano il piatto nuovo; nell'Excel c'è la colonna «Cambi nel menù».
