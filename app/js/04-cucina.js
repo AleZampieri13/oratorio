@@ -146,7 +146,7 @@ function renderUscita(){
   else if(kitchenReps().length<2){box.hidden=true;box.innerHTML=""}
   else{box.hidden=false;const cur=kitchenReps().includes(S.oRep)?S.oRep:"";
     box.innerHTML=`<span class="label">Reparto</span><span class="seg">${[["","Tutti"],...kitchenReps().map(r=>[r,repNome(r)])].map(([id,n])=>`<button data-orep="${esc(id)}" aria-pressed="${cur===id}">${esc(n)}</button>`).join("")}</span>`}
-  const ready=flatCourses("pronta").filter(c=>!c.o.asportoSubito&&inOScope(c,sc));
+  const ready=flatCourses("pronta").filter(c=>inOScope(c,sc));
   $("o-ready").innerHTML=ready.length?ready.map(c=>{const stale=c.t&&(Date.now()-c.t)>5*60000,rf=righeFor(c.o,c.k),n=cop(rf),wn=kWho(c.o,c.o.portate[c.k]);
     const dis=S.pending.has(c.o.numero+"|"+c.k)?"disabled":"";
     const pp=partsOf(c.o.portate[c.k]),parts=pp.length>1?pp.map(x=>x.piatto||x.nome).join(" + "):"";
@@ -158,15 +158,25 @@ function renderUscita(){
       ${c.o.note?`<div class="note">${esc(c.o.note)}</div>`:""}
       <button class="btn go big" ${dis} data-set="${c.o.numero}|${c.k}|servita">Consegnato</button></article>`}).join("")
     :'<div class="panel"><div class="empty">Niente da consegnare.</div></div>';
-  const wip=flatCourses("chiamata").filter(c=>!c.o.asportoSubito&&inOScope(c,sc));
-  $("o-wip").innerHTML=wip.length?wip.map(c=>{const pt=partsTxt(c.o.portate[c.k]);
-    return `<div class="li plain two"><span><b class="kwho">${esc(kWho(c.o,c.o.portate[c.k]))}</b> · <b style="color:${portColor(c.k)}">${esc(c.l)}</b> · ${cop(righeFor(c.o,c.k))} piatti<div class="sub">${c.o.fila?esc(filaNome(c.o.fila))+" · ":""}n. ${c.o.numero} · chiamata ${ago(c.t)==="adesso"?"adesso":"da "+ago(c.t)}${pt?" · "+pt:""}</div></span></div>`}).join("")
+  const wip=flatCourses("chiamata").filter(c=>inOScope(c,sc));
+  $("o-wip").innerHTML=wip.length?wip.map(c=>{const pt=partsTxt(c.o.portate[c.k]),wn=kWho(c.o,c.o.portate[c.k]);
+    const busy=S.pending.has(c.o.numero+"|"+c.k)||oReadyReps(c,sc).some(r=>S.pending.has(c.o.numero+"|"+c.k+"|"+r));
+    return `<div class="li plain two"><span><b class="kwho">${esc(wn)}</b>${c.o.asporto&&wn!=="Asporto"?' <span class="pill asp">Asporto</span>':""} · <b style="color:${portColor(c.k)}">${esc(c.l)}</b> · ${cop(righeFor(c.o,c.k))} piatti<div class="sub">${c.o.fila?esc(filaNome(c.o.fila))+" · ":""}n. ${c.o.numero} · chiamata ${ago(c.t)==="adesso"?"adesso":"da "+ago(c.t)}${pt?" · "+pt:""}</div></span>
+      <button class="btn small primary" ${busy?"disabled":""} data-oready="${c.o.numero}|${c.k}">Pronto</button></div>`}).join("")
     :'<div class="empty">Niente in preparazione.</div>';
-  const done=flatCourses("servita").filter(c=>!c.o.asportoSubito&&inOScope(c,sc)&&c.t&&Date.now()-c.t<3*60000).sort((a,b)=>b.t-a.t).slice(0,12);
+  const done=flatCourses("servita").filter(c=>inOScope(c,sc)&&c.t&&Date.now()-c.t<3*60000).sort((a,b)=>b.t-a.t).slice(0,12);
   $("o-done").innerHTML=done.length?done.map(c=>`<div class="li plain two"><span><b class="kwho">${esc(kWho(c.o,c.o.portate[c.k]))}</b> · <b style="color:${portColor(c.k)}">${esc(c.l)}</b> · ${cop(righeFor(c.o,c.k))} piatti<div class="sub">n. ${c.o.numero} · consegnato ${ago(c.t)==="adesso"?"adesso":"da "+ago(c.t)}</div></span>
       <button class="btn small" ${S.pending.has(c.o.numero+"|"+c.k)?"disabled":""} data-unserve="${c.o.numero}|${c.k}">Non consegnato</button></div>`).join("")
     :'<div class="empty">Niente.</div>';
 }
+/* l'uscita può segnare pronto un piatto chiamato (come la cucina): solo i reparti che vede */
+function oReadyReps(c,sc){const rp=(c.o.portate[c.k]||{}).rep||{};return Object.keys(rp).filter(r=>rp[r].s!=="pronta"&&(!sc||sc.includes(r)))}
+$("o-wip").addEventListener("click",async e=>{const b=e.target.closest("button[data-oready]");if(!b||b.disabled)return;b.disabled=true;
+  const [n,k]=b.dataset.oready.split("|"),o=orderByNum(Number(n)),pp=o&&o.portate&&o.portate[k];if(!pp||pp.stato!=="chiamata")return;
+  const rs=oReadyReps({o,k},oScope());
+  if(Object.keys(pp.rep||{}).length){for(const r of rs)await setPart(Number(n),k,r,"pronta",{silent:rs.length>1});
+    if(rs.length>1){const c=(orderCourses(o).find(x=>x.k===k)||{}).l||k;toast(`${kWho(o,pp)} · ${c} pronto`,{ms:4000})}}
+  else await setStato(Number(n),k,"pronta")});
 $("o-done").addEventListener("click",async e=>{const b=e.target.closest("button[data-unserve]");if(!b||b.disabled)return;b.disabled=true;const [n,k]=b.dataset.unserve.split("|");await unserve(Number(n),k)});
 $("o-reps").addEventListener("click",e=>{const b=e.target.closest("button[data-orep]");if(!b)return;S.oRep=b.dataset.orep;lsSet("orep",S.oRep);S.seenOut=null;renderUscita()});
 $("o-sound").addEventListener("click",()=>toggleSound());

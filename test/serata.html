@@ -190,7 +190,7 @@ async function setup(){
 
 /* ---------------- SERVIZIO ---------------- */
 const L={};CASSE.forEach(c=>L[c.dev]={contanti:0,pos:0});
-const ORD=[],STAT={contiDivisi:0,divisiPiatti:0,divisiPiattiKo:[],offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
+const ORD=[],STAT={prontoUscita:0,aspUscita:0,contiDivisi:0,divisiPiatti:0,divisiPiattiKo:[],offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
 const queueFor={};CAM.forEach(c=>queueFor[c.dev]=[]);
 let noDessert=false;
 function plan(){
@@ -244,7 +244,9 @@ async function createOrder(o){
   else await click(n,`#c-pay button[data-pay="${o.pay}"]`);
   if(o.off)await type(n,"#c-off",String(o.off));
   if(o.split&&!q(n,"#c-paybox").hidden){await click(n,'#c-split button[data-split="1"]');
-    if(STAT.contiDivisi%2===0){await click(n,'#c-smode button[data-smode="importi"]');await type(n,"#c-nparts","2");await click(n,"#c-equal");o.splitMode="importi"}
+    /* per piatti serve almeno due cose nell'ordine: con un piatto solo si divide a importi */
+    const nItems=W(n).eval("splitLines().reduce((a,l)=>a+l.qta,0)");
+    if(STAT.contiDivisi%2===0||nItems<2){await click(n,'#c-smode button[data-smode="importi"]');await type(n,"#c-nparts","2");await click(n,"#c-equal");o.splitMode="importi"}
     else{/* per piatti: la parte 1 paga un menù (o il primo piatto), la parte 2 tutto il resto */
       await click(n,'#c-partlist .part[data-pi="0"] button[data-pq][data-d="1"]:not([disabled])');await click(n,'#c-partlist .part[data-pi="1"] button[data-prest]');o.splitMode="piatti";
       o.p0=W(n).eval("S.parts[0].i");await type(n,'#c-partlist .part[data-pi="0"] input[data-pf="r"]',String(Math.ceil(o.p0/10)*10||10));o.p0exp=W(n).eval("splitLines()[0].p")+parsePrice0(q(n,"#c-off").value)}
@@ -300,7 +302,11 @@ async function cookAct(n){
 }
 async function barAct(){if(/Patatine|Pizzoccheri/.test(txt("bar","#b-queue")+txt("bar","#b-ready")))STAT.barVedePatatine++;if(/Acqua|Caffè|Vino|Bibita/.test(txt("bar","#b-queue")))STAT.barLavora++;
   for(let i=0;i<3;i++){const b=q("bar","#b-queue button[data-rsetall]:not([disabled])")||q("bar","#b-queue button[data-rset]:not([disabled])");if(!b||rnd()<.3)break;await click("bar",b)}}
-async function uscitaAct(){const b=q("uscita",'#o-ready button[data-set$="|servita"]:not([disabled])');if(b&&rnd()<.25){await click("uscita",b);STAT.consegnateUscita++}}
+async function uscitaAct(){const b=q("uscita",'#o-ready button[data-set$="|servita"]:not([disabled])');if(b&&rnd()<.25){await click("uscita",b);STAT.consegnateUscita++}
+  const r=q("uscita",'#o-wip button[data-oready]:not([disabled])');if(r&&rnd()<.08){const [n,k]=r.dataset.oready.split("|");await click("uscita",r);await sleep(30);
+    const st=W("uscita").eval(`(orderByNum(${n}).portate["${k}"]||{}).stato`);if(st==="pronta")STAT.prontoUscita++}
+  if(!STAT.aspUscita){const a=W("uscita").eval(`flatCourses("chiamata").concat(flatCourses("pronta")).filter(c=>c.o.asportoSubito).length`);
+    if(a&&qa("uscita","#o-wip .kwho, #o-ready .nm").some(x=>x.textContent==="Asporto"))STAT.aspUscita=1}}
 async function cassaAct(n){const b=q(n,"#c-asplist button[data-consegna]:not([disabled])");if(b)await click(n,b)}
 function allDone(){return vals(db().ordini).every(o=>vals(o.portate).every(p=>p.stato==="servita")&&(!o.bar||o.bar.stato==="servita"))}
 
@@ -437,6 +443,8 @@ async function closing(){
   await waitFor(()=>screens.every(([d,s,re])=>re.test(txt(d,s))),3000).catch(()=>null);
   const busy=screens.filter(([d,s,re])=>!re.test(txt(d,s))).map(([d,s])=>`${d}: ${txt(d,s).slice(0,120)}`);
   check(!busy.length,"Cucine, bar e uscita: niente in coda a fine serata",busy.join(" | "));
+  check(STAT.prontoUscita>0,`L'uscita segna «Pronto» da sola: ${STAT.prontoUscita} piatti`);
+  check(STAT.aspUscita>0,"L'uscita vede anche gli asporti mandati subito in cucina");
   const nums=[...O.map(o=>o.numero),...A.map(a=>a.n)].sort((a,b)=>a-b);
   check(new Set(nums).size===nums.length&&nums.every((n,i)=>n===i+1),`Numeri da 1 a ${nums.length} senza doppioni né buchi (${A.length} annullati e bruciati)`);
   const LM=vals(E.config.listino.menu),inMenu=(pid,r)=>{const m=LM.find(x=>x.id===r.id);return !!m&&vals(m.piatti).includes(pid)};

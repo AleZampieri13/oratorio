@@ -89,7 +89,7 @@ function afterAction(o,k,to,prev){
   const c=(orderCourses(o).find(x=>x.k===k)||{}).l||k;
   const prevT=o.portate&&o.portate[k]&&o.portate[k].t;
   const undo={label:"Annulla",fn:()=>{const x=orderByNum(o.numero);const cur=x&&x.portate&&x.portate[k]&&x.portate[k].stato;if(cur===to)setStato(o.numero,k,prev,{silent:true,t:prevT,expect:to})}};
-  if(S.role==="uscita"){toast(`n. ${o.numero} · ${c} consegnato a ${kWho(o,o.portate&&o.portate[k])}`,{ms:5000,action:undo});return}
+  if(S.role==="uscita"){toast(to==="pronta"?`${kWho(o,o.portate&&o.portate[k])} · ${c} pronto`:`n. ${o.numero} · ${c} consegnato a ${kWho(o,o.portate&&o.portate[k])}`,{ms:5000,action:undo});return}
   if(S.role==="cucina"||S.role==="bar"){const pp=o.portate&&o.portate[k];const wn=kWho(o,pp);
     toast(`${wn} · ${c} ${to==="servita"?"portato":"pronta"}`,{ms:5000,action:undo});return}
   if(to==="chiamata")toast(`${c} chiamato · ${whereTxt(o)}`,{ms:5000,action:undo});
