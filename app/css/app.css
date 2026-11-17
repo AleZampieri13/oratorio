@@ -213,7 +213,7 @@ input.bad{border-color:var(--danger);box-shadow:0 0 0 2px var(--danger-bg)}
 .rprow{display:flex;gap:8px;align-items:center}
 .rprow .label{min-width:84px}
 .rprow input{flex:1;min-width:0}
-.kcard .n.nm{font-size:clamp(1.6rem,6vw,2.2rem);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.kcard .n.nm{font-size:clamp(1.6rem,6vw,2.2rem);line-height:1.1;overflow-wrap:anywhere;min-width:0}
 .kwho{font-size:1.25rem}
 .kcard .kcourse{font-size:1.6rem;line-height:1.15;margin:2px 0 6px}
 .kcard .kcourse .label{font-size:.85rem}
@@ -379,19 +379,19 @@ input.bad{border-color:var(--danger);box-shadow:0 0 0 2px var(--danger-bg)}
 #p-cassa .msg{font-size:1.05rem}
 /* camerieri: nome del piatto e tasti sulla stessa riga, senza andare a capo */
 .wpiatto{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center}
-.wpiatto .wpn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wpiatto .wpn{overflow-wrap:anywhere}
 .wpiatto .row{flex-wrap:nowrap}
 .wpiatto .wsc,.wpiatto .wscd,.wpiatto .wsplit{grid-column:1 / -1}
 /* storico: un tasto colorato al centro, le righe dello stesso colore */
 :root{--hist:#5b3fa8;--hist-bg:#ece6fb}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--hist:#c3b0ff;--hist-bg:#2a2140}}
 :root[data-theme="dark"]{--hist:#c3b0ff;--hist-bg:#2a2140}
-.histbtn{align-self:center;display:flex;align-items:center;gap:10px;background:var(--hist-bg);color:var(--hist);border-color:var(--hist);border-radius:999px;padding:10px 20px;margin-top:12px;white-space:nowrap;max-width:100%}
+.histbtn{align-self:center;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;text-align:center;gap:4px 10px;background:var(--hist-bg);color:var(--hist);border-color:var(--hist);border-radius:999px;padding:10px 20px;margin-top:12px;max-width:100%}
 .histbtn span:first-child{font-size:1.05rem}
-.histbtn small{font-weight:600;opacity:.85;overflow:hidden;text-overflow:ellipsis}
+.histbtn small{font-weight:600;opacity:.85}
 .whist{background:var(--hist-bg);border-color:transparent;border-left:4px solid var(--hist)}
 .whist summary .n{color:var(--hist)}
-.whist .wh-main b,.whist .wh-main .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.whist .wh-main b,.whist .wh-main .sub{overflow-wrap:anywhere}
 .wqty{display:inline-flex;align-items:center;gap:4px;margin-right:4px;vertical-align:middle}
 .wqty button{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:1.2rem;font-weight:700;cursor:pointer}
 .wqty button:disabled{opacity:.35}
@@ -463,3 +463,4 @@ ul.kitems li.klate small{color:var(--danger);font-weight:700}
 #c-parts .plines{display:flex;flex-direction:column;gap:2px;padding-top:4px;border-top:1px dashed var(--line)}
 #c-parts .pamt{font-size:1.15rem;min-width:90px}
 #c-parts .stepper.pl .name{font-size:.95rem}
+.kcard .top .age{flex:none;white-space:nowrap}
