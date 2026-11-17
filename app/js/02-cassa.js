@@ -21,10 +21,12 @@ function singlesHtml(qty,attr){
 /* ---------- pagamenti: uno solo, diviso in parti, offerto ---------- */
 const PAY_LBL={contanti:"contanti",pos:"POS",offerto:"offerto",misto:"contanti e POS"};
 const eurIn=v=>v>0?v.toFixed(2).replace(".",","):"";
+const ccC=()=>clampCambi(S.cambi,S.qty),ccX=()=>clampCambi(S.ecambi,S.eqty);
 function newPart(i){return {i:i||0,m:"contanti",r:0,chi:"",sel:{}}}
 /* «Per piatti»: le righe dell'ordine (menù e piatti da soli) con il prezzo di uno */
-function splitLines(){const b=bill(S.qty,{},$("c-paid").checked,S.sqty);
-  return [...b.rr.map(r=>({k:"v:"+r.id,nome:r.nome,qta:r.qta,p:$("c-paid").checked?0:(r.prezzo||0)})),...b.ss.map(s=>({k:"s:"+s.pid+"|"+s.k,nome:s.nome,qta:s.qta,p:s.prezzo||0}))]}
+function splitLines(){const b=bill(S.qty,{},$("c-paid").checked,S.sqty,ccC());
+  return [...b.rr.map(r=>({k:"v:"+r.id,nome:r.nome,qta:r.qta,p:$("c-paid").checked?0:(r.prezzo||0)})),...b.ss.map(s=>({k:"s:"+s.pid+"|"+s.k,nome:s.nome,qta:s.qta,p:s.prezzo||0})),
+    ...($("c-paid").checked?[]:b.cc.filter(c=>!c.a&&c.s>0).map(c=>({k:"d:"+c.m+"|"+c.da,nome:"Sconto senza "+piattoNome(c.da,c.dn),qta:c.q,p:-c.s})))]}
 function assigned(k,except){return S.parts.reduce((a,p,j)=>a+(j===except?0:((p.sel||{})[k]||0)),0)}
 /* importi delle parti dai piatti scelti; l'offerta libera si aggiunge alla parte 1 */
 function recalcByItems(){const L=splitLines(),off=parsePrice($("c-off").value);
@@ -81,17 +83,17 @@ function renderParts(){if(S.smode==="piatti")recalcByItems();
 $("c-smode").addEventListener("click",e=>{const b=e.target.closest("button[data-smode]");if(!b)return;S.smode=b.dataset.smode;
   if(S.smode==="piatti")S.parts.forEach(p=>{p.sel={}});renderParts();repaintC()});
 function paintParts(){
-  const b=bill(S.qty,{},$("c-paid").checked,S.sqty),toPay=r2(b.due+parsePrice($("c-off").value)),sum=r2(S.parts.reduce((a,p)=>a+(p.i||0),0)),d=r2(toPay-sum);
+  const b=bill(S.qty,{},$("c-paid").checked,S.sqty,ccC()),toPay=r2(b.due+parsePrice($("c-off").value)),sum=r2(S.parts.reduce((a,p)=>a+(p.i||0),0)),d=r2(toPay-sum);
   $("c-partsum").innerHTML=`Parti: <b>${money(sum)}</b> su ${money(toPay)}${d>0?` · <span style="color:var(--danger)">mancano ${money(d)}</span>`:d<0?` · <span style="color:var(--danger)">${money(-d)} di troppo</span>`:" · ✓"}`;
   S.parts.forEach((p,k)=>{const el=document.querySelector(`[data-presto="${k}"]`);if(!el)return;if(!(p.r>0)){el.className="resto";el.innerHTML="";return}
     const r=r2(p.r-p.i);el.className="resto "+(r<0?"err":"ok");el.innerHTML=r<0?`<small>Mancano</small>${money(-r)}`:`<small>Resto</small>${money(r)}`});
 }
 $("c-split").addEventListener("click",e=>{const b=e.target.closest("button[data-split]");if(!b)return;S.split=b.dataset.split==="1";
-  if(S.split&&!S.parts.length){const bb=bill(S.qty,{},$("c-paid").checked,S.sqty),t=r2(bb.due+parsePrice($("c-off").value));S.parts=S.smode==="piatti"?[newPart(),newPart()]:equalParts(t,2).map(newPart)}
+  if(S.split&&!S.parts.length){const bb=bill(S.qty,{},$("c-paid").checked,S.sqty,ccC()),t=r2(bb.due+parsePrice($("c-off").value));S.parts=S.smode==="piatti"?[newPart(),newPart()]:equalParts(t,2).map(newPart)}
   renderSteppers()});
-$("c-equal").addEventListener("click",()=>{const n=Math.max(2,Math.min(20,parseInt($("c-nparts").value,10)||2)),b=bill(S.qty,{},$("c-paid").checked,S.sqty);
+$("c-equal").addEventListener("click",()=>{const n=Math.max(2,Math.min(20,parseInt($("c-nparts").value,10)||2)),b=bill(S.qty,{},$("c-paid").checked,S.sqty,ccC());
   const old=S.parts;S.parts=equalParts(r2(b.due+parsePrice($("c-off").value)),n).map((i,k)=>({...(old[k]||newPart()),i}));renderParts();repaintC()});
-$("c-addpart").addEventListener("click",()=>{const b=bill(S.qty,{},$("c-paid").checked,S.sqty),left=r2(b.due+parsePrice($("c-off").value)-S.parts.reduce((a,p)=>a+(p.i||0),0));
+$("c-addpart").addEventListener("click",()=>{const b=bill(S.qty,{},$("c-paid").checked,S.sqty,ccC()),left=r2(b.due+parsePrice($("c-off").value)-S.parts.reduce((a,p)=>a+(p.i||0),0));
   S.parts.push(newPart(S.smode==="piatti"?0:(left>0?left:0)));renderParts();repaintC()});
 $("c-partlist").addEventListener("click",e=>{const row=e.target.closest(".part");if(!row)return;const k=+row.dataset.pi;
   const m=e.target.closest("button[data-pm]");if(m){S.parts[k].m=m.dataset.pm;renderParts();repaintC();return}
@@ -132,7 +134,7 @@ function paintCash(toPay,pay){
   if(resto<0){el.className="resto err";el.innerHTML=`<small>Mancano</small>${money(-resto)}`}
   else{el.className="resto ok";el.innerHTML=`<small>Resto</small>${money(resto)}`;btn.hidden=resto<=0}
 }
-function repaintC(){paintTotal("c",bill(S.qty,{},$("c-paid").checked,S.sqty),$("c-paid").checked,S.pay)}
+function repaintC(){paintTotal("c",bill(S.qty,{},$("c-paid").checked,S.sqty,ccC()),$("c-paid").checked,S.pay)}
 $("c-off").addEventListener("input",repaintC);
 $("c-ric").addEventListener("input",repaintC);
 $("c-ric").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();createOrder()}});
@@ -142,7 +144,7 @@ $("c-ric").addEventListener("input",()=>{$("c-ric").classList.remove("bad");if($
 $("c-nome").addEventListener("input",()=>{$("c-nome").classList.remove("bad");if($("c-msg").textContent==="Scrivi il nominativo.")$("c-msg").textContent=""});
 ["c-steppers","c-sing"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target.closest("button"))hideDone()}));
 $("c-off-resto").addEventListener("click",()=>{
-  const b=bill(S.qty,{},$("c-paid").checked,S.sqty),off=parsePrice($("c-off").value),ric=parsePrice($("c-ric").value);
+  const b=bill(S.qty,{},$("c-paid").checked,S.sqty,ccC()),off=parsePrice($("c-off").value),ric=parsePrice($("c-ric").value);
   const resto=r2(ric-(b.due+off));if(resto>0){$("c-off").value=r2(off+resto).toFixed(2).replace(".",",");repaintC()}
 });
 function renderStock(){
@@ -179,7 +181,7 @@ function cambiHtml(pre,qty,cc){
   const das=m=>menuPiatti(m).filter(p=>cambiFree(qty,cc,m,p.id)>0);
   const can=ms.some(v=>das(v.id).length);
   if(!can&&!cc.length)return "";
-  const list=cc.map((c,i)=>`<div class="li plain"><span>${ms.length>1?esc(vn(c.m))+": ":""}${c.a?`<b>${c.q}</b> ${esc(piattoNome(c.da,c.dn))} → <b>${esc(piattoNome(c.a,c.an))}</b>`:`<b>${c.q}</b> <b>senza</b> ${esc(piattoNome(c.da,c.dn))}`}</span><button type="button" class="btn small" data-cx="${i}" aria-label="Togli il cambio ${esc(cambioTxt(c))}">✕</button></div>`).join("");
+  const list=cc.map((c,i)=>`<div class="li plain"><span>${ms.length>1?esc(vn(c.m))+": ":""}${c.a?`<b>${c.q}</b> ${esc(piattoNome(c.da,c.dn))} → <b>${esc(piattoNome(c.a,c.an))}</b>`:`<b>${c.q}</b> <b>senza</b> ${esc(piattoNome(c.da,c.dn))}${c.s>0?` <span class="label">· −${money(r2(c.s*c.q))}</span>`:""}`}</span><button type="button" class="btn small" data-cx="${i}" aria-label="Togli il cambio ${esc(cambioTxt(c))}">✕</button></div>`).join("");
   let form="";const F=S.cf&&S.cf.pre===pre?S.cf:null;
   if(F&&can){
     const mm=ms.filter(v=>das(v.id).length);if(!mm.some(v=>v.id===F.m))F.m=mm[0].id;
@@ -190,6 +192,8 @@ function cambiHtml(pre,qty,cc){
     form=`<div class="cform">${mm.length>1?`<label><span class="label">Nel menù</span><select data-cf="m">${opt(mm,F.m)}</select></label>`:""}
       <label><span class="label">Al posto di</span><select data-cf="da">${opt(dd,F.da)}</select></label>
       <label><span class="label">Vuole</span><select data-cf="a">${opt(aa,F.a)}<option value="" ${F.a===""?"selected":""}>Niente (lo togli dal menù)</option></select></label>
+      ${F.a===""?`<div class="payrow"><span class="label">Prezzo del menù</span><span class="seg"><button type="button" data-cfp="0" aria-pressed="${!F.sc}">Resta uguale</button><button type="button" data-cfp="1" aria-pressed="${!!F.sc}">Scala</button></span></div>
+        ${F.sc?`<div class="row"><span class="label">Da scalare a persona</span><input type="text" inputmode="decimal" class="pricein" data-cfs="1" value="${eurIn(F.s)}" placeholder="0,00 €" aria-label="Quanto scalare a persona"></div>`:""}`:""}
       <div class="stepper"><span class="name">Per quante persone</span><span class="ctl"><button type="button" data-cfq="-1" ${F.q>1?"":"disabled"} aria-label="Una persona in meno">−</button><output>${F.q}</output><button type="button" data-cfq="1" ${F.q<free?"":"disabled"} aria-label="Una persona in più">+</button></span></div>
       <div class="row"><button type="button" class="btn primary" data-cfok="1">Aggiungi il cambio</button><button type="button" class="btn" data-cfno="1">Chiudi</button></div></div>`}
   return `<div class="cambi">${cc.length?`<span class="label">Cambi nel menù (il prezzo resta quello del menù)</span>${list}`:""}
@@ -202,16 +206,21 @@ function cambiState(pre){return pre==="c"?{qty:S.qty,get:()=>S.cambi,set:v=>{S.c
     if(b.dataset.cadd){S.cf={pre};st.render();return}
     if(b.dataset.cfno){S.cf=null;st.render();return}
     if(b.dataset.cfq){S.cf.q=(S.cf.q||1)+Number(b.dataset.cfq);st.render();return}
-    if(b.dataset.cfok){const F=S.cf;if(!F||!F.da||F.a==null||!(F.q>0))return;const cc=st.get().map(c=>({...c})),ex=cc.find(c=>c.m===F.m&&c.da===F.da&&c.a===F.a);
-      if(ex)ex.q+=F.q;else cc.push({m:F.m,da:F.da,a:F.a,q:F.q,dn:piattoNome(F.da),an:F.a?piattoNome(F.a):""});
+    if(b.dataset.cfp){S.cf.sc=b.dataset.cfp==="1";if(S.cf.sc&&S.cf.s==null)S.cf.s=(portataCfg(S.cf.da)||{}).prezzo||0;st.render();if(S.cf.sc){const i=box.querySelector("input[data-cfs]");if(i&&!(S.cf.s>0))i.focus()}return}
+    if(b.dataset.cfok){const F=S.cf;if(!F||!F.da||F.a==null||!(F.q>0))return;
+      const vp=(S.varianti.find(v=>v.id===F.m)||{}).prezzo||0,sv=F.a===""&&F.sc?r2(Math.min(vp,F.s||0)):0;
+      if(F.a===""&&F.sc&&!(sv>0)){const i=box.querySelector("input[data-cfs]");if(i){i.classList.add("bad");i.focus()}return}
+      const cc=st.get().map(c=>({...c})),ex=cc.find(c=>c.m===F.m&&c.da===F.da&&c.a===F.a&&(c.s||0)===sv);
+      if(ex)ex.q+=F.q;else cc.push({m:F.m,da:F.da,a:F.a,q:F.q,dn:piattoNome(F.da),an:F.a?piattoNome(F.a):"",...(sv?{s:sv}:{})});
       st.set(clampCambi(cc,st.qty));S.cf=null;S.stockWarn=null;st.render()}});
-  box.addEventListener("change",e=>{const f=e.target.dataset.cf;if(!f||!S.cf)return;S.cf[f]=e.target.value;if(f==="m")S.cf.da=null;if(f!=="a"){S.cf.a=null;S.cf.q=1}cambiState(pre).render()})});
+  box.addEventListener("input",e=>{if(e.target.dataset.cfs&&S.cf){S.cf.s=parsePrice(e.target.value);e.target.classList.remove("bad")}});
+  box.addEventListener("change",e=>{const f=e.target.dataset.cf;if(!f||!S.cf)return;S.cf[f]=e.target.value;if(f==="m"||f==="da"){S.cf.s=null;S.cf.sc=false}if(f==="m")S.cf.da=null;if(f!=="a"){S.cf.a=null;S.cf.q=1}cambiState(pre).render()})});
 function renderSteppers(){
   S.aspConfirm=null;$("c-create").textContent="Crea ordine";
   $("c-steppers").innerHTML=stepperHtml(S.varianti,S.qty,"data-step");
   S.cambi=clampCambi(S.cambi,S.qty);$("c-cambi").innerHTML=cambiHtml("c",S.qty,S.cambi);
   const sl=singlesList();$("c-sing-box").hidden=!sl.length;$("c-sing").innerHTML=singlesHtml(S.sqty,"data-sstep");
-  paintTotal("c",bill(S.qty,{},$("c-paid").checked,S.sqty),$("c-paid").checked,S.pay);
+  paintTotal("c",bill(S.qty,{},$("c-paid").checked,S.sqty,ccC()),$("c-paid").checked,S.pay);
   $("c-asp-row").hidden=!$("c-asp").checked;$("c-aspmode").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.m===S.aspMode)));
   renderStock();
   if(S.editOrder!=null)renderEditSteppers();
@@ -322,7 +331,7 @@ $("c-fondo-save").addEventListener("click",()=>{if(!S.me||!hasRole(S.me,"master"
 
 async function createOrder(){
   const msg=$("c-msg");msg.className="msg err";
-  const paid=$("c-paid").checked,b=bill(S.qty,{},paid,S.sqty);
+  const paid=$("c-paid").checked,b=bill(S.qty,{},paid,S.sqty,ccC());
   if(!b.rr.length&&!b.ss.length&&!b.xx.length){msg.textContent="Aggiungi almeno un menù o un piatto.";return}
   if(!$("c-nome").value.trim()){msg.textContent="Scrivi il nominativo.";$("c-nome").classList.add("bad");$("c-nome").focus();return}
   let n=parseInt($("c-num").value,10);
@@ -475,7 +484,7 @@ function renderEditSteppers(){
   $("x-steppers").innerHTML=stepperHtml(S.varianti,S.eqty,"data-estep");
   S.ecambi=clampCambi(S.ecambi,S.eqty);$("x-cambi").innerHTML=cambiHtml("x",S.eqty,S.ecambi);
   const sl=singlesList();$("x-sing-box").hidden=!sl.length;$("x-sing").innerHTML=singlesHtml(S.esqty,"data-esstep");
-  paintTotal("x",bill(S.eqty,{},$("x-paid").checked,S.esqty),$("x-paid").checked,S.xpay);
+  paintTotal("x",bill(S.eqty,{},$("x-paid").checked,S.esqty,ccX()),$("x-paid").checked,S.xpay);
 }
 $("x-steppers").addEventListener("click",e=>{const b=e.target.closest("button[data-estep]");if(!b)return;
   const id=b.dataset.estep;S.eqty[id]=Math.max(0,(S.eqty[id]||0)+Number(b.dataset.d));renderEditSteppers()});
@@ -488,7 +497,7 @@ $("x-close").addEventListener("click",closeEdit);
 $("x-save").addEventListener("click",async()=>{
   const n=S.editOrder,o=orderByNum(n),m=$("x-msg");if(!o){closeEdit();return}
   if(isLocked(o)){m.className="msg err";m.textContent=LOCK_MSG(n);return}
-  const paid=$("x-paid").checked,b=bill(S.eqty,{},paid,S.esqty);
+  const paid=$("x-paid").checked,b=bill(S.eqty,{},paid,S.esqty,ccX());
   if(!b.rr.length&&!b.ss.length&&!b.xx.length){m.className="msg err";m.textContent="L'ordine è vuoto. Per toglierlo usa «Annulla ordine».";return}
   /* un pasto offerto resta offerto fino al suo importo; il resto si paga */
   const oOff=o.offerto||0,nOff=r2(Math.min(oOff,b.due)),xoff=parsePrice($("x-off").value);

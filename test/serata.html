@@ -197,7 +197,7 @@ async function setup(){
 
 /* ---------------- SERVIZIO ---------------- */
 const L={};CASSE.forEach(c=>L[c.dev]={contanti:0,pos:0});
-const ORD=[],STAT={aspTutto:0,aspConsegnati:0,cambi:0,scelteMosse:0,barVedeScelte:0,prontoUscita:0,aspUscita:0,contiDivisi:0,divisiPiatti:0,divisiPiattiKo:[],offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
+const ORD=[],STAT={scalati:0,aspTutto:0,aspConsegnati:0,cambi:0,scelteMosse:0,barVedeScelte:0,prontoUscita:0,aspUscita:0,contiDivisi:0,divisiPiatti:0,divisiPiattiKo:[],offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
 const queueFor={};CAM.forEach(c=>queueFor[c.dev]=[]);
 let noDessert=false;
 function plan(){
@@ -211,7 +211,7 @@ function plan(){
     else{o.nome=pick(["Sig. ","Fam. ","Gruppo "])+pick(COGNOMI);o.menu.Standard=1+Math.floor(rnd()*4);if(rnd()<.4)o.menu.Bambini=1+Math.floor(rnd()*2)}
     if(rnd()<.6)o.single[pick(["Acqua","Vino","Bibita"])]=1+Math.floor(rnd()*3);
     if(rnd()<.2)o.single["Patatine"]=1+Math.floor(rnd()*2);
-    if(!o.asp&&!o.pren&&(o.menu.Standard||0)>=2&&rnd()<.3){o.cambi=[{da:"Pizzoccheri",a:"Pasta",q:o.menu.Standard>=3&&rnd()<.5?2:1}];if(rnd()<.4)o.cambi.push({da:"Caffè",a:"Bibita",q:1});if(rnd()<.5)o.cambi.push({da:"Sciatt",a:"Niente",q:1})}
+    if(!o.asp&&!o.pren&&(o.menu.Standard||0)>=2&&rnd()<.3){o.cambi=[{da:"Pizzoccheri",a:"Pasta",q:o.menu.Standard>=3&&rnd()<.5?2:1}];if(rnd()<.4)o.cambi.push({da:"Caffè",a:"Bibita",q:1});if(rnd()<.5)o.cambi.push({da:"Sciatt",a:"Niente",q:1,scala:rnd()<.5})}
     if(rnd()<.12)o.off=pick([2,5,10]);
     if(!o.asp&&!o.pren){const z=rnd();if(z<.06){o.offer=true;o.off=0}else if(z<.16)o.split=true}
     if(o.pren&&offP.has(o.pren)){o.offer=true;o.prenOffer=true;o.off=0}
@@ -248,7 +248,7 @@ async function createOrder(o){
   for(const [k,v] of Object.entries(o.single)){if(noDessert&&k==="Torta")continue;for(let i=0;i<v;i++)await click(n,`#c-sing button[aria-label="Aggiungi ${k}"]`)}
   for(const cb of (o.cambi||[])){if(!q(n,"#c-cambi button[data-cadd]"))break;await click(n,"#c-cambi button[data-cadd]");
     const selT=async(f,t)=>{const e=q(n,`#c-cambi select[data-cf="${f}"]`);if(!e)return;const op=[...e.options].find(x=>x.textContent.startsWith(t));if(!op)return;e.value=op.value;e.dispatchEvent(new Event("change",{bubbles:true}));await sleep(STEP)};
-    await selT("m","Standard");await selT("da",cb.da);await selT("a",cb.a);for(let i=1;i<cb.q;i++)await click(n,'#c-cambi button[data-cfq="1"]');
+    await selT("m","Standard");await selT("da",cb.da);await selT("a",cb.a);for(let i=1;i<cb.q;i++)await click(n,'#c-cambi button[data-cfq="1"]');if(cb.scala){await click(n,'#c-cambi button[data-cfp="1"]');STAT.scalati++}
     await click(n,'#c-cambi button[data-cfok]');STAT.cambi++}
   if(o.asp){const c=q(n,"#c-asp");c.checked=true;c.dispatchEvent(new Event("change"));await sleep(STEP);if(o.asp==="cameriere")await click(n,'#c-aspmode button[data-m="cameriere"]')}
   if(o.offer){if(!o.prenOffer){await click(n,'#c-pay button[data-pay="offerto"]');await type(n,"#c-offby","Parrocchia")}
@@ -461,7 +461,9 @@ async function closing(){
   check(!busy.length,"Cucine, bar e uscita: niente in coda a fine serata",busy.join(" | "));
   {const W_=W("master"),pasta=W_.eval(`S.portate.find(p=>p.nome==="Pasta").id`),withC=vals(db().ordini).filter(o=>vals(o.cambi).length);
    const ok=withC.every(o=>W_.eval(`(()=>{const o=orderByNum(${o.numero}),cc=cambi(o),pz=cc.filter(c=>c.da==="p-primo").reduce((a,c)=>a+c.q,0),pa=cc.filter(c=>c.a==="${pasta}").reduce((a,c)=>a+c.q,0),
-     men=righe(o).filter(r=>applies(portataCfg("p-primo"),r.id)).reduce((a,r)=>a+r.qta,0);return cop(righeFor(o,"${pasta}"))===pa&&cop(righeFor(o,"p-primo"))===men-pz&&(pa===0||!!o.portate["${pasta}"])&&Math.abs(o.importoMenu-righe(o).reduce((a,r)=>a+r.qta*r.prezzo,0))<.01})()`));
+     men=righe(o).filter(r=>applies(portataCfg("p-primo"),r.id)).reduce((a,r)=>a+r.qta,0);return cop(righeFor(o,"${pasta}"))===pa&&cop(righeFor(o,"p-primo"))===men-pz&&(pa===0||!!o.portate["${pasta}"])&&Math.abs(o.importoMenu-(righe(o).reduce((a,r)=>a+r.qta*r.prezzo,0)-cc.reduce((a,c)=>a+(!c.a&&c.s>0?c.s*c.q:0),0)))<.01})()`));
+   const scal=withC.filter(o=>vals(o.cambi).some(c=>c.a===""&&c.s===5)).length;
+   check(STAT.scalati>0&&scal>0,`Togliere un piatto con «Scala»: ${scal} ordini con lo Sciatt tolto e 5 € in meno sul menù (gli altri pagano il menù intero)`);
    const ok2=withC.every(o=>W_.eval(`(()=>{const o=orderByNum(${o.numero}),cc=cambi(o);return S.portate.every(p=>{const men=righe(o).filter(r=>applies(p,r.id)).reduce((a,r)=>a+r.qta,0)+singoli(o).filter(s=>s.pid===p.id).reduce((a,s)=>a+s.qta,0);
      return cop(righeFor(o,p.id))===men-cc.filter(c=>c.da===p.id).reduce((a,c)=>a+c.q,0)+cc.filter(c=>c.a===p.id).reduce((a,c)=>a+c.q,0)})})()`));
    const senza=withC.filter(o=>vals(o.cambi).some(c=>c.a==="")).length;

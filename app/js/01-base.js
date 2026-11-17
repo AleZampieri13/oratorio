@@ -261,7 +261,9 @@ function coursesFor(rr,ss,xx,cc){const f={righe:rr,singoli:ss||[],cambi:cc||[]},
 function cambi(o){return toArr(o&&o.cambi).filter(c=>c&&c.q>0)}
 function piattoNome(id,fb){const p=portataCfg(id);return p?p.nome:(fb||id)}
 /* un cambio senza piatto nuovo (a:"") vuol dire «senza»: il piatto si toglie dal menù */
-function cambioTxt(c){return c.a?`${c.q} ${piattoNome(c.da,c.dn)} → ${piattoNome(c.a,c.an)}`:`${c.q} senza ${piattoNome(c.da,c.dn)}`}
+function cambioTxt(c){return c.a?`${c.q} ${piattoNome(c.da,c.dn)} → ${piattoNome(c.a,c.an)}`:`${c.q} senza ${piattoNome(c.da,c.dn)}${c.s>0?` (−${money(r2(c.s*c.q))})`:""}`}
+/* quanto si scala dal menù per i piatti tolti con «Scala» */
+function scontoCambi(cc){return r2((cc||[]).reduce((a,c)=>a+(!c.a&&c.s>0?c.s*c.q:0),0))}
 function cambiTxt(cc){return cc.map(cambioTxt).join(", ")}
 function cambiChips(cc){return cc.map(c=>`<span class="chip">${esc(cambioTxt(c))}</span>`).join("")}
 /* tiene solo i cambi ancora possibili con queste quantità di menù */
@@ -290,8 +292,8 @@ function buildExtra(){return []}
 function extras(o){const r=o&&o.extra;return (Array.isArray(r)?r:Object.values(r||{})).filter(Boolean)}
 const importo=rr=>Math.round(rr.reduce((a,r)=>a+r.qta*(r.prezzo||0),0)*100)/100;
 const r2=v=>Math.round(v*100)/100;
-function bill(qty,xq,paid,sq){const rr=buildRighe(qty),xx=buildExtra(xq),ss=buildSingoli(sq||{}),menu=importo(rr),ext=importo(xx),sing=importo(ss);
-  return {rr,xx,ss,menu,ext,sing,tot:r2(menu+ext+sing),due:r2((paid?0:menu)+ext+sing),cop:cop(rr)}}
+function bill(qty,xq,paid,sq,cc){const rr=buildRighe(qty),xx=buildExtra(xq),ss=buildSingoli(sq||{}),sconto=Math.min(importo(rr),scontoCambi(cc)),menu=r2(importo(rr)-sconto),ext=importo(xx),sing=importo(ss);
+  return {rr,xx,ss,cc:cc||[],sconto,menu,ext,sing,tot:r2(menu+ext+sing),due:r2((paid?0:menu)+ext+sing),cop:cop(rr)}}
 function singChips(ss){return (ss||[]).map(r=>`<span class="chip">${r.qta} ${esc(r.nome)}${r.k!=="b"?" (da solo)":""}</span>`).join("")}
 /* porzioni */
 const PORT_COLORS=["#0f766e","#b45309","#7c3aed","#be123c","#1d4ed8","#4d7c0f","#a21caf","#0e7490"];
