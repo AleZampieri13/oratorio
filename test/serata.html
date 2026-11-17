@@ -197,7 +197,7 @@ async function setup(){
 
 /* ---------------- SERVIZIO ---------------- */
 const L={};CASSE.forEach(c=>L[c.dev]={contanti:0,pos:0});
-const ORD=[],STAT={scalati:0,aspTutto:0,aspConsegnati:0,cambi:0,scelteMosse:0,barVedeScelte:0,prontoUscita:0,aspUscita:0,contiDivisi:0,divisiPiatti:0,divisiPiattiKo:[],offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
+const ORD=[],STAT={parz:0,scalati:0,aspTutto:0,aspConsegnati:0,cambi:0,scelteMosse:0,barVedeScelte:0,prontoUscita:0,aspUscita:0,contiDivisi:0,divisiPiatti:0,divisiPiattiKo:[],offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
 const queueFor={};CAM.forEach(c=>queueFor[c.dev]=[]);
 let noDessert=false;
 function plan(){
@@ -218,8 +218,13 @@ function plan(){
     if((!o.asp||o.asp==="cameriere")&&!aspP.has(o.pren))o.waiter=pick(CAM).dev;
     out.push(o)}
   while(fam.length){const pr=fam.shift();out.push({cassa:CASSE[0].dev,pay:"contanti",extra:{},single:{},menu:{},pren:pr,waiter:aspP.has(pr)?null:pick(CAM).dev,...(offP.has(pr)?{offer:true,prenOffer:true}:{})})}
+  /* una famiglia arriva in due volte: prima tutti meno uno, poi l'ultimo */
+  {const stdId=(vals(db().config.listino.menu).find(m=>m.nome==="Standard")||{}).id,pz=vals(db().prenotazioni).find(p=>!p.asporto&&!p.offerto&&vals(p.righe).some(r=>r.id===stdId&&r.qta>=2));
+   const o1=pz&&out.find(o=>o.pren===pz.nome);if(o1){o1.parz=true;PARZ.nome=pz.nome;PARZ.std=vals(pz.righe).find(r=>r.id===stdId).qta;PARZ.stdId=stdId;
+     out.push({cassa:CASSE[1%NCASSE].dev,pay:"contanti",extra:{},single:{},menu:{},pren:pz.nome,rest:true,waiter:o1.waiter||pick(CAM).dev})}}
   return out;
 }
+const PARZ={};
 /* quando i dolci finiscono il master crea i menù senza dolce */
 async function ensureNoDessert(){
   if(noDessert)return;noDessert=true;log("Le torte sono finite: il master crea «Standard senza dolce» (13 €) e «Bambini senza dolce» (7 €)","warn");
@@ -242,7 +247,9 @@ async function fixStock(n,msg){
 }
 async function createOrder(o){
   const n=o.cassa,menuName=m=>noDessert?m+" senza dolce":m;
-  if(o.pren){await type(n,"#c-search",o.pren.replace("Famiglia ",""));await click(n,await waitFor(()=>qa(n,"#c-results button[data-pren]").find(b=>b.querySelector("b").textContent===o.pren),3000,"prenotazione "+o.pren))}
+  if(o.pren){await type(n,"#c-search",o.pren.replace("Famiglia ",""));await click(n,await waitFor(()=>qa(n,"#c-results button[data-pren]:not([disabled])").find(b=>b.querySelector("b").textContent===o.pren),3000,"prenotazione "+o.pren));
+    if(o.parz){await click(n,`#c-steppers button[aria-label="Togli ${noDessert?"Standard senza dolce":"Standard"}"]`);STAT.parz++}
+    if(o.rest){check(W(n).eval("Object.values(S.qty).reduce((a,b)=>a+b,0)")===1&&/in parte/.test(txt(n,"#c-sel")),`Prenotazione «${o.pren}» arrivata in parte: in cassa la ritrovo con solo quello che manca`);STAT.parz++}}
   else await type(n,"#c-nome",o.nome);
   for(const [k,v] of Object.entries(o.menu))for(let i=0;i<v;i++)await click(n,`#c-steppers button[aria-label="Aggiungi ${menuName(k)}"]`);
   for(const [k,v] of Object.entries(o.single)){if(noDessert&&k==="Torta")continue;for(let i=0;i<v;i++)await click(n,`#c-sing button[aria-label="Aggiungi ${k}"]`)}
@@ -474,6 +481,9 @@ async function closing(){
    const friz=cs.filter(({p})=>vals(p.sc).some(x=>x.n==="Frizzante"&&x.q>0)).length;
    check(cs.length>0&&!bad.length&&friz>0&&STAT.barVedeScelte>0,`Acqua naturale / frizzante: ${cs.length} chiamate con la scelta (${friz} con frizzante, ${STAT.scelteMosse} cambi del cameriere); il bar la vede`,`sbagliate: ${bad.map(x=>x.o.numero).join(",")}`)}
   check(STAT.aspTutto>0&&STAT.aspConsegnati>0,`Uscita: l'asporto è una scheda sola con tutti i piatti (fino a ${STAT.aspTutto}) e «Consegnato tutto» (${STAT.aspConsegnati} asporti)`);
+  if(PARZ.nome){const p=vals(db().prenotazioni).find(x=>x.nome===PARZ.nome),os=vals(db().ordini).filter(o=>o.prenotazione===p.id);
+    const tot=os.reduce((a,o)=>a+((vals(o.righe).find(r=>r.id===PARZ.stdId)||{}).qta||0),0);
+    check(STAT.parz===2&&p.stato==="arrivata"&&Object.keys(p.arr||{}).length===2&&os.length===2&&(tot===PARZ.std||noDessert),`Arrivi in due volte: «${PARZ.nome}» ha due ordini (${os.map(o=>o.numero).join(" e ")}) e alla fine risulta arrivata`,JSON.stringify({parz:STAT.parz,st:p.stato,arr:p.arr,n:os.length,tot,std:PARZ.std}))}
   check(STAT.prontoUscita>0,`L'uscita segna «Pronto» da sola: ${STAT.prontoUscita} piatti`);
   check(STAT.aspUscita>0,"L'uscita vede anche gli asporti mandati subito in cucina");
   const nums=[...O.map(o=>o.numero),...A.map(a=>a.n)].sort((a,b)=>a-b);

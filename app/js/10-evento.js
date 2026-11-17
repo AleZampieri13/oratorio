@@ -1,13 +1,13 @@
 /* Evento: prenotazioni, Excel, nuovo evento, archivio */
 /* ---------- EVENTO: prenotazioni e import ---------- */
 function renderPrenList(){
-  const P=prensArr(),arr=P.filter(p=>p.stato==="arrivata").length;
-  $("e-prencount").textContent=P.length?`${arr} arrivati su ${P.length}`:"";
+  const P=prensArr(),arr=P.filter(p=>p.stato==="arrivata").length,par=P.filter(p=>p.stato==="parziale").length;
+  $("e-prencount").textContent=P.length?`${arr} arrivati su ${P.length}${par?` · ${par} in parte`:""}`:"";
   const q=norm($("e-psearch").value);$("e-psearch").hidden=!P.length;
   const list=P.filter(p=>!q||norm(p.nome).includes(q)).sort((a,b)=>String(a.nome).localeCompare(String(b.nome))).slice(0,60);
   $("e-plist").innerHTML=P.length?(list.map(p=>`<div class="li plain two"><span><b>${esc(p.nome)}</b>
       <div class="chips" style="margin-top:4px">${prenChips(p)}</div>${p.note?`<div class="sub">${esc(p.note)}</div>`:""}</span>
-      ${p.stato==="arrivata"?`<span class="pill ready">Arrivati · n. ${esc(p.ordine)}</span>`:`<span class="pill wait">In attesa</span>`}</div>`).join("")||'<div class="empty">Nessun risultato.</div>')
+      ${prenPill(p)||`<span class="pill wait">In attesa</span>`}</div>`).join("")||'<div class="empty">Nessun risultato.</div>')
     :'<div class="empty">Nessuna prenotazione caricata. Importa il file Excel qui sopra.</div>';
 }
 $("e-psearch").addEventListener("input",renderPrenList);
@@ -53,6 +53,15 @@ function buildPren(row,map){
 }
 /* chips di una prenotazione: menù, piatti da soli, asporto */
 function prenSing(p){return Object.entries((p&&p.singoli)||{}).filter(([,q])=>q>0).map(([id,q])=>({id,q,nome:(S.portate.find(x=>x.id===id)||{}).nome||"piatto"}))}
+/* arrivi in più volte: pren.arr = {"n<numero ordine>": {t, v:{menù:q}, s:{piatto:q}}} */
+function prenArr(p){return (p&&p.arr)||{}}
+function prenNums(p){return Object.keys(prenArr(p)).map(k=>Number(String(k).replace(/^n/,""))).filter(x=>x>0).sort((a,b)=>a-b)}
+function prenUsed(p){const v={},s={};Object.values(prenArr(p)).forEach(a=>{Object.entries((a&&a.v)||{}).forEach(([k,q])=>{v[k]=(v[k]||0)+q});Object.entries((a&&a.s)||{}).forEach(([k,q])=>{s[k]=(s[k]||0)+q})});return {v,s}}
+function prenLeft(p){const u=prenUsed(p);return {rr:righe(p).map(r=>({...r,qta:Math.max(0,r.qta-(u.v[r.id]||0))})).filter(r=>r.qta>0),ss:prenSing(p).map(x=>({...x,q:Math.max(0,x.q-(u.s[x.id]||0))})).filter(x=>x.q>0)}}
+function prenStato(p,arr){if(!Object.keys(arr).length)return "attesa";const L=prenLeft({...p,arr});return L.rr.length||L.ss.length?"parziale":"arrivata"}
+function prenRestTxt(p){const L=prenLeft(p),c=cop(L.rr);return c?`restano ${c} ${c===1?"coperto":"coperti"}`:"restano piatti da soli"}
+function prenPill(p){if(p.stato==="arrivata")return `<span class="pill ready">Arrivati · n. ${esc(prenNums(p).join(", ")||p.ordine)}</span>`;
+  if(p.stato==="parziale")return `<span class="pill call">Arrivati in parte · n. ${esc(prenNums(p).join(", "))} · ${prenRestTxt(p)}</span>`;return ""}
 function prenChips(p){return (p.asporto?'<span class="pill asp">Asporto</span>':"")+(p.offerto?`<span class="pill ok">Offerto · ${esc(p.offerto)}</span>`:"")+righeChips(righe(p))+prenSing(p).map(x=>`<span class="chip">${x.q} ${esc(x.nome)} (da solo)</span>`).join("")}
 function planImport(built,prune){
   const byName={};prensArr().forEach(p=>{const k=norm(p.nome);(byName[k]=byName[k]||[]).push(p)});
@@ -62,7 +71,7 @@ function planImport(built,prune){
     if(ex){touched.add(ex.id);stats.aggiornate++;upd[ex.id+"/nome"]=b.nome;upd[ex.id+"/righe"]=b.righe;upd[ex.id+"/singoli"]=b.singoli;upd[ex.id+"/asporto"]=b.asporto||null;upd[ex.id+"/offerto"]=b.offerto||null;upd[ex.id+"/note"]=b.note}
     else{const id=rid("p");stats.nuove++;upd[id]={id,nome:b.nome,righe:b.righe,singoli:b.singoli,note:b.note,stato:"attesa",ordine:0,...(b.asporto?{asporto:true}:{}),...(b.offerto?{offerto:b.offerto}:{})}}
   });
-  if(prune)prensArr().forEach(p=>{if(!touched.has(p.id)&&p.stato!=="arrivata"){upd[p.id]=null;stats.tolte++}});
+  if(prune)prensArr().forEach(p=>{if(!touched.has(p.id)&&p.stato!=="arrivata"&&p.stato!=="parziale"){upd[p.id]=null;stats.tolte++}});
   return {upd,stats};
 }
 function readMap(){const m={};fields().forEach(([k])=>{const s=$("im-"+k);m[k]=s?s.value:""});return m}
@@ -154,7 +163,7 @@ function exportExcel(title){
     ...S.portate.map(p=>o.portate&&o.portate[p.id]?(o.portate[p.id].stato||"attesa"):"—")]));
   const SP=S.portate.filter(p=>P.some(x=>(x.singoli||{})[p.id]));
   const pre=[["Nominativo",...V.map(v=>v.nome),...SP.map(p=>p.nome+" da solo"),"Coperti","Asporto","Offerto","Arrivati","Numero ordine","Note"]];
-  P.forEach(p=>pre.push([p.nome,...V.map(v=>qtyOf(p,v)),...SP.map(x=>(p.singoli||{})[x.id]||0),cop(righe(p)),p.asporto?"Sì":"No",p.offerto||"",p.stato==="arrivata"?"Sì":"No",p.ordine||"",p.note||""]));
+  P.forEach(p=>pre.push([p.nome,...V.map(v=>qtyOf(p,v)),...SP.map(x=>(p.singoli||{})[x.id]||0),cop(righe(p)),p.asporto?"Sì":"No",p.offerto||"",p.stato==="arrivata"?"Sì":p.stato==="parziale"?"In parte":"No",prenNums(p).join(", ")||p.ordine||"",p.note||""]));
   const per={};O.forEach(o=>righe(o).forEach(r=>{per[r.nome]=(per[r.nome]||0)+r.qta}));
   const rie=[["Voce","Valore"],["Ordini",T.n],["Coperti",T.cop],...S.portate.map(p=>[p.nome+" (porzioni)",usedFor(p.id)]),
     ...XN.map(n=>["Venduti "+n,O.reduce((a,o)=>a+xOf(o,n),0)]),

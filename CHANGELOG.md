@@ -1,6 +1,7 @@
 # Versioni
 
 ## 36
+- **Prenotazione arrivata in parte:** se in cassa togli dalla prenotazione chi non è ancora arrivato, la prenotazione resta «Arrivati in parte · restano N coperti». Quando arrivano gli altri la cerchi di nuovo e trovi solo quello che manca: secondo ordine, secondo biglietto. Se annulli uno dei due ordini, la prenotazione torna come prima.
 - **Cambi nel menù:** in cassa (nuovo ordine e modifica) «+ Cambia un piatto del menù»: al posto di un piatto un altro dello stesso reparto, per quante persone serve (es. 1 Pizzoccheri → Pasta), oppure «Niente» per toglierlo (es. 1 senza Torta); quando si toglie si può scegliere «Scala» e quanto togliere a persona dal prezzo del menù (proposto: il prezzo da solo del piatto). Si possono fare più cambi nello stesso ordine. Il prezzo resta quello del menù; cucina e porzioni contano il piatto nuovo; nell'Excel c'è la colonna «Cambi nel menù».
 - **Scelte del cameriere:** nel Listino un piatto può avere un elenco di scelte, una per riga (es. Acqua: Naturale, Frizzante). Prima di chiamare, il cameriere divide le quantità; bar, cucina e uscita vedono «2 Naturale · 1 Frizzante». Se nessuno sceglie vale la prima.
 - **Uscita piatti:** l'asporto mandato subito in cucina è una scheda sola con tutti i piatti e «Consegnato tutto»; può segnare «Pronto» i piatti in preparazione (solo i suoi reparti).

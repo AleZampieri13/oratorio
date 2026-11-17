@@ -238,27 +238,27 @@ function prefillNum(){if(!S.numDirty&&document.activeElement!==$("c-num"))$("c-n
 function renderSearch(){
   const q=norm($("c-search").value),box=$("c-results"),P=prensArr();
   $("c-searchbox").hidden=!P.length;
-  const arr=P.filter(p=>p.stato==="arrivata").length;
-  $("c-prencount").textContent=P.length?`${arr} arrivati su ${P.length} prenotati`:"";
+  const arr=P.filter(p=>p.stato==="arrivata").length,par=P.filter(p=>p.stato==="parziale").length;
+  $("c-prencount").textContent=P.length?`${arr} arrivati su ${P.length} prenotati${par?` · ${par} in parte`:""}`:"";
   if(!q){box.hidden=true;return}
   const hits=P.filter(p=>norm(p.nome).includes(q)).slice(0,8);
   box.hidden=false;
   box.innerHTML=hits.length?hits.map(p=>`<button data-pren="${esc(p.id)}" ${p.stato==="arrivata"?"disabled":""}>
     <span><b>${esc(p.nome)}</b><div class="chips" style="margin-top:4px">${prenChips(p)}</div></span>
-    ${p.stato==="arrivata"?`<span class="pill ready">Arrivati · n. ${esc(p.ordine)}</span>`:`<span class="pill wait">${cop(righe(p))} coperti</span>`}</button>`).join("")
+    ${prenPill(p)||`<span class="pill wait">${cop(righe(p))} coperti</span>`}</button>`).join("")
     :'<div class="empty" style="padding:10px 12px">Nessuna prenotazione trovata. Puoi creare l\'ordine lo stesso.</div>';
 }
 $("c-search").addEventListener("input",renderSearch);
 $("c-results").addEventListener("click",e=>{const b=e.target.closest("button[data-pren]");if(b)selectPren(b.dataset.pren)});
 function selectPren(id){
   const p=S.prenMap[id];if(!p)return;
-  S.selPren=id;S.qty={};righe(p).forEach(r=>{if(S.varianti.some(v=>v.id===r.id))S.qty[r.id]=r.qta});
-  S.sqty={};prenSing(p).forEach(x=>{if(singlesList().some(i=>i.id===x.id+"|a"))S.sqty[x.id+"|a"]=x.q});$("c-asp").checked=!!p.asporto;
+  const L=prenLeft(p);S.selPren=id;S.qty={};L.rr.forEach(r=>{if(S.varianti.some(v=>v.id===r.id))S.qty[r.id]=r.qta});
+  S.sqty={};L.ss.forEach(x=>{if(singlesList().some(i=>i.id===x.id+"|a"))S.sqty[x.id+"|a"]=x.q});$("c-asp").checked=!!p.asporto;
   S.split=false;S.parts=[];S.cambi=[];S.cf=null;if(p.offerto){S.pay="offerto";$("c-offby").value=p.offerto}
   $("c-nome").value=p.nome||"";$("c-note").value=p.note||"";$("c-search").value="";$("c-paid").checked=false;S.stockWarn=null;
   renderSearch();renderSteppers();renderSel();$("c-msg").textContent="";
 }
-function renderSel(){const p=S.selPren&&S.prenMap[S.selPren];$("c-sel").hidden=!p;if(p)$("c-sel-t").textContent="Prenotazione: "+p.nome}
+function renderSel(){const p=S.selPren&&S.prenMap[S.selPren];$("c-sel").hidden=!p;if(p)$("c-sel-t").textContent="Prenotazione: "+p.nome+(p.stato==="parziale"?` (arrivati in parte: qui c'è solo quello che manca)`:"")}
 function resetForm(){S.smode="piatti";S.cambi=[];S.cf=null;S.selPren=null;S.qty={};S.sqty={};S.split=false;S.parts=[];$("c-offby").value="";$("c-partlist").innerHTML="";$("c-asp").checked=false;S.aspMode="subito";S.pay="contanti";S.stockWarn=null;$("c-off").value="";$("c-ric").value="";$("c-nome").value="";$("c-note").value="";$("c-paid").checked=false;renderSel();renderSteppers()}
 $("c-sel-x").addEventListener("click",resetForm);
 function canUndo(o){return !!o&&!o.asportoSubito&&Date.now()-(o.creato||0)<60000&&!isLocked(o)}
@@ -369,12 +369,20 @@ async function createOrder(){
     }
     clearTimeout(slow);
     if(!done){msg.className="msg err";msg.textContent="Non riesco a trovare un numero libero: riprova.";return}
-    if(pren)R("prenotazioni/"+pren).update({stato:"arrivata",ordine:n}).catch(()=>{});
+    let prenMsg="";
+    if(pren){const p=S.prenMap[pren];
+      if(p){const L=prenLeft(p),v={},s={};
+        L.rr.forEach(r=>{const g=Math.min(r.qta,(b.rr.find(x=>x.id===r.id)||{}).qta||0);if(g)v[r.id]=g});
+        L.ss.forEach(x=>{const g=Math.min(x.q,(b.ss.find(y=>y.pid===x.id&&y.k==="a")||{}).qta||0);if(g)s[x.id]=g});
+        const a={t:Date.now(),...(Object.keys(v).length?{v}:{}),...(Object.keys(s).length?{s}:{})},arr={...prenArr(p),["n"+n]:a},st=prenStato(p,arr);
+        if(st==="parziale")prenMsg=` Prenotazione ${p.nome}: ${prenRestTxt({...p,arr})}. Quando arrivano gli altri, cercala di nuovo.`;
+        R("prenotazioni/"+pren).update({stato:st,ordine:n,["arr/n"+n]:a}).catch(()=>{})}
+      else R("prenotazioni/"+pren).update({stato:"arrivata",ordine:n}).catch(()=>{})}
     const pay=S.pay,split=S.split;S.lastNum=n;S.undoMsg="";S.numDirty=false;resetForm();$("c-last-wrap").hidden=false;
     setTimeout(()=>{if(S.lastNum===n)renderTicket()},61000);
     const resto=ric>0?r2(ric-toPay):0;
     if(plan.offerto>0)logChange(`Ordine ${n}${base.nome?" ("+base.nome+")":""}: pasto offerto ${money(plan.offerto)} da ${plan.offertoDa}`);
-    msg.className="msg ok";msg.textContent=`Ordine ${n} creato${base.asportoSubito?" e mandato in cucina":""}.`+(split?" Conto diviso: vedi le parti sul biglietto.":plan.money>0?` Incassa ${money(toPay)} (${PAY_LBL[pay]}).`:plan.offerto>0?" Pasto offerto.":"")+(resto>0?` Resto ${money(resto)}.`:"");
+    msg.className="msg ok";msg.textContent=`Ordine ${n} creato${base.asportoSubito?" e mandato in cucina":""}.`+(split?" Conto diviso: vedi le parti sul biglietto.":plan.money>0?` Incassa ${money(toPay)} (${PAY_LBL[pay]}).`:plan.offerto>0?" Pasto offerto.":"")+(resto>0?` Resto ${money(resto)}.`:"")+prenMsg;
     renderTicket();prefillNum();$("c-msg").textContent="";
     const w=$("c-last-wrap");w.classList.remove("flash");void w.offsetWidth;w.classList.add("flash");
   }catch(e){clearTimeout(slow);msg.className="msg err";msg.textContent=errText(e)}
