@@ -159,7 +159,7 @@ function cardAction(o){
     else right=`<span class="pill wait">portato ✓</span>${act&&c.p.t&&Date.now()-c.p.t<3*60000?`<button class="btn small" ${dis(c.k)} data-unserve="${n}|${c.k}">Non portato</button>`:""}`;
     const mg=st==="attesa"&&act?canMerge(o,c.k):null;
     if(mg)right=`<button class="btn small" data-wmerge="${n}|${esc(c.k)}">Unisci</button>`+right;
-    const scx=(st==="attesa"?(act?wScHtml(o,c):""):scTxt(c.p)?`<div class="sub wscd">${esc(scTxt(c.p))}</div>`:"")+(x<q?`<div class="sub wscd">Adesso ${x}, le altre ${q-x} restano da chiamare dopo</div>`:"");
+    const scx=(st==="attesa"?(act?wScHtml(o,c):""):scTxt(c.p)?`<div class="sub wscd">${esc(scTxt(c.p))}</div>`:"");
     return `<div class="wpiatto ${st}"><span class="wpn">${part?wQtyHtml(o,c,q):`<b>${q}</b>`} ${esc(c.l)}</span><span class="row">${right}</span>${scx}</div>`}).join("");
   const todo1=todo.filter(c=>kRound(c.k)===1);
   const all=todo1.length>1&&act?`<button class="btn primary big" data-callall="${n}|${esc(cur)}">Chiama tutto ${esc(repNome(cur))} (${todo1.length})</button>`:"";
@@ -246,7 +246,22 @@ function renderWaiterLists(){
     .sort((a,b)=>(orderDone(a)-orderDone(b))||(hasReady(b)-hasReady(a))||a.numero-b.numero);
   $("w-tables").innerHTML=list.length?list.map(custCard).join("")
     :`<div class="empty">${seesAll()?"Nessun cliente servito per ora.":"Nessun cliente."}</div>`;
+  renderWHist(recent);
 }
+/* storico: i clienti già finiti, il più recente in alto; tocca per vedere i piatti */
+function renderWHist(recent){
+  const H=ordersArr().filter(o=>!o.asportoSubito&&(seesAll()?(ownerId(o)||o.fila):mineOrder(o))&&orderDone(o)).sort((a,b)=>recent(b)-recent(a));
+  $("w-histbox").hidden=!H.length;if(!H.length){$("w-hist").innerHTML="";return}
+  $("w-hist-sub").textContent=`${H.length} ${H.length===1?"cliente finito":"clienti finiti"} · ${H.reduce((a,o)=>a+cop(righe(o)),0)} coperti`;
+  const open=S.wHistOpen||(S.wHistOpen=new Set());
+  const html=H.map(o=>{const who=seesAll()?nameOf(ownerId(o),o.cameriere):"";
+    return `<details class="whist" data-h="${o.numero}" ${open.has(o.numero)?"open":""}><summary><span class="n">${o.numero}</span><span class="wh-main"><b>${esc(o.nome||"Senza nome")}</b><span class="sub">${cop(righe(o))} coperti${who?" · "+esc(who):""} · finito alle ${fmtTime(recent(o))}</span></span></summary>
+      <ul>${orderCourses(o).map(c=>`<li><b>${cop(righeFor(o,c.k))}</b> <span style="color:${portColor(c.k)}">${esc(c.l)}</span>${scTxt(c.p)?` <small>(${esc(scTxt(c.p))})</small>`:""}<span class="sub"> · portato alle ${fmtTime(c.p.t)}</span></li>`).join("")}</ul>
+      ${o.note?`<div class="note">${esc(o.note)}</div>`:""}</details>`}).join("");
+  if($("w-hist").dataset.h!==html){$("w-hist").innerHTML=html;$("w-hist").dataset.h=html}
+}
+$("w-hist").addEventListener("toggle",e=>{const d=e.target.closest&&e.target.closest("details[data-h]");if(!d)return;const n=Number(d.dataset.h),s=S.wHistOpen||(S.wHistOpen=new Set());if(d.open)s.add(n);else s.delete(n);
+  $("w-hist").dataset.h="";},true);
 /* compatibilità con il resto dell'app */
 function renderDetail(){}
 function readyItems(){return flatCourses("pronta").filter(x=>!x.o.asportoSubito&&(seesAll()||mineOrder(x.o)))}

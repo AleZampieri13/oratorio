@@ -355,6 +355,18 @@ input.bad{border-color:var(--danger);box-shadow:0 0 0 2px var(--danger-bg)}
 .wsc .stepper .name{font-size:.95rem}
 .wsc .stepper .ctl button{width:40px;height:40px;font-size:1.3rem}
 .wscd{flex-basis:100%}
+/* storico del cameriere */
+.whist{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 12px;opacity:.9}
+.whist summary{display:flex;gap:10px;align-items:center;cursor:pointer;list-style:none}
+.whist summary::-webkit-details-marker{display:none}
+.whist summary .n{font:800 1.1rem var(--f-display);min-width:2.2em;text-align:center;color:var(--muted)}
+.whist .wh-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+.whist ul{margin:8px 0 2px;padding-left:18px}
+.whist li{padding:2px 0}
+/* cassa: tutto lo schermo in larghezza e scritte più grandi */
+body:has(#p-cassa:not([hidden])) .wrap{max-width:none}
+#p-cassa{zoom:1.08}
+@media (min-width:900px){#p-cassa{zoom:1.18}#p-cassa .grid2{gap:28px}}
 .wqty{display:inline-flex;align-items:center;gap:4px;margin-right:4px;vertical-align:middle}
 .wqty button{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:1.2rem;font-weight:700;cursor:pointer}
 .wqty button:disabled{opacity:.35}
