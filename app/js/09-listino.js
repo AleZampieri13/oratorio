@@ -58,6 +58,17 @@ function renderListino(){
 }
 document.addEventListener("input",e=>{if(e.target.closest&&e.target.closest("#p-listino"))e.target.dataset.dirty="1"});
 function repOpts(sel){return S.L.reparti.map(r=>`<option value="${esc(r.id)}" ${r.id===sel?"selected":""}>${esc(r.nome)}${r.bar?" (bar)":""}</option>`).join("")}
+/* scelte del cameriere: un elenco, una scelta per riga */
+function sceltaList(p){const sc=p.scelte||[],id=esc(p.id);
+  return `<div class="wide sclist"><span class="label">Scelte del cameriere</span>
+    ${sc.map((x,i)=>`<div class="row"><span class="scdot" aria-hidden="true">•</span><input type="text" id="lpsi-${id}-${i}" data-psc="${id}|${i}" value="${esc(x)}" aria-label="Scelta ${i+1} di ${esc(p.nome)}"><button type="button" class="btn small" data-pscx="${id}|${i}" aria-label="Togli ${esc(x)}">✕</button></div>`).join("")}
+    <div class="row"><span class="scdot" aria-hidden="true">+</span><input type="text" id="lpsc-${id}" data-pscnew="${id}" placeholder="${sc.length?"Un'altra scelta":"es. Naturale"}" aria-label="Nuova scelta per ${esc(p.nome)}"><button type="button" class="btn small" data-pscadd="${id}">Aggiungi</button></div>
+    ${sc.length===1?`<p class="hint" style="color:var(--danger)">Aggiungine almeno un'altra: con una sola il cameriere non ha niente da scegliere.</p>`:sc.length?"":`<p class="hint">Solo se il cameriere deve scegliere, es. Acqua: Naturale e Frizzante.</p>`}</div>`}
+function saveScelte(p,sc,log){const nx={...p};if(sc.length)nx.scelte=sc;else delete nx.scelte;saveL("piatti",S.L.piatti.map(x=>x.id===p.id?nx:x),"l-pmsg","Salvato.",log)}
+function addScelta(pid){const p=S.L.piatti.find(x=>x.id===pid),inp=$("lpsc-"+pid);if(!p||!inp)return;const v=inp.value.trim();if(!v){inp.focus();return}
+  const sc=p.scelte||[];if(sc.some(x=>norm(x)===norm(v))){emsg("l-pmsg",`${p.nome}: «${v}» c'è già.`);return}
+  if(sc.length>=8){emsg("l-pmsg","Al massimo 8 scelte.");return}
+  inp.value="";inp.dataset.dirty="";saveScelte(p,[...sc,v],`${p.nome}: nuova scelta ${v}`)}
 function renderListinoInner(){
   const L=S.L;
   if(!S.newMenu)S.newMenu=new Set();
@@ -78,7 +89,7 @@ function renderListinoInner(){
         <label><span class="label">Prezzo da solo</span><input type="text" inputmode="decimal" id="lps-${esc(p.id)}" value="${euro(p.prezzo)}" placeholder="non si vende"></label>
         <label><span class="label">Da solo bambini</span><input type="text" inputmode="decimal" id="lpb-${esc(p.id)}" value="${euro(p.prezzoBimbi)}" placeholder="—"></label>
         <label><span class="label">Pronto entro (minuti)</span><input type="number" inputmode="numeric" min="1" max="180" id="lpm-${esc(p.id)}" value="${p.min||""}" placeholder="${MIN_DEF}"></label>
-        <label class="wide"><span class="label">Scelte del cameriere (separate da virgola)</span><input type="text" id="lpc-${esc(p.id)}" value="${esc((p.scelte||[]).join(", "))}" placeholder="es. Naturale, Frizzante"></label></div></div>`).join("")
+        ${sceltaList(p)}</div></div>`).join("")
     :'<div class="empty">Nessun piatto. Aggiungine uno qui sotto.</div>';
   $("l-newprep").innerHTML=repOpts($("l-newprep").value||(L.reparti.find(r=>!r.bar)||L.reparti[0]||{}).id);
   /* reparti */
@@ -127,6 +138,8 @@ $("l-addvar").addEventListener("click",async()=>{const L=S.L;
 
 /* ---------- piatti ---------- */
 $("l-port").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const L=S.L,list=[...L.piatti];
+  if(b.dataset.pscadd){addScelta(b.dataset.pscadd);return}
+  if(b.dataset.pscx){const [pid,i]=b.dataset.pscx.split("|"),p=L.piatti.find(x=>x.id===pid);if(!p)return;const sc=[...(p.scelte||[])],x=sc.splice(+i,1)[0];saveScelte(p,sc,`${p.nome}: tolta la scelta ${x}`);return}
   if(b.dataset.delp){const p=L.piatti.find(x=>x.id===b.dataset.delp);if(!p)return;
     const only=L.menu.filter(m=>m.piatti.length===1&&m.piatti[0]===p.id);
     if(only.length){emsg("l-pmsg",`${p.nome} è l'unico piatto di ${only.map(m=>m.nome).join(", ")}: togli prima il menù.`);return}
@@ -134,17 +147,20 @@ $("l-port").addEventListener("click",e=>{const b=e.target.closest("button");if(!
     R("config/listino").update({piatti:list.filter(x=>x.id!==p.id),menu:L.menu.map(m=>({...m,piatti:m.piatti.filter(id=>id!==p.id)}))})
       .then(()=>{emsg("l-pmsg",`${p.nome} rimosso (anche dai menù).`,true);logChange("Tolto il piatto "+p.nome)},err=>emsg("l-pmsg",errText(err)))}
 });
+$("l-port").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.dataset.pscnew){e.preventDefault();addScelta(e.target.dataset.pscnew)}});
 $("l-port").addEventListener("change",e=>{const t=e.target,L=S.L;
+  if(t.dataset.psc){const [pid,i]=t.dataset.psc.split("|"),p=L.piatti.find(x=>x.id===pid);if(!p)return;t.dataset.dirty="";const sc=[...(p.scelte||[])],v=t.value.trim(),old=sc[+i];
+    if(v===old)return;if(v&&sc.some((x,j)=>j!==+i&&norm(x)===norm(v))){t.value=old;emsg("l-pmsg",`${p.nome}: «${v}» c'è già.`);return}
+    if(v)sc[+i]=v;else sc.splice(+i,1);saveScelte(p,sc,`${p.nome}: scelta ${old} → ${v||"tolta"}`);return}
+  if(t.dataset.pscnew)return;
   if(t.dataset.pcol){const p=L.piatti.find(x=>x.id===t.dataset.pcol);if(p)saveL("piatti",L.piatti.map(x=>x.id===p.id?{...x,colore:t.value}:x),"l-pmsg",`Colore di ${p.nome} salvato.`);return}
-  const m=/^lp([nrgsbmc])-(.+)$/.exec(t.id||"");if(!m)return;const p=L.piatti.find(x=>x.id===m[2]);if(!p)return;t.dataset.dirty="";
+  const m=/^lp([nrgsbm])-(.+)$/.exec(t.id||"");if(!m)return;const p=L.piatti.find(x=>x.id===m[2]);if(!p)return;t.dataset.dirty="";
   const v=t.value.trim();let nx={...p},log="";
   if(m[1]==="n"){if(!v||v===p.nome){t.value=p.nome;return}nx.nome=v;log=`Piatto ${p.nome} → ${v}`}
   if(m[1]==="r"){if(v===p.rep)return;nx.rep=v;log=`${p.nome}: lo prepara ${repNome(v)}`}
   if(m[1]==="g"){if(v===(p.gruppo||""))return;if(v)nx.gruppo=v;else delete nx.gruppo;log=`${p.nome}: gruppo «${v||"—"}»`}
   if(m[1]==="s"){const x=parsePrice(v);if(x===p.prezzo)return;nx.prezzo=x;log=`Prezzo da solo ${p.nome}: ${money(p.prezzo)} → ${money(x)}`}
   if(m[1]==="m"){const x=Math.max(0,Math.min(180,Math.round(+v||0)));if(x===(p.min||0))return;if(x)nx.min=x;else delete nx.min;log=`${p.nome}: pronto entro ${x||MIN_DEF} minuti`}
-  if(m[1]==="c"){const sc=[...new Set(v.split(/[,;]/).map(x=>x.trim()).filter(Boolean))].slice(0,8);if(sc.join("|")===(p.scelte||[]).join("|")){t.value=sc.join(", ");return}
-    if(sc.length>1)nx.scelte=sc;else delete nx.scelte;t.value=sc.length>1?sc.join(", "):"";log=`${p.nome}: scelte ${sc.length>1?sc.join(", "):"nessuna"}`}
   if(m[1]==="b"){const x=parsePrice(v);if(x===p.prezzoBimbi)return;nx.prezzoBimbi=x;log=`Prezzo da solo bambini ${p.nome}: ${money(p.prezzoBimbi)} → ${money(x)}`}
   saveL("piatti",L.piatti.map(x=>x.id===p.id?nx:x),"l-pmsg","Salvato.",log);
 });

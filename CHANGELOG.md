@@ -2,8 +2,8 @@
 
 ## 36
 - **Cambi nel menù:** in cassa (nuovo ordine e modifica) «+ Cambia un piatto del menù»: al posto di un piatto un altro dello stesso reparto, per quante persone serve (es. 1 Pizzoccheri → Pasta). Si possono fare più cambi nello stesso ordine. Il prezzo resta quello del menù; cucina e porzioni contano il piatto nuovo; nell'Excel c'è la colonna «Cambi nel menù».
-- **Scelte del cameriere:** nel Listino un piatto può avere delle scelte (es. Acqua: Naturale, Frizzante). Prima di chiamare, il cameriere divide le quantità; bar, cucina e uscita vedono «2 Naturale · 1 Frizzante». Se nessuno sceglie vale la prima.
-- **Uscita piatti:** vede anche gli asporti mandati subito in cucina e può segnare «Pronto» i piatti in preparazione (solo i suoi reparti).
+- **Scelte del cameriere:** nel Listino un piatto può avere un elenco di scelte, una per riga (es. Acqua: Naturale, Frizzante). Prima di chiamare, il cameriere divide le quantità; bar, cucina e uscita vedono «2 Naturale · 1 Frizzante». Se nessuno sceglie vale la prima.
+- **Uscita piatti:** l'asporto mandato subito in cucina è una scheda sola con tutti i piatti e «Consegnato tutto»; può segnare «Pronto» i piatti in preparazione (solo i suoi reparti).
 - **Conti separati:** in cassa «Dividi il conto»: **per piatti** (ogni parte tocca i menù e i piatti che paga e l'importo si calcola da solo; «Tutto il resto a questa parte»), oppure a importi / in parti uguali, ogni parte con il suo pagamento (contanti con il suo resto, POS, offerto). L'ordine resta uno solo (un biglietto, una scheda per il cameriere).
 - **Pasto offerto:** terzo modo di pagare, «Offerto», con «Offerto da» obbligatorio (cassa e master). Non entra nei contanti né nel POS; nel riepilogo e nell'Excel c'è «Pasti offerti». Anche solo una parte del conto può essere offerta. Nel file delle prenotazioni la colonna OFFERTO (chi offre, o «sì») arriva in cassa già impostata.
 - Ogni ordine nuovo tiene l'elenco dei suoi pagamenti (anche modifiche e rettifiche): la chiusura cassa somma contanti e POS da lì. Nella rettifica di un conto pagato in contanti e POS si sceglie come restituire.

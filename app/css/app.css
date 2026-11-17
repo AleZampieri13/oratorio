@@ -345,7 +345,10 @@ input.bad{border-color:var(--danger);box-shadow:0 0 0 2px var(--danger-bg)}
 .xedit .top .pricein{width:88px;flex:0 0 auto}
 .xf{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
 .xf label{display:flex;flex-direction:column;gap:4px;min-width:0}
-.xf label.wide{grid-column:1 / -1}
+.xf label.wide,.xf .wide{grid-column:1 / -1}
+.sclist{display:flex;flex-direction:column;gap:6px}
+.sclist .row{gap:8px;align-items:center;flex-wrap:nowrap}
+.sclist .scdot{width:1.2em;text-align:center;font-weight:800;color:var(--muted)}
 /* scelte del cameriere (es. naturale / frizzante) */
 .wsc{flex-basis:100%;display:flex;flex-wrap:wrap;gap:4px 16px}
 .wsc .stepper{border:0;padding:2px 0;gap:8px}

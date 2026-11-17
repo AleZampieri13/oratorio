@@ -148,8 +148,18 @@ function renderUscita(){
   else if(kitchenReps().length<2){box.hidden=true;box.innerHTML=""}
   else{box.hidden=false;const cur=kitchenReps().includes(S.oRep)?S.oRep:"";
     box.innerHTML=`<span class="label">Reparto</span><span class="seg">${[["","Tutti"],...kitchenReps().map(r=>[r,repNome(r)])].map(([id,n])=>`<button data-orep="${esc(id)}" aria-pressed="${cur===id}">${esc(n)}</button>`).join("")}</span>`}
-  const ready=flatCourses("pronta").filter(c=>inOScope(c,sc));
-  $("o-ready").innerHTML=ready.length?ready.map(c=>{const stale=c.t&&(Date.now()-c.t)>5*60000,rf=righeFor(c.o,c.k),n=cop(rf),wn=kWho(c.o,c.o.portate[c.k]);
+  /* asporto mandato subito: si prepara e si consegna tutto insieme, una scheda per ordine */
+  const aspO=ordersArr().filter(o=>o.asportoSubito&&orderCourses(o).some(c=>c.p.stato!=="servita")&&orderCourses(o).some(c=>inOScope({o,k:c.k},sc))).sort((a,b)=>a.numero-b.numero);
+  const allReady=o=>orderCourses(o).every(c=>c.p.stato==="pronta"||c.p.stato==="servita");
+  const aspR=aspO.filter(allReady),aspW=aspO.filter(o=>!allReady(o));
+  const ready=flatCourses("pronta").filter(c=>!c.o.asportoSubito&&inOScope(c,sc));
+  const aspCard=o=>{const cs=orderCourses(o).filter(c=>c.p.stato!=="servita"),t=Math.max(...cs.map(c=>c.p.t||0)),stale=t&&(Date.now()-t)>5*60000,n=cs.reduce((a,c)=>a+cop(righeFor(o,c.k)),0);
+    return `<article class="kcard ${stale?"late":""}"><div class="top"><span class="n nm">Asporto</span><span class="age">pronto ${ago(t)==="adesso"?"adesso":"da "+ago(t)}</span></div>
+      <div class="what kcourse"><span class="label">n. ${o.numero}${o.nome?" · "+esc(o.nome):""} · tutto insieme, ${n} ${n===1?"piatto":"piatti"}</span></div>
+      <ul>${cs.map(c=>`<li><b>${cop(righeFor(o,c.k))}</b><span style="color:${portColor(c.k)};font-weight:700">${esc(c.l)}</span>${scTxt(c.p)?` <small class="ksc">${esc(scTxt(c.p))}</small>`:""}</li>`).join("")}</ul>
+      ${o.note?`<div class="note">${esc(o.note)}</div>`:""}
+      <button class="btn go big" ${cs.some(c=>S.pending.has(o.numero+"|"+c.k))?"disabled":""} data-ocons="${o.numero}">Consegnato tutto</button></article>`};
+  $("o-ready").innerHTML=(ready.length||aspR.length)?aspR.map(aspCard).join("")+ready.map(c=>{const stale=c.t&&(Date.now()-c.t)>5*60000,rf=righeFor(c.o,c.k),n=cop(rf),wn=kWho(c.o,c.o.portate[c.k]);
     const dis=S.pending.has(c.o.numero+"|"+c.k)?"disabled":"";
     const pp=partsOf(c.o.portate[c.k]),parts=pp.length>1?pp.map(x=>x.piatto||x.nome).join(" + "):"";
     return `<article class="kcard ${stale?"late":""}"><div class="top"><span class="n nm">${esc(wn)}</span><span class="age">pronto ${ago(c.t)==="adesso"?"adesso":"da "+ago(c.t)}</span></div>
@@ -161,8 +171,11 @@ function renderUscita(){
       ${c.o.note?`<div class="note">${esc(c.o.note)}</div>`:""}
       <button class="btn go big" ${dis} data-set="${c.o.numero}|${c.k}|servita">Consegnato</button></article>`}).join("")
     :'<div class="panel"><div class="empty">Niente da consegnare.</div></div>';
-  const wip=flatCourses("chiamata").filter(c=>inOScope(c,sc));
-  $("o-wip").innerHTML=wip.length?wip.map(c=>{const pt=partsTxt(c.o.portate[c.k]),wn=kWho(c.o,c.o.portate[c.k]);
+  const wip=flatCourses("chiamata").filter(c=>!c.o.asportoSubito&&inOScope(c,sc));
+  const aspLine=o=>{const cs=orderCourses(o).filter(c=>c.p.stato!=="servita"),busy=cs.some(c=>S.pending.has(o.numero+"|"+c.k)),mine=cs.some(c=>c.p.stato==="chiamata"&&inOScope({o,k:c.k},sc));
+    return `<div class="li plain two"><span><b class="kwho">Asporto</b> · n. ${o.numero}${o.nome?" · "+esc(o.nome):""}<div class="sub">tutto insieme: ${cs.map(c=>`<span style="color:${portColor(c.k)}">${esc(c.l)}</span> ${c.p.stato==="pronta"?"✓":"…"}`).join(" · ")}</div></span>
+      ${mine?`<button class="btn small primary" ${busy?"disabled":""} data-oreadyall="${o.numero}">Pronto</button>`:""}</div>`};
+  $("o-wip").innerHTML=(wip.length||aspW.length)?aspW.map(aspLine).join("")+wip.map(c=>{const pt=partsTxt(c.o.portate[c.k]),wn=kWho(c.o,c.o.portate[c.k]);
     const busy=S.pending.has(c.o.numero+"|"+c.k)||oReadyReps(c,sc).some(r=>S.pending.has(c.o.numero+"|"+c.k+"|"+r));
     return `<div class="li plain two"><span><b class="kwho">${esc(wn)}</b>${c.o.asporto&&wn!=="Asporto"?' <span class="pill asp">Asporto</span>':""} · <b style="color:${portColor(c.k)}">${esc(c.l)}</b> · ${cop(righeFor(c.o,c.k))} piatti<div class="sub">${c.o.fila?esc(filaNome(c.o.fila))+" · ":""}n. ${c.o.numero} · chiamata ${ago(c.t)==="adesso"?"adesso":"da "+ago(c.t)}${pt?" · "+pt:""}</div></span>
       <button class="btn small primary" ${busy?"disabled":""} data-oready="${c.o.numero}|${c.k}">Pronto</button></div>`}).join("")
@@ -180,6 +193,17 @@ $("o-wip").addEventListener("click",async e=>{const b=e.target.closest("button[d
   if(Object.keys(pp.rep||{}).length){for(const r of rs)await setPart(Number(n),k,r,"pronta",{silent:rs.length>1});
     if(rs.length>1){const c=(orderCourses(o).find(x=>x.k===k)||{}).l||k;toast(`${kWho(o,pp)} · ${c} pronto`,{ms:4000})}}
   else await setStato(Number(n),k,"pronta")});
+/* asporto: tutto pronto (i reparti dell'uscita) e tutto consegnato in un colpo */
+$("o-wip").addEventListener("click",async e=>{const b=e.target.closest("button[data-oreadyall]");if(!b||b.disabled)return;b.disabled=true;
+  const n=Number(b.dataset.oreadyall),o=orderByNum(n);if(!o)return;const sc=oScope();
+  for(const c of orderCourses(o).filter(c=>c.p.stato==="chiamata"&&inOScope({o,k:c.k},sc))){const pp=o.portate[c.k];
+    if(Object.keys(pp.rep||{}).length){for(const r of oReadyReps({o,k:c.k},sc))await setPart(n,c.k,r,"pronta",{silent:true})}else await setStato(n,c.k,"pronta",{notoast:true})}
+  toast(`Asporto n. ${n}: pronto`,{ms:4000})});
+$("o-ready").addEventListener("click",async e=>{const b=e.target.closest("button[data-ocons]");if(!b||b.disabled)return;b.disabled=true;
+  const n=Number(b.dataset.ocons),o=orderByNum(n);if(!o)return;const now=Date.now(),upd={},ks=[];
+  orderCourses(o).forEach(c=>{if(c.p.stato==="pronta"){upd["portate/"+c.k+"/stato"]="servita";upd["portate/"+c.k+"/t"]=now;upd["portate/"+c.k+"/tp"]=c.p.t||null;ks.push(c.k)}});
+  try{await R("ordini/"+n).update(upd);toast(`Asporto n. ${n}: consegnato tutto`,{ms:6000,action:{label:"Annulla",fn:()=>ks.forEach(k=>unserve(n,k))}})}
+  catch(err){showBanner(errText(err));b.disabled=false}});
 $("o-done").addEventListener("click",async e=>{const b=e.target.closest("button[data-unserve]");if(!b||b.disabled)return;b.disabled=true;const [n,k]=b.dataset.unserve.split("|");await unserve(Number(n),k)});
 $("o-reps").addEventListener("click",e=>{const b=e.target.closest("button[data-orep]");if(!b)return;S.oRep=b.dataset.orep;lsSet("orep",S.oRep);S.seenOut=null;renderUscita()});
 $("o-sound").addEventListener("click",()=>toggleSound());

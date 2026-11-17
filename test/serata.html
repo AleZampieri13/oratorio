@@ -138,7 +138,8 @@ async function setup(){
   // un altro primo (solo per i cambi nel menù) e le scelte dell'acqua
   await type("master","#l-newport","Pasta");await setSel("#l-newprep",rid("Primo"));await type("master","#l-newpprice","");await click("master","#l-addport");
   await waitFor(()=>vals(db().config.listino.piatti).some(x=>x.nome==="Pasta"),3000,"piatto Pasta");
-  await type("master","#lpc-"+pid("Acqua"),"Naturale, Frizzante");
+  for(const v of ["Naturale","Frizzante"]){await type("master","#lpsc-"+pid("Acqua"),v);await click("master",`[data-pscadd="${pid("Acqua")}"]`);
+    await waitFor(()=>vals(vals(db().config.listino.piatti).find(x=>x.nome==="Acqua").scelte).includes(v),3000,"scelta "+v)}
   await waitFor(()=>vals(vals(db().config.listino.piatti).find(x=>x.nome==="Acqua").scelte).length===2,3000,"scelte dell'acqua");
   check(vals(vals(db().config.listino.piatti).find(x=>x.nome==="Acqua").scelte).join()==="Naturale,Frizzante","Listino: l'Acqua ha le scelte Naturale e Frizzante (le decide il cameriere)");
   {// passaggio dal listino della v35: portata con due reparti, portata senza reparto, extra del bar e del Fritto
@@ -196,7 +197,7 @@ async function setup(){
 
 /* ---------------- SERVIZIO ---------------- */
 const L={};CASSE.forEach(c=>L[c.dev]={contanti:0,pos:0});
-const ORD=[],STAT={cambi:0,scelteMosse:0,barVedeScelte:0,prontoUscita:0,aspUscita:0,contiDivisi:0,divisiPiatti:0,divisiPiattiKo:[],offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
+const ORD=[],STAT={aspTutto:0,aspConsegnati:0,cambi:0,scelteMosse:0,barVedeScelte:0,prontoUscita:0,aspUscita:0,contiDivisi:0,divisiPiatti:0,divisiPiattiKo:[],offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
 const queueFor={};CAM.forEach(c=>queueFor[c.dev]=[]);
 let noDessert=false;
 function plan(){
@@ -314,7 +315,10 @@ async function cookAct(n){
 }
 async function barAct(){if(/Frizzante|Naturale/.test(txt("bar","#b-queue")))STAT.barVedeScelte++;if(/Patatine|Pizzoccheri/.test(txt("bar","#b-queue")+txt("bar","#b-ready")))STAT.barVedePatatine++;if(/Acqua|Caffè|Vino|Bibita/.test(txt("bar","#b-queue")))STAT.barLavora++;
   for(let i=0;i<3;i++){const b=q("bar","#b-queue button[data-rsetall]:not([disabled])")||q("bar","#b-queue button[data-rset]:not([disabled])");if(!b||rnd()<.3)break;await click("bar",b)}}
-async function uscitaAct(){const b=q("uscita",'#o-ready button[data-set$="|servita"]:not([disabled])');if(b&&rnd()<.25){await click("uscita",b);STAT.consegnateUscita++}
+async function uscitaAct(){
+  const ac=q("uscita","#o-ready button[data-ocons]:not([disabled])");if(ac){const n=Number(ac.dataset.ocons),card=ac.closest(".kcard"),o=W("uscita").eval(`orderCourses(orderByNum(${n})).filter(c=>c.p.stato!=="servita").length`);
+    if(card.querySelectorAll("li").length===o&&o>0)STAT.aspTutto=Math.max(STAT.aspTutto,o);if(rnd()<.5){await click("uscita",ac);await sleep(30);
+      if(W("uscita").eval(`orderCourses(orderByNum(${n})).every(c=>c.p.stato==="servita")`))STAT.aspConsegnati++}}const b=q("uscita",'#o-ready button[data-set$="|servita"]:not([disabled])');if(b&&rnd()<.25){await click("uscita",b);STAT.consegnateUscita++}
   const r=q("uscita",'#o-wip button[data-oready]:not([disabled])');if(r&&rnd()<.08){const [n,k]=r.dataset.oready.split("|");await click("uscita",r);await sleep(30);
     const st=W("uscita").eval(`(orderByNum(${n}).portate["${k}"]||{}).stato`);if(st==="pronta")STAT.prontoUscita++}
   if(!STAT.aspUscita){const a=W("uscita").eval(`flatCourses("chiamata").concat(flatCourses("pronta")).filter(c=>c.o.asportoSubito).length`);
@@ -464,6 +468,7 @@ async function closing(){
    const bad=cs.filter(({o,p})=>vals(p.sc).reduce((a,x)=>a+x.q,0)!==W_.eval(`cop(righeFor(orderByNum(${o.numero}),"${acq}"))`));
    const friz=cs.filter(({p})=>vals(p.sc).some(x=>x.n==="Frizzante"&&x.q>0)).length;
    check(cs.length>0&&!bad.length&&friz>0&&STAT.barVedeScelte>0,`Acqua naturale / frizzante: ${cs.length} chiamate con la scelta (${friz} con frizzante, ${STAT.scelteMosse} cambi del cameriere); il bar la vede`,`sbagliate: ${bad.map(x=>x.o.numero).join(",")}`)}
+  check(STAT.aspTutto>0&&STAT.aspConsegnati>0,`Uscita: l'asporto è una scheda sola con tutti i piatti (fino a ${STAT.aspTutto}) e «Consegnato tutto» (${STAT.aspConsegnati} asporti)`);
   check(STAT.prontoUscita>0,`L'uscita segna «Pronto» da sola: ${STAT.prontoUscita} piatti`);
   check(STAT.aspUscita>0,"L'uscita vede anche gli asporti mandati subito in cucina");
   const nums=[...O.map(o=>o.numero),...A.map(a=>a.n)].sort((a,b)=>a-b);

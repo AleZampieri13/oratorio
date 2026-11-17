@@ -266,7 +266,7 @@ function cambiChips(cc){return cc.map(c=>`<span class="chip">${c.q} ${esc(piatto
 function clampCambi(cc,qty){const used={};return (cc||[]).map(c=>{const k=c.m+"|"+c.da,left=Math.max(0,(qty[c.m]||0)-(used[k]||0)),q=Math.min(c.q,left);used[k]=(used[k]||0)+q;return {...c,q}})
   .filter(c=>c.q>0&&portataCfg(c.a)&&applies(portataCfg(c.da),c.m))}
 /* scelte di un piatto (es. Acqua: Naturale, Frizzante): il cameriere divide le quantità quando chiama */
-function scelteOf(k){const p=portataCfg(k);return toArr(p&&p.scelte).map(String).filter(Boolean)}
+function scelteOf(k){const p=portataCfg(k),s=toArr(p&&p.scelte).map(String).filter(Boolean);return s.length>1?s:[]}
 function scDefault(o,k){const s=scelteOf(k),n=cop(righeFor(o,k));return s.length?s.map((x,i)=>({n:x,q:i?0:n})):null}
 function scTxt(p){return toArr(p&&p.sc).filter(x=>x&&x.q>0).map(x=>`${x.q} ${x.n}`).join(" · ")}
 function orderCourses(o){
