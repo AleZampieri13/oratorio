@@ -255,6 +255,8 @@ $("toast").addEventListener("click",e=>{const el=$("toast");el.hidden=true;
 
 /* portate */
 /* un piatto chiamato in più volte: la chiave «piatto~2» è la seconda volta, «piatto~3» la terza */
+/* campo con il numero da chiamare (camerieri) o da segnare pronto (cucina, bar, uscita): «3 di 20» */
+function qtyField(kind,key,x,q,label){return `<span class="qtyf"><input type="number" inputmode="numeric" min="1" max="${q}" class="qtyin" data-${kind}="${key}" value="${x}" aria-label="${esc(label)} (su ${q})"><small>di ${q}</small></span>`}
 function kBase(k){return String(k).split("~")[0]}
 function kRound(k){const m=/~(\d+)$/.exec(String(k));return m?+m[1]:1}
 function portataCfg(k){const b=kBase(k);return S.portate.find(p=>p.id===b)}

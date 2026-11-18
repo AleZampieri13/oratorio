@@ -124,7 +124,7 @@ function wSplitHtml(o,c,q){const W_=S.wSplit;if(!W_||W_.n!==o.numero||W_.k!==c.k
 /* quante porzioni chiamare adesso: parte dal totale; se si abbassa, il resto diventa «2ª volta» */
 function wNowOf(o,k){const q=cop(righeFor(o,k)),st=S.wNow[o.numero+"|"+k];return st&&st.q===q?Math.max(1,Math.min(q,st.x)):q}
 function wQtyHtml(o,c,q){const x=wNowOf(o,c.k),key=`${o.numero}|${esc(c.k)}`;
-  return `<span class="wqty"><button type="button" data-wq="${key}" data-d="-1" ${x>1?"":"disabled"} aria-label="Una ${esc(c.l)} in meno adesso">−</button><b>${x}</b><button type="button" data-wq="${key}" data-d="1" ${x<q?"":"disabled"} aria-label="Una ${esc(c.l)} in più adesso">+</button></span>`}
+  return qtyField("wqi",key,x,q,`Quante ${c.l} chiamare adesso`)}
 async function splitCourse(n,k,now,opts){const o=orderByNum(n);if(!o||!o.portate||!o.portate[k]||stOf(o,k)!=="attesa"){S.wSplit=null;renderWaiterLists();return}
   const q=cop(righeFor(o,k)),later=q-now;if(!(now>=1&&later>=1))return;
   const b=kBase(k),D=o.dopo||{},used=[...Object.keys(o.portate),...Object.keys(D)].filter(x=>kBase(x)===b).map(kRound),nk=b+"~"+(Math.max(1,...used)+1),upd={};
@@ -207,8 +207,6 @@ $("w-tables").addEventListener("click",async e=>{
     const done=await setMany(n,orderCourses(o).filter(c=>c.p.stato==="pronta").map(c=>c.k),"servita");
     if(done.length)toast(`${done.length} piatti portati · ${whereTxt(o)}`,{ms:10000,action:{label:"Annulla",fn:()=>done.forEach(k=>unserve(n,k))}});return}
   if(t.dataset.unserve){const [n,k]=t.dataset.unserve.split("|");await unserve(Number(n),k);return}
-  if(t.dataset.wq){const [n,k]=t.dataset.wq.split("|"),o=orderByNum(Number(n));if(!o)return;const q=cop(righeFor(o,k));
-    S.wNow[n+"|"+k]={q,x:Math.max(1,Math.min(q,wNowOf(o,k)+Number(t.dataset.d)))};renderWaiterLists();return}
   if(t.dataset.callpart){const [n,k]=t.dataset.callpart.split("|"),o=orderByNum(Number(n));if(!o||!canAct(o))return;t.disabled=true;const x=wNowOf(o,k);
     if(x<cop(righeFor(o,k))&&!(await splitCourse(Number(n),k,x,{silent:true})))return;await setStato(Number(n),k,"chiamata");return}
   if(t.dataset.wsplit){const [n,k]=t.dataset.wsplit.split("|");S.wSplit={n:Number(n),k,x:1};renderWaiterLists();return}

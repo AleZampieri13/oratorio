@@ -7,7 +7,19 @@ function tryConvert(){if(!S.listinoConv||!S.me||S.convTried)return;S.convTried=t
   R("config/listino").transaction(cur=>cur?undefined:L).then(r=>{if(r&&r.committed)logChange("Listino della versione 36 preparato da quello di prima: controlla nomi e reparti dei piatti")},()=>{S.convTried=false})}
 function oldOrdersBanner(){const old=S.ordLoaded&&isBoss()&&ordersArr().some(o=>o.v!==2),t="Ci sono ordini fatti con la versione precedente: chiudi la serata con «Nuovo evento» (scheda Evento) prima di cominciare.";
   if(old&&$("banner").hidden)showBanner(t);else if(!old&&$("banner").textContent===t)showBanner("")}
+/* mentre si scrive nel campo della quantità la pagina si aggiorna lo stesso: il campo resta com'era, con il cursore */
+function qtyFocusKeep(){const a=document.activeElement;if(!a||!a.matches||!a.matches("input.qtyin"))return null;const at=a.dataset.kqi!=null?"kqi":"wqi";return {at,key:a.dataset[at],v:a.value}}
+function qtyFocusBack(f){if(!f)return;const el=[...document.querySelectorAll(`input.qtyin[data-${f.at}]`)].find(x=>x.dataset[f.at]===f.key);if(!el||el===document.activeElement)return;S.qtyBack=true;el.value=f.v;el.focus();S.qtyBack=false}
+function qtyInput(el,commit){const at=el.dataset.kqi!=null?"kqi":"wqi",[n,k]=el.dataset[at].split("|"),o=orderByNum(Number(n));if(!o)return;const q=cop(righeFor(o,k)),v=parseInt(el.value,10),map=at==="kqi"?S.kNow:S.wNow;
+  if(v>=1&&v<=q)map[n+"|"+k]={q,x:v};else if(commit)map[n+"|"+k]={q,x:v>q?q:(map[n+"|"+k]||{}).x||q};else return;
+  const f=commit?null:qtyFocusKeep();renderAll();qtyFocusBack(f)}
+document.addEventListener("input",e=>{if(e.target.matches&&e.target.matches("input.qtyin"))qtyInput(e.target,false)});
+document.addEventListener("change",e=>{if(e.target.matches&&e.target.matches("input.qtyin"))qtyInput(e.target,true)});
+document.addEventListener("focusin",e=>{if(!S.qtyBack&&e.target.matches&&e.target.matches("input.qtyin"))setTimeout(()=>{try{e.target.select()}catch(x){}},0)});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches&&e.target.matches("input.qtyin"))e.target.blur()});
 function renderAll(){
+  const qf=qtyFocusKeep();try{renderAll0()}finally{qtyFocusBack(qf)}}
+function renderAll0(){
   paintSoundBar();
   if(!S.me)return;
   tryConvert();oldOrdersBanner();

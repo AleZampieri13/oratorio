@@ -27,10 +27,9 @@ function repItems(stato,sc){
 /* pronti in parte (cucina, bar, uscita): −/+ sul numero; il resto resta da preparare come «2ª volta» */
 function kNowOf(o,k){const q=cop(righeFor(o,k)),st=S.kNow[o.numero+"|"+k];return st&&st.q===q?Math.max(1,Math.min(q,st.x)):q}
 function kQtyHtml(o,k){const q=cop(righeFor(o,k));if(q<2)return `<b>${q}</b>`;const x=kNowOf(o,k),key=`${o.numero}|${esc(k)}`;
-  return `<span class="wqty kqty"><button type="button" data-kq="${key}" data-d="-1" ${x>1?"":"disabled"} aria-label="Uno in meno pronto">−</button><b>${x}</b><button type="button" data-kq="${key}" data-d="1" ${x<q?"":"disabled"} aria-label="Uno in più pronto">+</button></span>`}
+  return qtyField("kqi",key,x,q,`Quanti ${piattoNome(k)} sono pronti`)}
 const prontoLbl=(o,k)=>{const q=cop(righeFor(o,k)),x=kNowOf(o,k);return x<q?`Pronti ${x}`:"Pronto"};
-document.addEventListener("click",e=>{const b=e.target.closest("button[data-kq]");if(!b)return;const [n,k]=b.dataset.kq.split("|"),o=orderByNum(Number(n));if(!o)return;
-  const q=cop(righeFor(o,k));S.kNow[n+"|"+k]={q,x:Math.max(1,Math.min(q,kNowOf(o,k)+Number(b.dataset.d)))};renderAll()});
+
 /* divide un piatto chiamato: x restano in questa riga, gli altri vanno in una riga nuova ancora «chiamata» */
 async function splitCalled(n,k,x){const o=orderByNum(n),p=o&&o.portate&&o.portate[k];if(!p||p.stato!=="chiamata")return false;
   const q=cop(righeFor(o,k)),later=q-x;if(!(x>=1&&later>=1))return true;
