@@ -33,7 +33,7 @@ document.addEventListener("change",e=>{if(e.target.matches&&e.target.matches("in
 document.addEventListener("focusin",e=>{if(!S.qtyBack&&e.target.matches&&e.target.matches("input.qtyin"))setTimeout(()=>{try{e.target.select()}catch(x){}},0)});
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches&&e.target.matches("input.qtyin"))e.target.blur()});
 function renderAll(){
-  const qf=qtyFocusKeep();try{renderAll0()}finally{qtyFocusBack(qf)}}
+  const qf=qtyFocusKeep();try{renderAll0()}finally{qtyFocusBack(qf);armBack()}}
 function renderAll0(){
   paintSoundBar();
   if(!S.me)return;

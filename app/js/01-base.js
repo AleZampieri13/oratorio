@@ -332,13 +332,22 @@ async function burnOrder(n,o,back,how){
     else R("prenotazioni/"+o.prenotazione).update({stato:"attesa",ordine:0}).catch(()=>{})}
   logChange(`Ordine ${n}${o.nome?" ("+o.nome+")":""} annullato${how?" "+how:""}: ${orderDesc(righe(o),singoli(o),extras(o))}${back>0?` · restituiti ${money(back)}`:""}`);
 }
+/* «tocca di nuovo»: il primo tocco resta valido 4 secondi anche se nel frattempo la pagina si ridisegna */
+const armSig=btn=>Object.entries(btn.dataset).filter(([k])=>k!=="armed"&&k!=="label").map(([k,v])=>k+"="+v).join("&");
 function armed(btn,label){
-  const disarm=()=>{if(btn.dataset.armed!=="1")return;btn.dataset.armed="";btn.textContent=btn.dataset.label||btn.textContent;btn.classList.remove("solid");clearTimeout(btn._armT)};
-  if(btn.dataset.armed==="1"){disarm();return true}
+  const sig=armSig(btn),live=S.arm&&S.arm.sig===sig&&Date.now()<S.arm.until;
+  const disarm=()=>{btn.dataset.armed="";btn.textContent=btn.dataset.label||btn.textContent;btn.classList.remove("solid");clearTimeout(btn._armT)};
+  if(btn.dataset.armed==="1"||live){S.arm=null;if(btn.dataset.armed==="1")disarm();return true}
   btn.dataset.label=btn.textContent;btn.dataset.armed="1";btn.textContent=label||"Sicuro? Tocca di nuovo";btn.classList.add("solid");
-  btn._armT=setTimeout(()=>{if(btn.isConnected)disarm()},4000);
+  S.arm={sig,until:Date.now()+4000,label:btn.textContent};
+  btn._armT=setTimeout(()=>{if(btn.isConnected&&btn.dataset.armed==="1")disarm()},4000);
   return false;
 }
+/* dopo un ridisegno il tasto toccato una volta torna a dire «Non pronto?» */
+function armBack(){const a=S.arm;if(!a)return;if(Date.now()>=a.until){S.arm=null;return}
+  const b=[...document.querySelectorAll("button")].find(x=>x.dataset.armed!=="1"&&Object.keys(x.dataset).length&&armSig(x)===a.sig);if(!b)return;
+  b.dataset.label=b.textContent;b.dataset.armed="1";b.textContent=a.label;b.classList.add("solid");
+  b._armT=setTimeout(()=>{if(b.isConnected&&b.dataset.armed==="1"){b.dataset.armed="";b.textContent=b.dataset.label;b.classList.remove("solid")}},a.until-Date.now())}
 /* tempo massimo di preparazione del piatto (Listino, «Pronto entro»); vuoto = 15 minuti */
 const MIN_DEF=15;
 function maxMin(pid){const p=portataCfg(pid);return p&&p.min>0?p.min:MIN_DEF}

@@ -197,7 +197,7 @@ async function setup(){
 
 /* ---------------- SERVIZIO ---------------- */
 const L={};CASSE.forEach(c=>L[c.dev]={contanti:0,pos:0});
-const ORD=[],STAT={kParzKo:[],uniti:0,doppi:0,kScParz:0,kScParzKo:0,kParz:0,divisi:0,parz:0,scalati:0,aspTutto:0,aspConsegnati:0,cambi:0,scelteMosse:0,barVedeScelte:0,prontoUscita:0,aspUscita:0,contiDivisi:0,divisiPiatti:0,divisiPiattiKo:[],offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
+const ORD=[],STAT={oAnnullaWhy:[],oAnnulla:0,oAnnullaKo:0,kParzKo:[],uniti:0,doppi:0,kScParz:0,kScParzKo:0,kParz:0,divisi:0,parz:0,scalati:0,aspTutto:0,aspConsegnati:0,cambi:0,scelteMosse:0,barVedeScelte:0,prontoUscita:0,aspUscita:0,contiDivisi:0,divisiPiatti:0,divisiPiattiKo:[],offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
 const queueFor={};CAM.forEach(c=>queueFor[c.dev]=[]);
 let noDessert=false;
 function plan(){
@@ -344,7 +344,11 @@ async function barAct(){if(/Frizzante|Naturale/.test(txt("bar","#b-queue")))STAT
 async function uscitaAct(){
   const ac=q("uscita","#o-ready button[data-ocons]:not([disabled])");if(ac){const n=Number(ac.dataset.ocons),card=ac.closest(".kcard"),o=W("uscita").eval(`orderCourses(orderByNum(${n})).filter(c=>c.p.stato!=="servita").length`);
     if(card.querySelectorAll("li").length===o&&o>0)STAT.aspTutto=Math.max(STAT.aspTutto,o);if(rnd()<.5){await click("uscita",ac);await sleep(30);
-      if(W("uscita").eval(`orderCourses(orderByNum(${n})).every(c=>c.p.stato==="servita")`))STAT.aspConsegnati++}}const b=q("uscita",'#o-ready button[data-set$="|servita"]:not([disabled])');if(b&&rnd()<.25){await click("uscita",b);STAT.consegnateUscita++}
+      if(W("uscita").eval(`orderCourses(orderByNum(${n})).every(c=>c.p.stato==="servita")`))STAT.aspConsegnati++}}const un=q("uscita",'#o-ready button[data-ounready]:not([disabled])');if(un&&STAT.oAnnulla<3&&rnd()<.05){const [an,ak]=un.dataset.ounready.split("|");await click("uscita",un);await sleep(200);const un2=q("uscita",`#o-ready button[data-ounready="${an}|${ak}"]`);if(un2)await click("uscita",un2);
+    for(let i=0;i<20;i++){if(W("uscita").eval(`((orderByNum(${an}).portate||{})[${JSON.stringify(ak)}]||{}).stato`)!=="pronta")break;await sleep(50)}
+    const st=W("uscita").eval(`(()=>{const o=orderByNum(${an}),k=${JSON.stringify(ak)},p=(o.portate||{})[k];if(p)return p.stato;return Object.keys(o.portate||{}).some(x=>kBase(x)===kBase(k)&&o.portate[x].stato==="chiamata")?"unito":"sparito"})()`);
+    if(st==="chiamata"||st==="unito")STAT.oAnnulla++;else{STAT.oAnnullaKo++;STAT.oAnnullaWhy.push(`n.${an} ${ak}: ${st}`)}return}
+  const b=q("uscita",'#o-ready button[data-set$="|servita"]:not([disabled])');if(b&&rnd()<.25){await click("uscita",b);STAT.consegnateUscita++}
   const r=q("uscita",'#o-wip button[data-oready]:not([disabled])');if(r&&rnd()<.08){const [n,k]=r.dataset.oready.split("|");await click("uscita",r);await sleep(30);
     const st=W("uscita").eval(`(orderByNum(${n}).portate["${k}"]||{}).stato`);if(st==="pronta")STAT.prontoUscita++}
   if(!STAT.aspUscita){const a=W("uscita").eval(`flatCourses("chiamata").concat(flatCourses("pronta")).filter(c=>c.o.asportoSubito).length`);
@@ -412,7 +416,7 @@ async function specialTick(t,S){
       await sleep(STEP*3);check(!/Torta|Dolce/.test(txt(o.waiter,`[data-card="${o.n}"] .cact`)),"Il cameriere non vede più la Torta (né il reparto Dolce) in quell'ordine",txt(o.waiter,`[data-card="${o.n}"] .cact`));
       await click(o.cassa,"#x-close")}}
   // il master annulla un ordine già in cucina
-  if(!S.annul&&ORD.length>=30){const target=ORD.find(o=>!o.annullato&&o.waiter&&!o.split&&!o.offer&&O[o.n]&&vals(O[o.n].portate).some(p=>p.stato==="chiamata"));
+  if(!S.annul&&ORD.length>=30){const target=ORD.find(o=>!o.annullato&&!o.pren&&o.waiter&&!o.split&&!o.offer&&O[o.n]&&vals(O[o.n].portate).some(p=>p.stato==="chiamata"));
     if(target){S.annul=true;const w=target.waiter;const KB=[...COOKS,"capocucina","bar"],before={w:toasts(w).length,k:KB.map(c=>toasts(c).length)};
       await tab("master","cassa");await type("master","#c-opennum",String(target.n));await click("master","#c-open");
       check(!q("master","#x-lockmsg").hidden&&!q("master","#x-del-row").hidden,`Master: il n. ${target.n} è in cucina, il pannello offre rettifica e annullo`);
@@ -486,14 +490,14 @@ async function closing(){
   const busy=screens.filter(([d,s,re])=>!re.test(txt(d,s))).map(([d,s])=>`${d}: ${txt(d,s).slice(0,120)}`);
   check(!busy.length,"Cucine, bar e uscita: niente in coda a fine serata",busy.join(" | "));
   {const W_=W("master"),pasta=W_.eval(`S.portate.find(p=>p.nome==="Pasta").id`),withC=vals(db().ordini).filter(o=>vals(o.cambi).length);
-   const ok=withC.every(o=>W_.eval(`(()=>{const o=orderByNum(${o.numero}),cc=cambi(o),pz=cc.filter(c=>c.da==="p-primo").reduce((a,c)=>a+c.q,0),pa=cc.filter(c=>c.a==="${pasta}").reduce((a,c)=>a+c.q,0),
-     men=righe(o).filter(r=>applies(portataCfg("p-primo"),r.id)).reduce((a,r)=>a+r.qta,0);return cop(righeAll(o,"${pasta}"))===pa&&cop(righeAll(o,"p-primo"))===men-pz&&(pa===0||!!o.portate["${pasta}"])&&Math.abs(o.importoMenu-(righe(o).reduce((a,r)=>a+r.qta*r.prezzo,0)-cc.reduce((a,c)=>a+(!c.a&&c.s>0?c.s*c.q:0),0)))<.01})()`));
+   const okf=o=>W_.eval(`(()=>{const o=orderByNum(${o.numero}),cc=cambi(o),pz=cc.filter(c=>c.da==="p-primo").reduce((a,c)=>a+c.q,0),pa=cc.filter(c=>c.a==="${pasta}").reduce((a,c)=>a+c.q,0),
+     men=righe(o).filter(r=>applies(portataCfg("p-primo"),r.id)).reduce((a,r)=>a+r.qta,0);return cop(righeAll(o,"${pasta}"))===pa&&cop(righeAll(o,"p-primo"))===men-pz&&(pa===0||!!o.portate["${pasta}"])&&Math.abs(o.importoMenu-(righe(o).reduce((a,r)=>a+r.qta*r.prezzo,0)-cc.reduce((a,c)=>a+(!c.a&&c.s>0?c.s*c.q:0),0)))<.01})()`),bad1=withC.filter(o=>!okf(o)),ok=!bad1.length;
    const scal=withC.filter(o=>vals(o.cambi).some(c=>c.a===""&&c.s===5)).length;
    check(STAT.scalati>0&&scal>0,`Togliere un piatto con «Scala»: ${scal} ordini con lo Sciatt tolto e 5 € in meno sul menù (gli altri pagano il menù intero)`);
    const ok2=withC.every(o=>W_.eval(`(()=>{const o=orderByNum(${o.numero}),cc=cambi(o);return S.portate.every(p=>{const men=righe(o).filter(r=>applies(p,r.id)).reduce((a,r)=>a+r.qta,0)+singoli(o).filter(s=>s.pid===p.id).reduce((a,s)=>a+s.qta,0);
      return cop(righeAll(o,p.id))===men-cc.filter(c=>c.da===p.id).reduce((a,c)=>a+c.q,0)+cc.filter(c=>c.a===p.id).reduce((a,c)=>a+c.q,0)})})()`));
    const senza=withC.filter(o=>vals(o.cambi).some(c=>c.a==="")).length;
-   check(STAT.cambi>0&&withC.length>0&&ok&&ok2&&senza>0,`Cambi nel menù: ${withC.length} ordini (Pizzoccheri → Pasta, Caffè → Bibita, ${senza} con «senza Sciatt»); la cucina conta giusto ogni piatto, il prezzo resta quello del menù`)}
+   check(STAT.cambi>0&&withC.length>0&&ok&&ok2&&senza>0,`Cambi nel menù: ${withC.length} ordini (Pizzoccheri → Pasta, Caffè → Bibita, ${senza} con «senza Sciatt»); la cucina conta giusto ogni piatto, il prezzo resta quello del menù`,bad1.map(o=>W_.eval(`(()=>{const o=orderByNum(${o.numero});return "n."+o.numero+" "+JSON.stringify({p:Object.fromEntries(Object.entries(o.portate||{}).map(([k,v])=>[k,v.stato+(v.sc?JSON.stringify(v.sc):"")])),dopo:o.dopo,cambi:o.cambi,imp:o.importoMenu,righe:righe(o).map(r=>r.qta+"x"+r.prezzo)})})()`)).join(" ; ")+(ok2?"":" · ok2 no"))}
   {const W_=W("master"),acq=W_.eval(`S.portate.find(p=>p.nome==="Acqua").id`);
    const cs=vals(db().ordini).flatMap(o=>Object.entries(o.portate||{}).filter(([k,p])=>k===acq&&p.stato&&p.stato!=="attesa").map(([k,p])=>({o,p})));
    const bad=cs.filter(({o,p})=>vals(p.sc).reduce((a,x)=>a+x.q,0)!==W_.eval(`cop(righeFor(orderByNum(${o.numero}),"${acq}"))`));
@@ -510,6 +514,7 @@ async function closing(){
    check(STAT.divisi>0&&O_.length>0&&ok&&served>0,`«Una parte dopo»: ${O_.length} ordini con un piatto chiamato in due volte (es. 1 acqua adesso, 1 dopo); le quantità tornano e la seconda volta arriva (${served})`)}
   check(STAT.kScParz>0&&STAT.kScParzKo===0,`Bar: pronte solo alcune scelte (es. 1 Naturale e 0 Frizzante): ${STAT.kScParz} volte la scelta tolta è rimasta da preparare`+(STAT.kScParzKo?` · ${STAT.kScParzKo} volte no`:""));
   check(STAT.uniti>0&&STAT.doppi===0,`Stesso piatto chiamato due volte mentre il primo era ancora da preparare: unito in una riga sola (${STAT.uniti} volte)`+(STAT.doppi?` · ${STAT.doppi} volte restavano due righe`:""));
+  check(STAT.oAnnulla>0&&!STAT.oAnnullaKo,`Uscita: «Annulla» su un piatto pronto lo rimette da preparare (${STAT.oAnnulla} volte)`+(STAT.oAnnullaKo?` · ${STAT.oAnnullaKo} volte no`:""),STAT.oAnnullaWhy.join("; "));
   check(STAT.kParz>0&&!STAT.kParzKo.length,`Cucina: pronti in parte ${STAT.kParz} volte (es. 3 Pizzoccheri su 6), il resto è rimasto da preparare ed è arrivato`,STAT.kParzKo.join("; "));
   check(STAT.prontoUscita>0,`L'uscita segna «Pronto» da sola: ${STAT.prontoUscita} piatti`);
   check(STAT.aspUscita>0,"L'uscita vede anche gli asporti mandati subito in cucina");
