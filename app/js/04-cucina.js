@@ -212,7 +212,7 @@ function renderUscita(){
     const dis=S.pending.has(c.o.numero+"|"+c.k)?"disabled":"";
     const pp=partsOf(c.o.portate[c.k]),parts=pp.length>1?pp.map(x=>x.piatto||x.nome).join(" + "):"";
     return `<article class="kcard ${stale?"late":""} tint" style="--pc:${portColor(c.k)}"><div class="top"><span class="n nm">${esc(wn)}</span><span class="age">pronto ${ago(c.t)==="adesso"?"adesso":"da "+ago(c.t)}</span></div>
-      <div class="what kcourse"><span class="label">${c.o.fila?esc(filaNome(c.o.fila))+" · ":""}<b class="onum">n. ${c.o.numero}</b>${c.o.nome?" · "+esc(c.o.nome):""}</span>${c.o.asporto&&wn!=="Asporto"?' <span class="pill asp">Asporto</span>':""}</div>
+      <div class="what kcourse"><span class="label"><b class="onum">n. ${c.o.numero}</b>${c.o.fila?" · "+esc(filaNome(c.o.fila)):""}${c.o.nome?" · "+esc(c.o.nome):""}</span>${c.o.asporto&&wn!=="Asporto"?' <span class="pill asp">Asporto</span>':""}</div>
       <div class="what kcourse"><span class="kqn">${n}</span> <span style="color:${portColor(c.k)}">${esc(c.l)}</span></div>
       ${parts?`<div class="kparts">${esc(parts)}</div>`:""}
       ${scTxt(c.o.portate[c.k])?`<div class="kparts ksc">${scLines(c.o.portate[c.k])}</div>`:""}
