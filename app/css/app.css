@@ -552,4 +552,4 @@ ul.kitems li:has(.kscq) .kbtn{grid-column:2}
   .kq>.kcard>:last-child{align-self:end;margin-top:0}
 }
 /* orario delle schede: ora e minuti su una riga, mai rosso (il ritardo lo dice il bordo) */
-.kcard .top .age,.kcard.late .age{color:var(--call);white-space:nowrap}
+.kcard .top .age,.kcard.late .age{color:var(--muted);white-space:nowrap}
