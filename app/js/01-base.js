@@ -233,6 +233,8 @@ function orderByNum(n){return S.ordMap[n]}
 function righe(o){const r=o&&o.righe;return (Array.isArray(r)?r:Object.values(r||{})).filter(Boolean)}
 function righeChips(rr){return (rr||[]).map(r=>`<span class="chip">${r.qta} ${esc(r.nome)}</span>`).join("")}
 function cop(rr){return (rr||[]).reduce((a,r)=>a+(r.qta||0),0)}
+/* ora d'arrivo e minuti passati, su una riga: «20:15 · 12 min» */
+function clockAgo(t){if(!t)return"";const d=new Date(t);return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")} · ${ago(t)}`}
 function ago(t){if(!t)return"";const m=Math.floor((Date.now()-t)/60000);return m<1?"adesso":m+" min"}
 function errText(e){
   const c=String((e&&e.code)||"");
