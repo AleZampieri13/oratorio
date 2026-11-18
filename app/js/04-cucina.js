@@ -38,16 +38,22 @@ function kQtyHtml(o,k){const q=cop(righeFor(o,k)),key=`${o.numero}|${esc(k)}`;
 const prontoLbl=(o,k)=>{const q=cop(righeFor(o,k)),x=kNowOf(o,k);return x<q?`Pronti ${x}`:"Pronto"};
 
 /* divide un piatto chiamato: x restano in questa riga, gli altri vanno in una riga nuova ancora «chiamata» */
-async function splitCalled(n,k,x,scx){const o=orderByNum(n),p=o&&o.portate&&o.portate[k];if(!p||p.stato!=="chiamata")return false;
+async function splitCalled(n,k,x,scx,rs){const o=orderByNum(n),p=o&&o.portate&&o.portate[k];if(!p||p.stato!=="chiamata")return false;
   const q=cop(righeFor(o,k)),later=q-x;if(!(x>=1&&later>=1))return true;
   const b=kBase(k),D=o.dopo||{},used=[...Object.keys(o.portate),...Object.keys(D)].filter(y=>kBase(y)===b).map(kRound),nk=b+"~"+(Math.max(1,...used)+1);
   const sc=toArr(p.sc).filter(Boolean);let a=x;const sc1=[],sc2=[];sc.forEach((s,i)=>{const t=scx?Math.min(s.q,scx[i]||0):Math.min(s.q,a);a-=t;sc1.push({n:s.n,q:t});sc2.push({n:s.n,q:s.q-t})});
   const rep=p.rep?Object.fromEntries(Object.entries(p.rep).map(([r,v])=>{const y={...v,s:"chiamata"};delete y.t;return [r,y]})):null;
   const nx={...p,stato:"chiamata"};if(rep)nx.rep=rep;if(sc.length)nx.sc=sc2;
-  const upd={["dopo/"+nk]:later,["portate/"+nk]:nx};if(k!==b)upd["dopo/"+k]=(D[k]||0)-later;if(sc.length)upd["portate/"+k+"/sc"]=sc1;
+  const upd={["dopo/"+nk]:later,["portate/"+nk]:nx};if(k!==b)upd["dopo/"+k]=(D[k]||0)-later;
+  if(rs){/* la parte pronta si segna insieme alla divisione: niente passaggi intermedi sullo schermo */
+    const now=Date.now(),p1={...p};if(sc.length)p1.sc=sc1;let all=true;
+    if(p.rep&&Object.keys(p.rep).length){p1.rep={...p.rep};rs.forEach(r=>{if(p1.rep[r])p1.rep[r]={...p1.rep[r],s:"pronta",t:now}});all=Object.values(p1.rep).every(v=>v&&v.s==="pronta")}
+    if(all){p1.tc=p.t||null;p1.stato="pronta";p1.t=now;delete p1.annull}
+    upd["portate/"+k]=p1}
+  else if(sc.length)upd["portate/"+k+"/sc"]=sc1;
   try{await R("ordini/"+n).update(upd);delete S.kNow[n+"|"+k];return true}catch(e){showBanner(errText(e));return false}}
 /* prima di segnare pronto: se il numero è stato abbassato, divide; ritorna [quanti pronti, quanti restano] */
-async function prepPart(n,k){const o=orderByNum(n);if(!o)return null;const q=cop(righeFor(o,k)),x=kNowOf(o,k);if(x>=q)return [q,0];S.holdMerge=Date.now()+4000;return (await splitCalled(n,k,x,kScMode(o,k)?kScNow(o,k):null))?[x,q-x]:null}
+async function prepPart(n,k,rs){const o=orderByNum(n);if(!o)return null;const q=cop(righeFor(o,k)),x=kNowOf(o,k);if(x>=q)return [q,0,false];S.holdMerge=Date.now()+4000;return (await splitCalled(n,k,x,kScMode(o,k)?kScNow(o,k):null,rs))?[x,q-x,!!rs]:null}
 const partToast=(n,k,r)=>{const o=orderByNum(n);toast(`${o?kWho(o,o.portate&&o.portate[k])+" · ":""}${r[0]} ${piattoNome(k)} pronti · ${r[1]} ancora da preparare`,{ms:5000})};
 /* chiamate di un gruppo di reparti, raggruppate per cliente (usato da cucina e bar) */
 function renderRepView(sc,ids){
@@ -58,9 +64,15 @@ function renderRepView(sc,ids){
     :'<div class="zero"><span class="label">Nessun piatto</span><span class="brk">A questo reparto non è assegnato nessun piatto: chiedi al master (Listino → Piatti).</span></div>';
   const groups=[];calls.forEach(c=>{let g=groups.find(x=>x.o.numero===c.o.numero);if(!g){g={o:c.o,t:c.t,items:[]};groups.push(g)}g.items.push(c);if(c.t<g.t)g.t=c.t});
   /* due righe dello stesso piatto ancora da preparare (chiamate prima dell'unione, o insieme da due telefoni): si uniscono */
-  groups.forEach(g=>{const seen=new Set();[...new Set(g.items.map(c=>c.k))].sort((x,y)=>kRound(x)-kRound(y)).map(k=>({k})).forEach(c=>{const b=kBase(c.k);if(!seen.has(b)||kRound(c.k)<2){seen.add(b);return}
-    if(Date.now()<(S.holdMerge||0)){if(!S.holdT)S.holdT=setTimeout(()=>{S.holdT=null;renderAll()},S.holdMerge-Date.now()+100);return}
-    const key=g.o.numero+"|"+c.k;S.mergeTry=S.mergeTry||new Map();if(Date.now()-(S.mergeTry.get(key)||0)<5000)return;S.mergeTry.set(key,Date.now());setTimeout(()=>mergeCalled(g.o.numero,c.k,true),0)})});
+  const fresh=(o,x)=>{const q=(o.portate||{})[x];return q&&q.stato==="chiamata"&&Object.values(q.rep||{}).every(v=>!v||v.s==="chiamata")};
+  S.mergeTry=S.mergeTry||new Map();
+  groups.forEach(g=>{const seen=new Set(),hide=new Set();[...new Set(g.items.map(c=>c.k))].sort((x,y)=>kRound(x)-kRound(y)).forEach(k=>{const b=kBase(k);
+      if(!seen.has(b)||kRound(k)<2||!fresh(g.o,k)||![...seen].length){if(fresh(g.o,k))seen.add(b);return}
+      if(!Object.keys(g.o.portate).some(x=>x!==k&&kBase(x)===b&&fresh(g.o,x)))return;
+      const key=g.o.numero+"|"+k,t0=S.mergeTry.get(key);if(!t0||Date.now()-t0>5000){S.mergeTry.set(key,Date.now());setTimeout(()=>mergeCalled(g.o.numero,k,true),0)}
+      if(Date.now()-(S.mergeTry.get(key)||0)<3000)hide.add(k)});
+    if(hide.size)g.items=g.items.filter(c=>!hide.has(c.k))});
+  for(let i=groups.length-1;i>=0;i--)if(!groups[i].items.length)groups.splice(i,1);
   const key=c=>c.o.numero+"|"+c.k+"|"+c.r,dis=c=>S.pending.has(key(c))?"disabled":"";
   $(ids.queue).innerHTML=groups.length?groups.map(g=>{const o=g.o,late=g.items.some(c=>isLate(c.k,c.t)),wn=kWho(o,g.items[0].p),many=g.items.length>1;
     const tn=tintCls(g.items.map(c=>c.k));
@@ -101,10 +113,10 @@ async function setPart(n,k,r,to,opts){
   finally{S.pending.delete(key);schedule()}
 }
 document.addEventListener("click",async e=>{const b=e.target.closest("button[data-rset]");if(!b||b.disabled)return;const [n,k,r]=b.dataset.rset.split("|");
-  const pr=await prepPart(Number(n),k);if(!pr)return;await setPart(Number(n),k,r,"pronta",pr[1]?{silent:true}:undefined);if(pr[1])partToast(Number(n),k,pr)});
+  const pr=await prepPart(Number(n),k,[r]);if(!pr)return;if(!pr[2])await setPart(Number(n),k,r,"pronta");if(pr[1])partToast(Number(n),k,pr)});
 document.addEventListener("click",async e=>{const b=e.target.closest("button[data-rsetall]");if(!b||b.disabled)return;b.disabled=true;
   const [n,list]=b.dataset.rsetall.split("|"),its=list.split(",").map(x=>{const i=x.lastIndexOf("~");return [x.slice(0,i),x.slice(i+1)]});
-  for(const [k,r] of its){if(!(await prepPart(Number(n),k)))continue;await setPart(Number(n),k,r,"pronta",{silent:true})}
+  for(const [k,r] of its){const pr=await prepPart(Number(n),k,[r]);if(!pr)continue;if(!pr[2])await setPart(Number(n),k,r,"pronta",{silent:true})}
   const o=orderByNum(Number(n));toast(`${o?kWho(o,null)+" · ":""}n. ${n}: tutto pronto`,{ms:4000})});
 document.addEventListener("click",e=>{const b=e.target.closest("button[data-runready]");if(!b||b.disabled)return;if(!armed(b,"Non pronto?"))return;
   const [n,k,r]=b.dataset.runready.split("|");setPart(Number(n),k,r,"chiamata")});
@@ -225,8 +237,8 @@ function renderUscita(){
 function oReadyReps(c,sc){const rp=(c.o.portate[c.k]||{}).rep||{};return Object.keys(rp).filter(r=>rp[r].s!=="pronta"&&(!sc||sc.includes(r)))}
 $("o-wip").addEventListener("click",async e=>{const b=e.target.closest("button[data-oready]");if(!b||b.disabled)return;b.disabled=true;
   const [n,k]=b.dataset.oready.split("|");if(!((orderByNum(Number(n))||{}).portate||{})[k]||orderByNum(Number(n)).portate[k].stato!=="chiamata")return;
-  const pr=await prepPart(Number(n),k);if(!pr)return;if(pr[1]){const o=orderByNum(Number(n)),pp=o.portate[k];
-    if(Object.keys(pp.rep||{}).length){for(const r of oReadyReps({o,k},oScope()))await setPart(Number(n),k,r,"pronta",{silent:true})}else await setStato(Number(n),k,"pronta",{notoast:true});partToast(Number(n),k,pr);return}
+  const o0=orderByNum(Number(n)),pp0=o0.portate[k],rs0=Object.keys(pp0.rep||{}).length?oReadyReps({o:o0,k},oScope()):[];
+  const pr=await prepPart(Number(n),k,rs0);if(!pr)return;if(pr[1]){partToast(Number(n),k,pr);return}
   const o=orderByNum(Number(n)),pp=o.portate[k],rs=oReadyReps({o,k},oScope());
   if(Object.keys(pp.rep||{}).length){for(const r of rs)await setPart(Number(n),k,r,"pronta",{silent:rs.length>1});
     if(rs.length>1){const c=(orderCourses(o).find(x=>x.k===k)||{}).l||k;toast(`${kWho(o,pp)} · ${c} pronto`,{ms:4000})}}
