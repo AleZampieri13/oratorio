@@ -47,7 +47,7 @@ async function splitCalled(n,k,x,scx){const o=orderByNum(n),p=o&&o.portate&&o.po
   const upd={["dopo/"+nk]:later,["portate/"+nk]:nx};if(k!==b)upd["dopo/"+k]=(D[k]||0)-later;if(sc.length)upd["portate/"+k+"/sc"]=sc1;
   try{await R("ordini/"+n).update(upd);delete S.kNow[n+"|"+k];return true}catch(e){showBanner(errText(e));return false}}
 /* prima di segnare pronto: se il numero è stato abbassato, divide; ritorna [quanti pronti, quanti restano] */
-async function prepPart(n,k){const o=orderByNum(n);if(!o)return null;const q=cop(righeFor(o,k)),x=kNowOf(o,k);if(x>=q)return [q,0];return (await splitCalled(n,k,x,kScMode(o,k)?kScNow(o,k):null))?[x,q-x]:null}
+async function prepPart(n,k){const o=orderByNum(n);if(!o)return null;const q=cop(righeFor(o,k)),x=kNowOf(o,k);if(x>=q)return [q,0];S.holdMerge=Date.now()+4000;return (await splitCalled(n,k,x,kScMode(o,k)?kScNow(o,k):null))?[x,q-x]:null}
 const partToast=(n,k,r)=>{const o=orderByNum(n);toast(`${o?kWho(o,o.portate&&o.portate[k])+" · ":""}${r[0]} ${piattoNome(k)} pronti · ${r[1]} ancora da preparare`,{ms:5000})};
 /* chiamate di un gruppo di reparti, raggruppate per cliente (usato da cucina e bar) */
 function renderRepView(sc,ids){
@@ -59,7 +59,8 @@ function renderRepView(sc,ids){
   const groups=[];calls.forEach(c=>{let g=groups.find(x=>x.o.numero===c.o.numero);if(!g){g={o:c.o,t:c.t,items:[]};groups.push(g)}g.items.push(c);if(c.t<g.t)g.t=c.t});
   /* due righe dello stesso piatto ancora da preparare (chiamate prima dell'unione, o insieme da due telefoni): si uniscono */
   groups.forEach(g=>{const seen=new Set();[...new Set(g.items.map(c=>c.k))].sort((x,y)=>kRound(x)-kRound(y)).map(k=>({k})).forEach(c=>{const b=kBase(c.k);if(!seen.has(b)||kRound(c.k)<2){seen.add(b);return}
-    const key=g.o.numero+"|"+c.k;S.mergeTry=S.mergeTry||new Set();if(S.mergeTry.has(key))return;S.mergeTry.add(key);setTimeout(()=>mergeCalled(g.o.numero,c.k,true),0)})});
+    if(Date.now()<(S.holdMerge||0)){if(!S.holdT)S.holdT=setTimeout(()=>{S.holdT=null;renderAll()},S.holdMerge-Date.now()+100);return}
+    const key=g.o.numero+"|"+c.k;S.mergeTry=S.mergeTry||new Map();if(Date.now()-(S.mergeTry.get(key)||0)<5000)return;S.mergeTry.set(key,Date.now());setTimeout(()=>mergeCalled(g.o.numero,c.k,true),0)})});
   const key=c=>c.o.numero+"|"+c.k+"|"+c.r,dis=c=>S.pending.has(key(c))?"disabled":"";
   $(ids.queue).innerHTML=groups.length?groups.map(g=>{const o=g.o,late=g.items.some(c=>isLate(c.k,c.t)),wn=kWho(o,g.items[0].p),many=g.items.length>1;
     const tn=tintCls(g.items.map(c=>c.k));

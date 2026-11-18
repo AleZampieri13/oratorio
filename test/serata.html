@@ -197,7 +197,7 @@ async function setup(){
 
 /* ---------------- SERVIZIO ---------------- */
 const L={};CASSE.forEach(c=>L[c.dev]={contanti:0,pos:0});
-const ORD=[],STAT={uniti:0,doppi:0,kScParz:0,kScParzKo:0,kParz:0,divisi:0,parz:0,scalati:0,aspTutto:0,aspConsegnati:0,cambi:0,scelteMosse:0,barVedeScelte:0,prontoUscita:0,aspUscita:0,contiDivisi:0,divisiPiatti:0,divisiPiattiKo:[],offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
+const ORD=[],STAT={kParzKo:[],uniti:0,doppi:0,kScParz:0,kScParzKo:0,kParz:0,divisi:0,parz:0,scalati:0,aspTutto:0,aspConsegnati:0,cambi:0,scelteMosse:0,barVedeScelte:0,prontoUscita:0,aspUscita:0,contiDivisi:0,divisiPiatti:0,divisiPiattiKo:[],offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
 const queueFor={};CAM.forEach(c=>queueFor[c.dev]=[]);
 let noDessert=false;
 function plan(){
@@ -328,8 +328,10 @@ let unreadyDone=false;
 async function cookAct(n){
   if(n==="fritto"&&/Patatine/i.test(txt(n,"#k-queue")))STAT.frittoVedeExtra++;
   if(COOKS.some(c=>/Acqua|Caffè|Vino/i.test(txt(c,"#k-queue"))))STAT.cucinaVedeBar++;
-  {const m=[...qa(n,'#k-queue input.qtyin[data-kqi]')].find(x=>+x.value>1);if(m&&rnd()<.15){const key=m.dataset.kqi;await type(n,m,String(Math.max(1,Math.floor(+m.value/2))));
-    const rb=await waitFor(()=>qa(n,"#k-queue button[data-rset]:not([disabled])").find(x=>x.dataset.rset.startsWith(key+"|")),3000,"pronti in parte");await click(n,rb);await sleep(30);STAT.kParz++;STAT.pronti++}}
+  {const m=[...qa(n,'#k-queue input.qtyin[data-kqi]')].find(x=>+x.value>1);if(m&&rnd()<.15){const key=m.dataset.kqi,qq=+m.value,xx=Math.max(1,Math.floor(qq/2));await type(n,m,String(xx));
+    const rb=await waitFor(()=>qa(n,"#k-queue button[data-rset]:not([disabled])").find(x=>x.dataset.rset.startsWith(key+"|")),3000,"pronti in parte");await click(n,rb);await sleep(400);STAT.kParz++;STAT.pronti++;
+    const [kn,kk]=key.split("|"),rest=W(n).eval(`(()=>{const o=orderByNum(${kn}),b=kBase(${JSON.stringify(kk)});return Object.keys(o.portate||{}).filter(x=>kBase(x)===b&&o.portate[x].stato==="chiamata").reduce((a,x)=>a+cop(righeFor(o,x)),0)})()`);
+    if(rest<qq-xx)STAT.kParzKo.push(`n.${kn} ${kk}: ${xx} su ${qq}, restano ${rest}`)}}
   for(let i=0;i<3;i++){const b=q(n,"#k-queue button[data-rsetall]:not([disabled])")||q(n,"#k-queue button[data-rset]:not([disabled])");if(!b||rnd()<.35)break;if(b.dataset.rsetall)STAT.tuttoPronto++;await click(n,b);STAT.pronti++}
   if(!unreadyDone&&n==="fritto"&&STAT.pronti>30){const u=q(n,"#k-ready button[data-runready]");if(u){await click(n,u);await click(n,u);unreadyDone=true;log("Il Fritto annulla un «pronto» (ripensamento)")}}
 }
@@ -508,7 +510,7 @@ async function closing(){
    check(STAT.divisi>0&&O_.length>0&&ok&&served>0,`«Una parte dopo»: ${O_.length} ordini con un piatto chiamato in due volte (es. 1 acqua adesso, 1 dopo); le quantità tornano e la seconda volta arriva (${served})`)}
   check(STAT.kScParz>0&&STAT.kScParzKo===0,`Bar: pronte solo alcune scelte (es. 1 Naturale e 0 Frizzante): ${STAT.kScParz} volte la scelta tolta è rimasta da preparare`+(STAT.kScParzKo?` · ${STAT.kScParzKo} volte no`:""));
   check(STAT.uniti>0&&STAT.doppi===0,`Stesso piatto chiamato due volte mentre il primo era ancora da preparare: unito in una riga sola (${STAT.uniti} volte)`+(STAT.doppi?` · ${STAT.doppi} volte restavano due righe`:""));
-  check(STAT.kParz>0,`Cucina: pronti in parte ${STAT.kParz} volte (es. 3 Pizzoccheri su 6), il resto è rimasto da preparare ed è arrivato`);
+  check(STAT.kParz>0&&!STAT.kParzKo.length,`Cucina: pronti in parte ${STAT.kParz} volte (es. 3 Pizzoccheri su 6), il resto è rimasto da preparare ed è arrivato`,STAT.kParzKo.join("; "));
   check(STAT.prontoUscita>0,`L'uscita segna «Pronto» da sola: ${STAT.prontoUscita} piatti`);
   check(STAT.aspUscita>0,"L'uscita vede anche gli asporti mandati subito in cucina");
   const nums=[...O.map(o=>o.numero),...A.map(a=>a.n)].sort((a,b)=>a-b);
