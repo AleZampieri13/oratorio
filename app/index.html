@@ -206,10 +206,10 @@
             <span id="c-fondo-row" hidden><input type="text" id="c-fondo"><button id="c-fondo-save">Salva</button></span><span id="c-attesi" hidden></span></div>
           <div class="row"><input type="number" id="c-opennum" inputmode="numeric" min="1" placeholder="N. da modificare" aria-label="Numero dell'ordine da modificare"><button class="btn" id="c-open">Apri</button></div>
           <div class="list" id="c-recent"></div>
-          <div class="stack" id="c-histbox" hidden><button type="button" class="btn histbtn" id="c-histbtn" data-hist="c" aria-expanded="false" aria-controls="c-hist"></button><div class="list" id="c-hist" hidden></div></div>
         </div>
       </div>
     </div>
+    <div class="stack" id="c-histbox" hidden><button type="button" class="btn histbtn" id="c-histbtn" data-hist="c" aria-expanded="false" aria-controls="c-hist"></button><div class="list" id="c-hist" hidden></div></div>
   </section>
 
   <!-- CAMERIERI -->
@@ -229,10 +229,10 @@
           <span class="seg" id="w-filter" hidden><button data-f="mie">Miei</button><button data-f="tutte">Tutti</button></span></div>
         <div class="note" id="w-nofila" hidden>Nessuna fila assegnata.</div>
         <div class="stack" id="w-tables"></div>
-        <div class="stack" id="w-histbox" hidden><button type="button" class="btn histbtn" id="w-histbtn" aria-expanded="false" aria-controls="w-hist"></button>
-          <div class="stack" id="w-hist" hidden></div></div>
       </div>
       <button class="btn small" id="w-sound" aria-pressed="true" style="align-self:center">Avviso sonoro: acceso</button>
+      <div class="stack" id="w-histbox" hidden><button type="button" class="btn histbtn" id="w-histbtn" aria-expanded="false" aria-controls="w-hist"></button>
+          <div class="stack" id="w-hist" hidden></div></div>
     </div>
   </section>
 
@@ -248,11 +248,11 @@
     <div class="kq" id="k-queue"></div>
     <div class="section-head"><h2>Pronti, in attesa del cameriere</h2></div>
     <div class="panel"><div class="list" id="k-ready"></div></div>
-    <div class="stack" id="k-histbox" hidden><button type="button" class="btn histbtn" id="k-histbtn" data-hist="k" aria-expanded="false" aria-controls="k-hist"></button><div class="list" id="k-hist" hidden></div></div>
     <details class="panel bstock" id="k-stock-box"><summary>Porzioni</summary>
       <div id="k-stock"></div>
       <div class="msg" id="k-stock-msg"></div>
     </details>
+    <div class="stack" id="k-histbox" hidden><button type="button" class="btn histbtn" id="k-histbtn" data-hist="k" aria-expanded="false" aria-controls="k-hist"></button><div class="list" id="k-hist" hidden></div></div>
   </section>
 
   <!-- USCITA PIATTI -->
@@ -326,11 +326,11 @@
     <div class="kq" id="b-queue"></div>
     <div class="section-head"><h2>Pronte</h2></div>
     <div class="panel"><div class="list" id="b-ready"></div></div>
-    <div class="stack" id="b-histbox" hidden><button type="button" class="btn histbtn" id="b-histbtn" data-hist="b" aria-expanded="false" aria-controls="b-hist"></button><div class="list" id="b-hist" hidden></div></div>
     <details class="panel bstock" id="b-stock-box"><summary>Porzioni</summary>
       <div id="b-stock"></div>
       <div class="msg" id="b-stock-msg"></div>
     </details>
+    <div class="stack" id="b-histbox" hidden><button type="button" class="btn histbtn" id="b-histbtn" data-hist="b" aria-expanded="false" aria-controls="b-hist"></button><div class="list" id="b-hist" hidden></div></div>
   </section>
 
   <!-- LISTINO (master e cassa) -->
