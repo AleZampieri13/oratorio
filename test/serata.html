@@ -54,7 +54,7 @@ function check(c,msg,det){c=!!c;if(c){R.ok++;R.checks.push("OK  "+msg)}else{R.ko
 function issue(m){R.issues.push(m);log("⚠ "+m,"warn")}
 const F={};
 function addDev(name,label){return new Promise(res=>{const w=document.createElement("div");w.className="dev";w.innerHTML=`<div class="lbl">${label}</div>`;
-  const f=document.createElement("iframe");f.src=(EMU?"emu/":"")+"index.html?dev="+name+(EMU?"#k="+EMU_KEY:"");f.title=label;f.onload=()=>res();w.appendChild(f);$devs.appendChild(w);F[name]=f})}
+  const f=document.createElement("iframe");f.src=(EMU?"emu/":"")+"index.html?dev="+name+(EMU?"#k="+EMU_KEY:"");f.title=label;f.onload=()=>{try{const st=f.contentDocument.createElement("style");st.textContent=".kcard,.kcard *{text-transform:none!important}";f.contentDocument.head.appendChild(st)}catch(e){}res()};w.appendChild(f);$devs.appendChild(w);F[name]=f})}
 const D=n=>F[n].contentDocument,W=n=>F[n].contentWindow;
 async function waitFor(fn,ms,what){const t0=performance.now();ms=ms||4000;while(performance.now()-t0<ms){try{const v=fn();if(v)return v}catch(e){}await sleep(25)}throw new Error("Tempo scaduto: "+(what||String(fn).slice(0,90)))}
 const q=(n,s)=>D(n).querySelector(s),qa=(n,s)=>[...D(n).querySelectorAll(s)];

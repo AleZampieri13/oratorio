@@ -2,6 +2,7 @@
 
 ## 36
 - **Cucina e bar:** nelle schede il nome del piatto è come nell'uscita (grande, maiuscolo, colore del reparto) su una riga sua; numero e «Pronto» sotto.
+- **Cucina, bar e uscita:** nomi dei piatti e quantità più grandi; tutte le scritte delle schede in maiuscolo.
 - **Pronti in parte:** in cucina, al bar e all'uscita, se un piatto chiamato ha 2 o più porzioni il numero è un campo da scrivere («3 di 20»): il tasto diventa «Pronti 3»: quelle vanno al cameriere, le altre restano da preparare come «2ª volta». I tasti «Chiama» / «Pronto» non cambiano più larghezza quando cambia la scritta.
 - **Uscita:** in alto i totali per piatto (pronti da consegnare e in preparazione). Nelle schede di cucina, bar e uscita il tasto è sempre in fondo, alla stessa altezza; in cassa i tasti «Modifica» / «Rettifica» sono allineati.
 - **Camerieri:** «Da chiamare» elenca i piatti (colorati come il loro reparto) invece del numero. Un piatto da chiamare in parte ha il nome sopra e quantità e tasti sotto.

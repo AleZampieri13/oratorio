@@ -491,3 +491,13 @@ ul.kitems li .kbtn{grid-column:3}
 ul.kitems li+li{border-top:1px solid var(--line);padding-top:8px}
 ul.kitems li .kin small{font:700 1rem var(--f-body);text-transform:none;letter-spacing:0}
 ul.kitems li>b{font-size:1.6rem}
+/* cucina, bar e uscita: nomi dei piatti e quantità più grandi */
+ul.kitems li .kin,.kcard .kcourse{font-size:2rem;line-height:1.1}
+.kcard .kcourse .label{font-size:.9rem}
+.kcard .qtyf .qtyin{font-size:1.7rem;width:2.6em;padding:4px 2px}
+.kcard .qtyf .qtyof{font:800 1.7rem var(--f-display)}
+ul.kitems li>b,.kcard li b{font-size:2rem}
+.kcard li{font-size:1.3rem}
+/* cucina, bar e uscita: tutte le scritte delle schede in maiuscolo */
+.kcard{text-transform:uppercase}
+.kcard *:not(.qtyin){text-transform:inherit}
