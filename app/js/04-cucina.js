@@ -27,14 +27,14 @@ function repItems(stato,sc){
 /* pronti in parte (cucina, bar, uscita): −/+ sul numero; il resto resta da preparare come «2ª volta» */
 /* scelte del piatto (Naturale / Frizzante): se ce ne sono 2 o più, ognuna ha il suo numero da segnare pronto */
 const kScList=(o,k)=>toArr(((o.portate||{})[k]||{}).sc).filter(Boolean);
-const kScMode=(o,k)=>kScList(o,k).filter(s=>s.q>0).length>=2;
+const kScMode=(o,k)=>kScList(o,k).some(s=>s.q>0);
 function kScNow(o,k){const L=kScList(o,k),sig=L.map(s=>s.q).join(","),st=S.kNow[o.numero+"|"+k];
   return L.map((s,i)=>st&&st.sig===sig&&st.v?Math.max(0,Math.min(s.q,st.v[i]??s.q)):s.q)}
 function kNowOf(o,k){const q=cop(righeFor(o,k));if(kScMode(o,k)){const t=kScNow(o,k).reduce((a,b)=>a+b,0);return t>=1?Math.min(q,t):q}
   const st=S.kNow[o.numero+"|"+k];return st&&st.q===q?Math.max(1,Math.min(q,st.x)):q}
-function kQtyHtml(o,k){const q=cop(righeFor(o,k));if(q<2)return `<b>${q}</b>`;const key=`${o.numero}|${esc(k)}`;
+function kQtyHtml(o,k){const q=cop(righeFor(o,k)),key=`${o.numero}|${esc(k)}`;
   if(kScMode(o,k)){const v=kScNow(o,k);return `<span class="kscq">${kScList(o,k).map((s,i)=>s.q>0?`<span class="kscr">${qtyField("kqs",`${key}|${i}`,v[i],s.q,`Quante ${s.n} sono pronte`)}<span class="scn">${esc(s.n)}</span></span>`:"").join("")}</span>`}
-  const x=kNowOf(o,k);return qtyField("kqi",key,x,q,`Quanti ${piattoNome(k)} sono pronti`)}
+  if(q<2)return `<b>${q}</b>`;const x=kNowOf(o,k);return qtyField("kqi",key,x,q,`Quanti ${piattoNome(k)} sono pronti`)}
 const prontoLbl=(o,k)=>{const q=cop(righeFor(o,k)),x=kNowOf(o,k);return x<q?`Pronti ${x}`:"Pronto"};
 
 /* divide un piatto chiamato: x restano in questa riga, gli altri vanno in una riga nuova ancora «chiamata» */
@@ -62,7 +62,7 @@ function renderRepView(sc,ids){
     const tn=tintCls(g.items.map(c=>c.k));
     return `<article class="kcard ${late?"late":""}${tn.c}"${tn.s}><div class="top"><span class="n nm">${esc(wn)}</span><span class="age">${ago(g.t)}</span></div>
       <div class="what kcourse"><span class="label">n. ${o.numero}${o.nome?" · "+esc(o.nome):""}</span>${o.asporto&&wn!=="Asporto"?' <span class="pill asp">Asporto</span>':""}</div>
-      <ul class="kitems">${g.items.map(c=>{const q=cop(righeFor(o,c.k));return `<li class="${isLate(c.k,c.t)?"klate":""}" style="--pc:${portColor(c.k)}">${kQtyHtml(o,c.k)}<span class="kin" style="color:${portColor(c.k)}">${esc(c.l)}${scTxt(c.p)&&!(cop(righeFor(o,c.k))>=2&&kScMode(o,c.k))?` <small class="ksc">${scLines(c.p)}</small>`:""}</span>${many?`<button class="btn small kbtn" ${dis(c)} data-rset="${o.numero}|${c.k}|${esc(c.r)}">${prontoLbl(o,c.k)}</button>`:""}</li>`}).join("")}</ul>
+      <ul class="kitems">${g.items.map(c=>{const q=cop(righeFor(o,c.k));return `<li class="${isLate(c.k,c.t)?"klate":""}" style="--pc:${portColor(c.k)}">${kQtyHtml(o,c.k)}<span class="kin" style="color:${portColor(c.k)}">${esc(c.l)}${scTxt(c.p)&&!kScMode(o,c.k)?` <small class="ksc">${scLines(c.p)}</small>`:""}</span>${many?`<button class="btn small kbtn" ${dis(c)} data-rset="${o.numero}|${c.k}|${esc(c.r)}">${prontoLbl(o,c.k)}</button>`:""}</li>`}).join("")}</ul>
       ${o.note?`<div class="note">${esc(o.note)}</div>`:""}
       ${many?`<button class="btn primary big" data-rsetall="${o.numero}|${g.items.map(c=>c.k+"~"+c.r).join(",")}">${g.items.some(c=>kNowOf(o,c.k)<cop(righeFor(o,c.k)))?"Segna pronti questi":"Tutto pronto"}</button>`
         :`<button class="btn primary big" ${dis(g.items[0])} data-rset="${o.numero}|${g.items[0].k}|${esc(g.items[0].r)}">${prontoLbl(o,g.items[0].k)}</button>`}</article>`}).join("")

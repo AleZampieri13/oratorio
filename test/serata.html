@@ -330,7 +330,7 @@ async function cookAct(n){
   if(!unreadyDone&&n==="fritto"&&STAT.pronti>30){const u=q(n,"#k-ready button[data-runready]");if(u){await click(n,u);await click(n,u);unreadyDone=true;log("Il Fritto annulla un «pronto» (ripensamento)")}}
 }
 async function barAct(){if(/Frizzante|Naturale/.test(txt("bar","#b-queue")))STAT.barVedeScelte++;if(/Patatine|Pizzoccheri/i.test(txt("bar","#b-queue")+txt("bar","#b-ready")))STAT.barVedePatatine++;if(/Acqua|Caffè|Vino|Bibita/i.test(txt("bar","#b-queue")))STAT.barLavora++;
-  {const f=qa("bar","#b-queue input.qtyin[data-kqs]").find(x=>+x.value>0);if(f&&rnd()<.3){const [n,k,i]=f.dataset.kqs.split("|"),nome=W("bar").eval(`kScList(orderByNum(${n}),${JSON.stringify(k)})[${i}].n`);
+  {const f=qa("bar","#b-queue input.qtyin[data-kqs]").find(x=>+x.value>0&&[...x.closest(".kscq").querySelectorAll("input.qtyin")].some(y=>y!==x&&+y.value>0));if(f&&rnd()<.3){const [n,k,i]=f.dataset.kqs.split("|"),nome=W("bar").eval(`kScList(orderByNum(${n}),${JSON.stringify(k)})[${i}].n`);
     await type("bar",f,"0");const rb=await waitFor(()=>qa("bar","#b-queue button[data-rset]:not([disabled])").find(x=>x.dataset.rset.startsWith(n+"|"+k+"|"))||qa("bar","#b-queue button[data-rsetall]:not([disabled])").find(x=>x.dataset.rsetall.startsWith(n+"|")),3000,"pronti per scelta");
     await click("bar",rb);await sleep(40);const rest=W("bar").eval(`Object.entries(orderByNum(${n}).portate).filter(([kk,p])=>kBase(kk)===kBase(${JSON.stringify(k)})&&kk!==${JSON.stringify(k)}&&p.stato==="chiamata").some(([kk,p])=>toArr(p.sc).some(x=>x&&x.n===${JSON.stringify(nome)}&&x.q>0))`);
     if(rest)STAT.kScParz++;else STAT.kScParzKo++}}
