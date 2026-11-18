@@ -474,3 +474,8 @@ ul.kitems li.klate small{color:var(--danger);font-weight:700}
 .wpart .wpn{font-weight:700}
 .wpart .wbar{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .wleft b{font-weight:800}
+/* tasti che non cambiano larghezza quando cambia la scritta («Chiama» / «Chiama 2», «Pronto» / «Pronti 3») */
+.wcall{min-width:7.2em}
+.kbtn{min-width:6.6em}
+.row.nowrap{flex-wrap:nowrap;align-items:center;gap:8px}
+ul.kitems li .kqty{flex:none}

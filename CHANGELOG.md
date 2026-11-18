@@ -1,6 +1,7 @@
 # Versioni
 
 ## 36
+- **Pronti in parte:** in cucina, al bar e all'uscita, se un piatto chiamato ha 2 o più porzioni il numero ha − e +. Abbassandolo il tasto diventa «Pronti 3»: quelle vanno al cameriere, le altre restano da preparare come «2ª volta». I tasti «Chiama» / «Pronto» non cambiano più larghezza quando cambia la scritta.
 - **Uscita:** in alto i totali per piatto (pronti da consegnare e in preparazione). Nelle schede di cucina, bar e uscita il tasto è sempre in fondo, alla stessa altezza; in cassa i tasti «Modifica» / «Rettifica» sono allineati.
 - **Camerieri:** «Da chiamare» elenca i piatti (colorati come il loro reparto) invece del numero. Un piatto da chiamare in parte ha il nome sopra e quantità e tasti sotto.
 - **Cassa:** scritte più grandi, riquadri come nelle altre pagine. Tutte le pagine possono essere larghe fino a 1400 px.
