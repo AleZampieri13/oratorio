@@ -489,7 +489,7 @@ ul.kitems li{display:grid;grid-template-columns:auto 1fr auto;align-items:center
 ul.kitems li .kin{grid-column:1 / -1;grid-row:1;font:800 1.6rem/1.15 var(--f-display);text-transform:uppercase;letter-spacing:.02em;overflow-wrap:break-word;min-width:0}
 ul.kitems li .kbtn{grid-column:3}
 ul.kitems li+li{border-top:1px solid var(--line);padding-top:8px}
-ul.kitems li .kin small{font:700 1rem var(--f-body);text-transform:none;letter-spacing:0}
+ul.kitems li .kin small{font:700 1rem var(--f-body);letter-spacing:0}
 ul.kitems li>b{font-size:1.6rem}
 /* cucina, bar e uscita: nomi dei piatti e quantità più grandi */
 ul.kitems li .kin,.kcard .kcourse{font-size:2rem;line-height:1.1}
@@ -498,6 +498,12 @@ ul.kitems li .kin,.kcard .kcourse{font-size:2rem;line-height:1.1}
 .kcard .qtyf .qtyof{font:800 1.7rem var(--f-display)}
 ul.kitems li>b,.kcard li b{font-size:2rem}
 .kcard li{font-size:1.3rem}
-/* cucina, bar e uscita: tutte le scritte delle schede in maiuscolo */
-.kcard{text-transform:uppercase}
-.kcard *:not(.qtyin){text-transform:inherit}
+/* tutte le scritte in maiuscolo (non i campi dove si scrive) */
+body{text-transform:uppercase}
+body *{text-transform:inherit}
+input,textarea,[contenteditable]{text-transform:none}
+/* schede colorate come la portata, più chiare; se i piatti sono di reparti diversi, ogni riga ha il suo colore */
+.kcard.tint{background:color-mix(in srgb,var(--pc) 16%,var(--surface));border-color:color-mix(in srgb,var(--pc) 45%,var(--line))}
+.kcard.tint:not(.late){border-left-color:var(--pc)}
+.kcard.mixed li{background:color-mix(in srgb,var(--pc) 16%,var(--surface));border-radius:10px;padding:6px 8px}
+.kcard.mixed ul.kitems li+li{border-top:0;padding-top:6px}

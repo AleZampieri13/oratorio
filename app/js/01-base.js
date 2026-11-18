@@ -311,6 +311,8 @@ function singChips(ss){return (ss||[]).map(r=>`<span class="chip">${r.qta} ${esc
 const PORT_COLORS=["#0f766e","#b45309","#7c3aed","#be123c","#1d4ed8","#4d7c0f","#a21caf","#0e7490"];
 /* colori per reparto: ogni piatto prende il colore del suo reparto (cucina, uscita, bar, cameriere) */
 function repColor(rid){const i=repList().findIndex(r=>r.id===rid);const r=repList()[i];return (r&&r.colore)||PORT_COLORS[(i<0?0:i)%PORT_COLORS.length]}
+/* scheda colorata come la portata (se i piatti hanno tutti lo stesso colore); altrimenti ogni riga ha il suo */
+function tintCls(ks){const u=[...new Set(ks.map(portColor))];return u.length===1?{c:" tint",s:` style="--pc:${u[0]}"`}:{c:" mixed",s:""}}
 function portColor(pid){const b=kBase(pid),i=S.portate.findIndex(p=>p.id===b);const p=S.portate[i];if(p&&p.rep)return repColor(p.rep);return (p&&p.colore)||PORT_COLORS[(i<0?0:i)%PORT_COLORS.length]}
 function usedFor(pid){return ordersArr().reduce((a,o)=>a+(Object.keys(o.portate||{}).some(k=>kBase(k)===pid)?cop(righeAll(o,pid)):0),0)}
 function stockLeft(pid){const lim=S.scorte[pid];return (lim==null||lim==="")?null:lim-usedFor(pid)}
