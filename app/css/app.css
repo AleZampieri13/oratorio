@@ -483,9 +483,11 @@ ul.kitems li .kqty{flex:none}
 .qtyf{display:inline-flex;align-items:baseline;gap:4px;flex:none;margin-right:6px}
 .qtyf .qtyin{width:3.4em;padding:6px 4px;text-align:center;font:800 1.15rem var(--f-display);font-variant-numeric:tabular-nums}
 .qtyf .qtyof{color:var(--ink);font-weight:700;white-space:nowrap}
-/* cucina, bar e uscita: nomi dei piatti nelle schede più grandi */
-.kcard li{font-size:1.4rem;line-height:1.2}
-.kcard li b{font-size:1.5rem}
-ul.kitems li .kin,.kcard li>span[style]{font:800 1.4rem/1.2 var(--f-display);overflow-wrap:anywhere;min-width:0}
-.kcard li small,.kcard li .ksc{font-size:1rem}
-.kcard .qtyf .qtyin{font-size:1.3rem}
+/* cucina e bar: nome del piatto come nell'uscita (grande, maiuscolo, colore del reparto) */
+ul.kitems{gap:8px}
+ul.kitems li{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:4px 8px}
+ul.kitems li .kin{grid-column:1 / -1;grid-row:1;font:800 1.6rem/1.15 var(--f-display);text-transform:uppercase;letter-spacing:.02em;overflow-wrap:break-word;min-width:0}
+ul.kitems li .kbtn{grid-column:3}
+ul.kitems li+li{border-top:1px solid var(--line);padding-top:8px}
+ul.kitems li .kin small{font:700 1rem var(--f-body);text-transform:none;letter-spacing:0}
+ul.kitems li>b{font-size:1.6rem}
