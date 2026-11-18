@@ -538,3 +538,16 @@ ul.kitems li:has(.kscq) .kbtn{grid-column:2}
 .oacts .btn.small{min-height:52px;font-size:1rem}
 /* numero dell'ordine più grande nelle schede di cucina, bar e uscita */
 .kcard .kcourse .label .onum{font:800 1.5rem/1.1 var(--f-display);color:var(--ink);letter-spacing:.02em;vertical-align:-2px}
+/* riga dell'ordine: numero grande, poi fila e cliente; se il cliente non ci sta va intero sotto */
+.kcard .oline{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:10px;row-gap:2px;font-size:1rem;text-transform:uppercase}
+.kcard .oline .onum{font:800 1.9rem/1.1 var(--f-display);color:var(--ink);letter-spacing:.02em;white-space:nowrap}
+.kcard .oline .ocli{font:800 1.35rem/1.15 var(--f-display);color:var(--ink);letter-spacing:.02em;overflow-wrap:anywhere;min-width:0;opacity:.9}
+.kcard .oline .label{font-size:.95rem}
+/* posizioni fisse: nelle schede della stessa riga nome, ordine, piatti e tasto partono alla stessa altezza */
+@supports (grid-template-rows:subgrid){
+  .kq>.kcard{display:grid;grid-row:span 4;grid-template-rows:subgrid;row-gap:10px;align-content:stretch}
+  .kq>.kcard>.top{align-self:start}
+  .kq>.kcard>.kcourse{align-self:start;margin:0}
+  .kq>.kcard>.kbody{display:flex;flex-direction:column;gap:10px;min-width:0;align-self:start}
+  .kq>.kcard>:last-child{align-self:end;margin-top:0}
+}
