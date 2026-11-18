@@ -197,7 +197,7 @@ async function setup(){
 
 /* ---------------- SERVIZIO ---------------- */
 const L={};CASSE.forEach(c=>L[c.dev]={contanti:0,pos:0});
-const ORD=[],STAT={kScParz:0,kScParzKo:0,kParz:0,divisi:0,parz:0,scalati:0,aspTutto:0,aspConsegnati:0,cambi:0,scelteMosse:0,barVedeScelte:0,prontoUscita:0,aspUscita:0,contiDivisi:0,divisiPiatti:0,divisiPiattiKo:[],offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
+const ORD=[],STAT={uniti:0,doppi:0,kScParz:0,kScParzKo:0,kParz:0,divisi:0,parz:0,scalati:0,aspTutto:0,aspConsegnati:0,cambi:0,scelteMosse:0,barVedeScelte:0,prontoUscita:0,aspUscita:0,contiDivisi:0,divisiPiatti:0,divisiPiattiKo:[],offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
 const queueFor={};CAM.forEach(c=>queueFor[c.dev]=[]);
 let noDessert=false;
 function plan(){
@@ -318,7 +318,10 @@ async function waiterAct(w){
   const plus=c.querySelector('.wsc button[data-d="1"]:not([disabled])');if(plus&&rnd()<.5){await click(w,plus);STAT.scelteMosse++;return true}
   const all=c.querySelector("button[data-callall]:not([disabled])");
   if(all&&rnd()<.5){await click(w,all);STAT.chiamateTutto++;STAT.chiamate++;return true}
-  STAT.chiamate++;await click(w,rnd()<.75?own[0]:pick(own));return true;
+  const bt=rnd()<.75?own[0]:pick(own),[bn,bk]=bt.dataset.set.split("|");
+  const exp=W(w).eval(`(()=>{const o=orderByNum(${bn}),k=${JSON.stringify(bk)},b=kBase(k);return Object.entries(o.portate||{}).some(([x,p])=>x!==k&&kBase(x)===b&&p.stato==="chiamata"&&Object.values(p.rep||{}).every(v=>!v||v.s==="chiamata"))})()`);
+  STAT.chiamate++;await click(w,bt);
+  if(exp){await sleep(60);const gone=W(w).eval(`!(orderByNum(${bn}).portate||{})[${JSON.stringify(bk)}]`);if(gone)STAT.uniti++;else STAT.doppi++}return true;
 }
 let unreadyDone=false;
 async function cookAct(n){
@@ -503,6 +506,7 @@ async function closing(){
    const served=O_.filter(o=>Object.entries(o.portate).some(([k,p])=>/~\d+$/.test(k)&&p.stato==="servita")).length;
    check(STAT.divisi>0&&O_.length>0&&ok&&served>0,`«Una parte dopo»: ${O_.length} ordini con un piatto chiamato in due volte (es. 1 acqua adesso, 1 dopo); le quantità tornano e la seconda volta arriva (${served})`)}
   check(STAT.kScParz>0&&STAT.kScParzKo===0,`Bar: pronte solo alcune scelte (es. 1 Naturale e 0 Frizzante): ${STAT.kScParz} volte la scelta tolta è rimasta da preparare`+(STAT.kScParzKo?` · ${STAT.kScParzKo} volte no`:""));
+  check(STAT.uniti>0&&STAT.doppi===0,`Stesso piatto chiamato due volte mentre il primo era ancora da preparare: unito in una riga sola (${STAT.uniti} volte)`+(STAT.doppi?` · ${STAT.doppi} volte restavano due righe`:""));
   check(STAT.kParz>0,`Cucina: pronti in parte ${STAT.kParz} volte (es. 3 Pizzoccheri su 6), il resto è rimasto da preparare ed è arrivato`);
   check(STAT.prontoUscita>0,`L'uscita segna «Pronto» da sola: ${STAT.prontoUscita} piatti`);
   check(STAT.aspUscita>0,"L'uscita vede anche gli asporti mandati subito in cucina");

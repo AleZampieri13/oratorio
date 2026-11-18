@@ -532,3 +532,4 @@ ul.kitems li:has(.kscq) .kbtn{grid-column:2}
 .row.nowrap:has(.kscq){flex-wrap:wrap;justify-content:flex-end}
 /* tasti «Pronto» dei singoli piatti più grandi */
 .btn.small.kbtn{min-height:52px;padding:10px 18px;font-size:1.15rem;min-width:7.5em}
+.kscr .kscn{font:800 1.7rem/1 var(--f-display);color:var(--ink);margin-right:6px;font-variant-numeric:tabular-nums}

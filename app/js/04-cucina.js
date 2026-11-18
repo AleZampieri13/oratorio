@@ -33,7 +33,7 @@ function kScNow(o,k){const L=kScList(o,k),sig=L.map(s=>s.q).join(","),st=S.kNow[
 function kNowOf(o,k){const q=cop(righeFor(o,k));if(kScMode(o,k)){const t=kScNow(o,k).reduce((a,b)=>a+b,0);return t>=1?Math.min(q,t):q}
   const st=S.kNow[o.numero+"|"+k];return st&&st.q===q?Math.max(1,Math.min(q,st.x)):q}
 function kQtyHtml(o,k){const q=cop(righeFor(o,k)),key=`${o.numero}|${esc(k)}`;
-  if(kScMode(o,k)){const v=kScNow(o,k);return `<span class="kscq">${kScList(o,k).map((s,i)=>s.q>0?`<span class="kscr">${qtyField("kqs",`${key}|${i}`,v[i],s.q,`Quante ${s.n} sono pronte`)}<span class="scn">${esc(s.n)}</span></span>`:"").join("")}</span>`}
+  if(kScMode(o,k)){const v=kScNow(o,k);return `<span class="kscq">${kScList(o,k).map((s,i)=>s.q>0?`<span class="kscr">${q<2?`<b class="kscn">${s.q}</b>`:qtyField("kqs",`${key}|${i}`,v[i],s.q,`Quante ${s.n} sono pronte`)}<span class="scn">${esc(s.n)}</span></span>`:"").join("")}</span>`}
   if(q<2)return `<b>${q}</b>`;const x=kNowOf(o,k);return qtyField("kqi",key,x,q,`Quanti ${piattoNome(k)} sono pronti`)}
 const prontoLbl=(o,k)=>{const q=cop(righeFor(o,k)),x=kNowOf(o,k);return x<q?`Pronti ${x}`:"Pronto"};
 
