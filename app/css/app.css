@@ -482,4 +482,4 @@ ul.kitems li .kqty{flex:none}
 /* campo della quantità («3 di 20») */
 .qtyf{display:inline-flex;align-items:baseline;gap:4px;flex:none;margin-right:6px}
 .qtyf .qtyin{width:3.4em;padding:6px 4px;text-align:center;font:800 1.15rem var(--f-display);font-variant-numeric:tabular-nums}
-.qtyf small{color:var(--muted);font-weight:700;white-space:nowrap}
+.qtyf .qtyof{color:var(--ink);font-weight:700;white-space:nowrap}

@@ -144,7 +144,7 @@ function cardAction(o){
   const left=cs.filter(isTodo).length;
   if(!cs.length)return out.join("")||`<div class="wait big ok">Finito</div>`;
   if(cs.every(c=>c.p.stato==="servita")&&!out.length)out.push(`<div class="wait big ok">Finito</div>`);
-  if(left)out.push(`<div class="sub wleft">Da chiamare: ${cs.filter(isTodo).map(c=>`<b style="color:${portColor(c.k)}">${esc(c.l)}</b>`).join(", ")}</div>`);
+  if(left)out.push(`<div class="sub wleft">Da chiamare: ${[...new Map(cs.filter(isTodo).map(c=>[kBase(c.k),c])).values()].map(c=>`<b style="color:${portColor(c.k)}">${esc(c.l)}</b>`).join(", ")}</div>`);
   const reps=wReps(o);
   let cur=S.wTab[n];if(!reps.includes(cur))cur=reps.find(r=>cs.some(c=>repOfC(o,c)===r&&isTodo(c)))||reps[0];
   const tabs=reps.length>1?`<div class="rtabs" role="tablist">${reps.map(r=>{const rc=cs.filter(c=>repOfC(o,c)===r),todo=rc.some(isTodo),ok=rc.every(c=>c.p.stato==="servita");

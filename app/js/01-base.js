@@ -256,7 +256,7 @@ $("toast").addEventListener("click",e=>{const el=$("toast");el.hidden=true;
 /* portate */
 /* un piatto chiamato in più volte: la chiave «piatto~2» è la seconda volta, «piatto~3» la terza */
 /* campo con il numero da chiamare (camerieri) o da segnare pronto (cucina, bar, uscita): «3 di 20» */
-function qtyField(kind,key,x,q,label){return `<span class="qtyf"><input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="3" class="qtyin" data-${kind}="${key}" value="${x}" aria-label="${esc(label)} (su ${q})"><small>di ${q}</small></span>`}
+function qtyField(kind,key,x,q,label){return `<span class="qtyf"><input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="3" class="qtyin" data-${kind}="${key}" value="${x}" aria-label="${esc(label)} (su ${q})"><span class="qtyof">/ ${q}</span></span>`}
 function kBase(k){return String(k).split("~")[0]}
 function kRound(k){const m=/~(\d+)$/.exec(String(k));return m?+m[1]:1}
 function portataCfg(k){const b=kBase(k);return S.portate.find(p=>p.id===b)}
@@ -280,7 +280,7 @@ function scDefault(o,k){const s=scelteOf(k),n=cop(righeFor(o,k));return s.length
 function scTxt(p){return toArr(p&&p.sc).filter(x=>x&&x.q>0).map(x=>`${x.q} ${x.n}`).join(" · ")}
 function orderCourses(o){
   const ps=o.portate||{};
-  return Object.keys(ps).map(k=>{const c=portataCfg(k);const idx=S.portate.indexOf(c),rn=kRound(k);return {k,l:((c&&c.nome)||ps[k].nome||k)+(rn>1?` · ${rn}ª volta`:""),ord:(idx<0?100+(ps[k].ord||0):idx)+(rn-1)/100,p:ps[k]}}).sort((a,b)=>a.ord-b.ord);
+  return Object.keys(ps).map(k=>{const c=portataCfg(k);const idx=S.portate.indexOf(c),rn=kRound(k);return {k,l:(c&&c.nome)||ps[k].nome||k,ord:(idx<0?100+(ps[k].ord||0):idx)+(rn-1)/100,p:ps[k]}}).sort((a,b)=>a.ord-b.ord);
 }
 function singoli(o){const r=o&&o.singoli;return (Array.isArray(r)?r:Object.values(r||{})).filter(Boolean)}
 /* o.dopo = {"piatto~2": quanti, ...}: quelli tenuti per dopo; la prima volta prende il resto (almeno 1) */
