@@ -453,8 +453,6 @@ ul.kitems li .kin{flex:1;font-weight:700}
 .ccard.cdone .note{display:none}
 #sndtest{padding-left:10px;padding-right:10px}
 /* piatto in ritardo rispetto al suo «Pronto entro» */
-ul.kitems li.klate .kin{text-decoration:underline wavy var(--danger);text-underline-offset:4px}
-ul.kitems li.klate small{color:var(--danger);font-weight:700}
 /* cassa: conto diviso in parti */
 #c-parts .part{display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid var(--line);border-radius:var(--r)}
 #c-parts .part .row{gap:8px;align-items:center;flex-wrap:wrap}
@@ -489,7 +487,6 @@ ul.kitems li{display:grid;grid-template-columns:auto 1fr auto;align-items:center
 ul.kitems li .kin{grid-column:1 / -1;grid-row:1;font:800 1.6rem/1.15 var(--f-display);text-transform:uppercase;letter-spacing:.02em;overflow-wrap:break-word;min-width:0}
 ul.kitems li .kbtn{grid-column:3}
 ul.kitems li+li{border-top:1px solid var(--line);padding-top:8px}
-ul.kitems li .kin small{font:700 1rem var(--f-body);letter-spacing:0}
 ul.kitems li>b{font-size:1.6rem}
 /* cucina, bar e uscita: nomi dei piatti e quantità più grandi */
 ul.kitems li .kin,.kcard .kcourse{font-size:2rem;line-height:1.1}
@@ -512,3 +509,10 @@ input,textarea,[contenteditable]{text-transform:none}
 /* totali in alto: i nomi lunghi in maiuscolo vanno a capo invece di uscire dal riquadro */
 .ksum div{min-width:0}
 .ksum .label{display:block;overflow-wrap:break-word;letter-spacing:0}
+/* scelte (Naturale / Frizzante) con lo stesso stile del piatto: stesso colore e carattere, un po' più piccole */
+.kcard .ksc{display:block;font:800 1.3rem/1.2 var(--f-display);letter-spacing:.02em;color:var(--pc,inherit);margin-top:2px}
+ul.kitems li .kin .ksc{color:inherit}
+/* la scheda in ritardo tiene il bordo rosso anche se colorata */
+.kcard.tint.late{border-left-color:var(--danger)}
+/* asporto all'uscita: nome del piatto grande come nelle altre schede */
+.kcard li>span.aspn{font:800 1.6rem/1.15 var(--f-display);letter-spacing:.02em}

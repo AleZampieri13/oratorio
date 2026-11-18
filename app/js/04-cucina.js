@@ -176,7 +176,7 @@ function renderUscita(){
     const tn=tintCls(cs.map(c=>c.k));
     return `<article class="kcard ${stale?"late":""}${tn.c}"${tn.s}><div class="top"><span class="n nm">Asporto</span><span class="age">pronto ${ago(t)==="adesso"?"adesso":"da "+ago(t)}</span></div>
       <div class="what kcourse"><span class="label">n. ${o.numero}${o.nome?" · "+esc(o.nome):""} · tutto insieme, ${n} ${n===1?"piatto":"piatti"}</span></div>
-      <ul>${cs.map(c=>`<li style="--pc:${portColor(c.k)}"><b>${cop(righeFor(o,c.k))}</b><span style="color:${portColor(c.k)};font-weight:700">${esc(c.l)}</span>${scTxt(c.p)?` <small class="ksc">${esc(scTxt(c.p))}</small>`:""}</li>`).join("")}</ul>
+      <ul>${cs.map(c=>`<li style="--pc:${portColor(c.k)}"><b>${cop(righeFor(o,c.k))}</b><span class="aspn" style="color:${portColor(c.k)}">${esc(c.l)}</span>${scTxt(c.p)?` <small class="ksc">${esc(scTxt(c.p))}</small>`:""}</li>`).join("")}</ul>
       ${o.note?`<div class="note">${esc(o.note)}</div>`:""}
       <button class="btn go big" ${cs.some(c=>S.pending.has(o.numero+"|"+c.k))?"disabled":""} data-ocons="${o.numero}">Consegnato tutto</button></article>`};
   /* totali per piatto: pronti da consegnare e in preparazione */
