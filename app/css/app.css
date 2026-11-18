@@ -518,3 +518,8 @@ ul.kitems li .kin .ksc{color:inherit}
 .kcard li>span.aspn{font:800 1.6rem/1.15 var(--f-display);letter-spacing:.02em}
 /* ogni scelta su una riga */
 .ksc .scl{display:block}
+/* pronti in parte per scelta: un campo per ogni scelta («1 / 4 NATURALE») */
+.kscq{display:flex;flex-direction:column;gap:4px}
+.kscr{display:flex;align-items:center;gap:2px;color:var(--pc,inherit);font:800 1.3rem/1.2 var(--f-display);letter-spacing:.02em}
+.kscr .qtyf{margin-right:4px}
+.kscr .scn{margin-left:4px}

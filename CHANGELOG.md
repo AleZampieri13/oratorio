@@ -7,6 +7,7 @@
 - **Cucina, bar e uscita:** niente più righe del menù («3 Standard · 1 Bambini»): sulle schede e nei totali c'è solo il numero di piatti (es. «4 Pizzoccheri»); restano le scelte (Naturale / Frizzante).
 - **Scelte e ritardi:** le scelte (es. «6 Naturale») hanno lo stesso colore e carattere del piatto, un po' più piccole (prima diventavano rosse sui piatti in ritardo). Tolta la sottolineatura rossa dei piatti in ritardo: resta il bordo rosso della scheda.
 - **Scelte una per riga** nelle schede di cucina, bar e uscita («4 Naturale», sotto «1 Frizzante»).
+- **Pronti in parte per scelta:** in cucina, al bar e all'uscita, se un piatto ha 2 o più scelte ogni scelta ha il suo campo («1 / 4 Naturale», «0 / 1 Frizzante»): «Pronti 1» segna pronte solo quelle, le altre restano da preparare con la loro scelta.
 - **Pronti in parte:** in cucina, al bar e all'uscita, se un piatto chiamato ha 2 o più porzioni il numero è un campo da scrivere («3 di 20»): il tasto diventa «Pronti 3»: quelle vanno al cameriere, le altre restano da preparare come «2ª volta». I tasti «Chiama» / «Pronto» non cambiano più larghezza quando cambia la scritta.
 - **Uscita:** in alto i totali per piatto (pronti da consegnare e in preparazione). Nelle schede di cucina, bar e uscita il tasto è sempre in fondo, alla stessa altezza; in cassa i tasti «Modifica» / «Rettifica» sono allineati.
 - **Camerieri:** «Da chiamare» elenca i piatti (colorati come il loro reparto) invece del numero. Un piatto da chiamare in parte ha il nome sopra e quantità e tasti sotto.

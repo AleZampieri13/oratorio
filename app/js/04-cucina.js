@@ -25,22 +25,29 @@ function repItems(stato,sc){
   return out.sort((a,b)=>a.t-b.t);
 }
 /* pronti in parte (cucina, bar, uscita): −/+ sul numero; il resto resta da preparare come «2ª volta» */
-function kNowOf(o,k){const q=cop(righeFor(o,k)),st=S.kNow[o.numero+"|"+k];return st&&st.q===q?Math.max(1,Math.min(q,st.x)):q}
-function kQtyHtml(o,k){const q=cop(righeFor(o,k));if(q<2)return `<b>${q}</b>`;const x=kNowOf(o,k),key=`${o.numero}|${esc(k)}`;
-  return qtyField("kqi",key,x,q,`Quanti ${piattoNome(k)} sono pronti`)}
+/* scelte del piatto (Naturale / Frizzante): se ce ne sono 2 o più, ognuna ha il suo numero da segnare pronto */
+const kScList=(o,k)=>toArr(((o.portate||{})[k]||{}).sc).filter(Boolean);
+const kScMode=(o,k)=>kScList(o,k).filter(s=>s.q>0).length>=2;
+function kScNow(o,k){const L=kScList(o,k),sig=L.map(s=>s.q).join(","),st=S.kNow[o.numero+"|"+k];
+  return L.map((s,i)=>st&&st.sig===sig&&st.v?Math.max(0,Math.min(s.q,st.v[i]??s.q)):s.q)}
+function kNowOf(o,k){const q=cop(righeFor(o,k));if(kScMode(o,k)){const t=kScNow(o,k).reduce((a,b)=>a+b,0);return t>=1?Math.min(q,t):q}
+  const st=S.kNow[o.numero+"|"+k];return st&&st.q===q?Math.max(1,Math.min(q,st.x)):q}
+function kQtyHtml(o,k){const q=cop(righeFor(o,k));if(q<2)return `<b>${q}</b>`;const key=`${o.numero}|${esc(k)}`;
+  if(kScMode(o,k)){const v=kScNow(o,k);return `<span class="kscq">${kScList(o,k).map((s,i)=>s.q>0?`<span class="kscr">${qtyField("kqs",`${key}|${i}`,v[i],s.q,`Quante ${s.n} sono pronte`)}<span class="scn">${esc(s.n)}</span></span>`:"").join("")}</span>`}
+  const x=kNowOf(o,k);return qtyField("kqi",key,x,q,`Quanti ${piattoNome(k)} sono pronti`)}
 const prontoLbl=(o,k)=>{const q=cop(righeFor(o,k)),x=kNowOf(o,k);return x<q?`Pronti ${x}`:"Pronto"};
 
 /* divide un piatto chiamato: x restano in questa riga, gli altri vanno in una riga nuova ancora «chiamata» */
-async function splitCalled(n,k,x){const o=orderByNum(n),p=o&&o.portate&&o.portate[k];if(!p||p.stato!=="chiamata")return false;
+async function splitCalled(n,k,x,scx){const o=orderByNum(n),p=o&&o.portate&&o.portate[k];if(!p||p.stato!=="chiamata")return false;
   const q=cop(righeFor(o,k)),later=q-x;if(!(x>=1&&later>=1))return true;
   const b=kBase(k),D=o.dopo||{},used=[...Object.keys(o.portate),...Object.keys(D)].filter(y=>kBase(y)===b).map(kRound),nk=b+"~"+(Math.max(1,...used)+1);
-  const sc=toArr(p.sc).filter(Boolean);let a=x;const sc1=[],sc2=[];sc.forEach(s=>{const t=Math.min(s.q,a);a-=t;sc1.push({n:s.n,q:t});sc2.push({n:s.n,q:s.q-t})});
+  const sc=toArr(p.sc).filter(Boolean);let a=x;const sc1=[],sc2=[];sc.forEach((s,i)=>{const t=scx?Math.min(s.q,scx[i]||0):Math.min(s.q,a);a-=t;sc1.push({n:s.n,q:t});sc2.push({n:s.n,q:s.q-t})});
   const rep=p.rep?Object.fromEntries(Object.entries(p.rep).map(([r,v])=>{const y={...v,s:"chiamata"};delete y.t;return [r,y]})):null;
   const nx={...p,stato:"chiamata"};if(rep)nx.rep=rep;if(sc.length)nx.sc=sc2;
   const upd={["dopo/"+nk]:later,["portate/"+nk]:nx};if(k!==b)upd["dopo/"+k]=(D[k]||0)-later;if(sc.length)upd["portate/"+k+"/sc"]=sc1;
   try{await R("ordini/"+n).update(upd);delete S.kNow[n+"|"+k];return true}catch(e){showBanner(errText(e));return false}}
 /* prima di segnare pronto: se il numero è stato abbassato, divide; ritorna [quanti pronti, quanti restano] */
-async function prepPart(n,k){const o=orderByNum(n);if(!o)return null;const q=cop(righeFor(o,k)),x=kNowOf(o,k);if(x>=q)return [q,0];return (await splitCalled(n,k,x))?[x,q-x]:null}
+async function prepPart(n,k){const o=orderByNum(n);if(!o)return null;const q=cop(righeFor(o,k)),x=kNowOf(o,k);if(x>=q)return [q,0];return (await splitCalled(n,k,x,kScMode(o,k)?kScNow(o,k):null))?[x,q-x]:null}
 const partToast=(n,k,r)=>{const o=orderByNum(n);toast(`${o?kWho(o,o.portate&&o.portate[k])+" · ":""}${r[0]} ${piattoNome(k)} pronti · ${r[1]} ancora da preparare`,{ms:5000})};
 /* chiamate di un gruppo di reparti, raggruppate per cliente (usato da cucina e bar) */
 function renderRepView(sc,ids){
@@ -55,7 +62,7 @@ function renderRepView(sc,ids){
     const tn=tintCls(g.items.map(c=>c.k));
     return `<article class="kcard ${late?"late":""}${tn.c}"${tn.s}><div class="top"><span class="n nm">${esc(wn)}</span><span class="age">${ago(g.t)}</span></div>
       <div class="what kcourse"><span class="label">n. ${o.numero}${o.nome?" · "+esc(o.nome):""}</span>${o.asporto&&wn!=="Asporto"?' <span class="pill asp">Asporto</span>':""}</div>
-      <ul class="kitems">${g.items.map(c=>{const q=cop(righeFor(o,c.k));return `<li class="${isLate(c.k,c.t)?"klate":""}" style="--pc:${portColor(c.k)}">${kQtyHtml(o,c.k)}<span class="kin" style="color:${portColor(c.k)}">${esc(c.l)}${scTxt(c.p)?` <small class="ksc">${scLines(c.p)}</small>`:""}</span>${many?`<button class="btn small kbtn" ${dis(c)} data-rset="${o.numero}|${c.k}|${esc(c.r)}">${prontoLbl(o,c.k)}</button>`:""}</li>`}).join("")}</ul>
+      <ul class="kitems">${g.items.map(c=>{const q=cop(righeFor(o,c.k));return `<li class="${isLate(c.k,c.t)?"klate":""}" style="--pc:${portColor(c.k)}">${kQtyHtml(o,c.k)}<span class="kin" style="color:${portColor(c.k)}">${esc(c.l)}${scTxt(c.p)&&!(cop(righeFor(o,c.k))>=2&&kScMode(o,c.k))?` <small class="ksc">${scLines(c.p)}</small>`:""}</span>${many?`<button class="btn small kbtn" ${dis(c)} data-rset="${o.numero}|${c.k}|${esc(c.r)}">${prontoLbl(o,c.k)}</button>`:""}</li>`}).join("")}</ul>
       ${o.note?`<div class="note">${esc(o.note)}</div>`:""}
       ${many?`<button class="btn primary big" data-rsetall="${o.numero}|${g.items.map(c=>c.k+"~"+c.r).join(",")}">${g.items.some(c=>kNowOf(o,c.k)<cop(righeFor(o,c.k)))?"Segna pronti questi":"Tutto pronto"}</button>`
         :`<button class="btn primary big" ${dis(g.items[0])} data-rset="${o.numero}|${g.items[0].k}|${esc(g.items[0].r)}">${prontoLbl(o,g.items[0].k)}</button>`}</article>`}).join("")

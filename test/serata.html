@@ -197,7 +197,7 @@ async function setup(){
 
 /* ---------------- SERVIZIO ---------------- */
 const L={};CASSE.forEach(c=>L[c.dev]={contanti:0,pos:0});
-const ORD=[],STAT={kParz:0,divisi:0,parz:0,scalati:0,aspTutto:0,aspConsegnati:0,cambi:0,scelteMosse:0,barVedeScelte:0,prontoUscita:0,aspUscita:0,contiDivisi:0,divisiPiatti:0,divisiPiattiKo:[],offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
+const ORD=[],STAT={kScParz:0,kScParzKo:0,kParz:0,divisi:0,parz:0,scalati:0,aspTutto:0,aspConsegnati:0,cambi:0,scelteMosse:0,barVedeScelte:0,prontoUscita:0,aspUscita:0,contiDivisi:0,divisiPiatti:0,divisiPiattiKo:[],offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
 const queueFor={};CAM.forEach(c=>queueFor[c.dev]=[]);
 let noDessert=false;
 function plan(){
@@ -330,6 +330,10 @@ async function cookAct(n){
   if(!unreadyDone&&n==="fritto"&&STAT.pronti>30){const u=q(n,"#k-ready button[data-runready]");if(u){await click(n,u);await click(n,u);unreadyDone=true;log("Il Fritto annulla un «pronto» (ripensamento)")}}
 }
 async function barAct(){if(/Frizzante|Naturale/.test(txt("bar","#b-queue")))STAT.barVedeScelte++;if(/Patatine|Pizzoccheri/i.test(txt("bar","#b-queue")+txt("bar","#b-ready")))STAT.barVedePatatine++;if(/Acqua|Caffè|Vino|Bibita/i.test(txt("bar","#b-queue")))STAT.barLavora++;
+  {const f=qa("bar","#b-queue input.qtyin[data-kqs]").find(x=>+x.value>0);if(f&&rnd()<.3){const [n,k,i]=f.dataset.kqs.split("|"),nome=W("bar").eval(`kScList(orderByNum(${n}),${JSON.stringify(k)})[${i}].n`);
+    await type("bar",f,"0");const rb=await waitFor(()=>qa("bar","#b-queue button[data-rset]:not([disabled])").find(x=>x.dataset.rset.startsWith(n+"|"+k+"|"))||qa("bar","#b-queue button[data-rsetall]:not([disabled])").find(x=>x.dataset.rsetall.startsWith(n+"|")),3000,"pronti per scelta");
+    await click("bar",rb);await sleep(40);const rest=W("bar").eval(`Object.entries(orderByNum(${n}).portate).filter(([kk,p])=>kBase(kk)===kBase(${JSON.stringify(k)})&&kk!==${JSON.stringify(k)}&&p.stato==="chiamata").some(([kk,p])=>toArr(p.sc).some(x=>x&&x.n===${JSON.stringify(nome)}&&x.q>0))`);
+    if(rest)STAT.kScParz++;else STAT.kScParzKo++}}
   for(let i=0;i<3;i++){const b=q("bar","#b-queue button[data-rsetall]:not([disabled])")||q("bar","#b-queue button[data-rset]:not([disabled])");if(!b||rnd()<.3)break;await click("bar",b)}}
 async function uscitaAct(){
   const ac=q("uscita","#o-ready button[data-ocons]:not([disabled])");if(ac){const n=Number(ac.dataset.ocons),card=ac.closest(".kcard"),o=W("uscita").eval(`orderCourses(orderByNum(${n})).filter(c=>c.p.stato!=="servita").length`);
@@ -498,6 +502,7 @@ async function closing(){
      return bs.every(b=>Object.keys(o.portate).filter(k=>kBase(k)===b).reduce((a,k)=>a+cop(righeFor(o,k)),0)===cop(righeAll(o,b)))&&Object.keys(o.portate).every(k=>cop(righeFor(o,k))>0)})()`));
    const served=O_.filter(o=>Object.entries(o.portate).some(([k,p])=>/~\d+$/.test(k)&&p.stato==="servita")).length;
    check(STAT.divisi>0&&O_.length>0&&ok&&served>0,`«Una parte dopo»: ${O_.length} ordini con un piatto chiamato in due volte (es. 1 acqua adesso, 1 dopo); le quantità tornano e la seconda volta arriva (${served})`)}
+  check(STAT.kScParz>0&&STAT.kScParzKo===0,`Bar: pronte solo alcune scelte (es. 1 Naturale e 0 Frizzante): ${STAT.kScParz} volte la scelta tolta è rimasta da preparare`+(STAT.kScParzKo?` · ${STAT.kScParzKo} volte no`:""));
   check(STAT.kParz>0,`Cucina: pronti in parte ${STAT.kParz} volte (es. 3 Pizzoccheri su 6), il resto è rimasto da preparare ed è arrivato`);
   check(STAT.prontoUscita>0,`L'uscita segna «Pronto» da sola: ${STAT.prontoUscita} piatti`);
   check(STAT.aspUscita>0,"L'uscita vede anche gli asporti mandati subito in cucina");
