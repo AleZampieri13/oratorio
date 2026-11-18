@@ -321,7 +321,8 @@ async function waiterAct(w){
   const bt=rnd()<.75?own[0]:pick(own),[bn,bk]=bt.dataset.set.split("|");
   const exp=W(w).eval(`(()=>{const o=orderByNum(${bn}),k=${JSON.stringify(bk)},b=kBase(k);return Object.entries(o.portate||{}).some(([x,p])=>x!==k&&kBase(x)===b&&p.stato==="chiamata"&&Object.values(p.rep||{}).every(v=>!v||v.s==="chiamata"))})()`);
   STAT.chiamate++;await click(w,bt);
-  if(exp){await sleep(60);const gone=W(w).eval(`!(orderByNum(${bn}).portate||{})[${JSON.stringify(bk)}]`);if(gone)STAT.uniti++;else STAT.doppi++}return true;
+  if(exp){const one=()=>W(w).eval(`(()=>{const o=orderByNum(${bn}),b=kBase(${JSON.stringify(bk)});return Object.entries(o.portate||{}).filter(([x,p])=>kBase(x)===b&&p.stato==="chiamata"&&Object.values(p.rep||{}).every(v=>!v||v.s==="chiamata")).length<=1})()`);
+    let ok=false;for(let i=0;i<20&&!ok;i++){ok=one();if(!ok)await sleep(50)}if(ok)STAT.uniti++;else STAT.doppi++}return true;
 }
 let unreadyDone=false;
 async function cookAct(n){

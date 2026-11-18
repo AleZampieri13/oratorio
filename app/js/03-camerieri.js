@@ -87,13 +87,13 @@ async function setStato(n,k,to,opts){
   finally{S.pending.delete(key);schedule()}
 }
 /* lo stesso piatto chiamato di nuovo mentre la chiamata di prima è ancora da preparare: diventano una riga sola */
-async function mergeCalled(n,k){const o=orderByNum(n),p=o&&o.portate&&o.portate[k];if(!p||p.stato!=="chiamata")return false;const b=kBase(k);
+async function mergeCalled(n,k,quiet){const o=orderByNum(n),p=o&&o.portate&&o.portate[k];if(!p||p.stato!=="chiamata"||kRound(k)<2)return false;const b=kBase(k);
   const fresh=x=>{const q=o.portate[x];return q&&q.stato==="chiamata"&&Object.values(q.rep||{}).every(v=>!v||v.s==="chiamata")};
   const t=[b,...Object.keys(o.portate).filter(x=>kBase(x)===b&&x!==b).sort((x,y)=>kRound(x)-kRound(y))].find(x=>x!==k&&fresh(x));if(!t||!fresh(k))return false;
   const D=o.dopo||{},upd={["portate/"+k]:null,["dopo/"+k]:null};if(kRound(t)>1)upd["dopo/"+t]=(D[t]||0)+(D[k]||0);
   const s1=toArr(o.portate[t].sc).filter(Boolean),s2=toArr(p.sc).filter(Boolean);
   if(s1.length||s2.length){const m=new Map();[...s1,...s2].forEach(s=>m.set(s.n,(m.get(s.n)||0)+(s.q||0)));upd["portate/"+t+"/sc"]=[...m].map(([nn,q])=>({n:nn,q}))}
-  try{await R("ordini/"+n).update(upd);const c=(orderCourses(o).find(x=>x.k===t)||{}).l||"";toast(`${c} chiamato · aggiunto a quello già in preparazione · ${whereTxt(o)}`,{ms:5000});return true}
+  try{await R("ordini/"+n).update(upd);const c=(orderCourses(o).find(x=>x.k===t)||{}).l||"";if(!quiet)toast(`${c} chiamato · aggiunto a quello già in preparazione · ${whereTxt(o)}`,{ms:5000});return true}
   catch(e){return false}}
 function afterAction(o,k,to,prev){
   const c=(orderCourses(o).find(x=>x.k===k)||{}).l||k;

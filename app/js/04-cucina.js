@@ -57,6 +57,9 @@ function renderRepView(sc,ids){
     return `<div class="${b.tot?"":"zero"}"><span class="label" style="color:${portColor(p.id)}">${esc(p.nome)}</span><b>${b.tot}</b><span class="brk">${b.tot?b.txt:"—"}</span>${l!=null?`<span class="left ${stockCls(l)}">${l<=0?"Esaurito":l===1?"Resta 1 porzione":"Restano "+l+" porzioni"}</span>`:""}</div>`}).join("")
     :'<div class="zero"><span class="label">Nessun piatto</span><span class="brk">A questo reparto non è assegnato nessun piatto: chiedi al master (Listino → Piatti).</span></div>';
   const groups=[];calls.forEach(c=>{let g=groups.find(x=>x.o.numero===c.o.numero);if(!g){g={o:c.o,t:c.t,items:[]};groups.push(g)}g.items.push(c);if(c.t<g.t)g.t=c.t});
+  /* due righe dello stesso piatto ancora da preparare (chiamate prima dell'unione, o insieme da due telefoni): si uniscono */
+  groups.forEach(g=>{const seen=new Set();[...new Set(g.items.map(c=>c.k))].sort((x,y)=>kRound(x)-kRound(y)).map(k=>({k})).forEach(c=>{const b=kBase(c.k);if(!seen.has(b)||kRound(c.k)<2){seen.add(b);return}
+    const key=g.o.numero+"|"+c.k;S.mergeTry=S.mergeTry||new Set();if(S.mergeTry.has(key))return;S.mergeTry.add(key);setTimeout(()=>mergeCalled(g.o.numero,c.k,true),0)})});
   const key=c=>c.o.numero+"|"+c.k+"|"+c.r,dis=c=>S.pending.has(key(c))?"disabled":"";
   $(ids.queue).innerHTML=groups.length?groups.map(g=>{const o=g.o,late=g.items.some(c=>isLate(c.k,c.t)),wn=kWho(o,g.items[0].p),many=g.items.length>1;
     const tn=tintCls(g.items.map(c=>c.k));
