@@ -523,3 +523,10 @@ ul.kitems li .kin .ksc{color:inherit}
 .kscr{display:flex;align-items:center;gap:2px;color:var(--pc,inherit);font:800 1.3rem/1.2 var(--f-display);letter-spacing:.02em}
 .kscr .qtyf{margin-right:4px}
 .kscr .scn{margin-left:4px}
+/* con le scelte il tasto «Pronto» va sotto, così non esce dalla scheda */
+ul.kitems li:has(.kscq){grid-template-columns:minmax(0,1fr) auto}
+ul.kitems li .kscq{grid-column:1 / -1;min-width:0}
+ul.kitems li:has(.kscq) .kbtn{grid-column:2}
+.kscr{min-width:0;flex-wrap:wrap}
+.kscr .scn{min-width:0;overflow-wrap:anywhere}
+.row.nowrap:has(.kscq){flex-wrap:wrap;justify-content:flex-end}
