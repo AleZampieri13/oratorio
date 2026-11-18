@@ -111,7 +111,7 @@ textarea{min-height:64px;resize:vertical}
 @media (max-width:520px){.ksum{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .ksum div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .ksum b{display:block;font:800 1.8rem var(--f-display);font-variant-numeric:tabular-nums}
-.kq{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.kq{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:12px}
 .kcard{background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--call);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .kcard.late{border-left-color:var(--danger)}
 .kcard .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
