@@ -235,6 +235,12 @@ function righeChips(rr){return (rr||[]).map(r=>`<span class="chip">${r.qta} ${es
 function cop(rr){return (rr||[]).reduce((a,r)=>a+(r.qta||0),0)}
 /* ora d'arrivo e minuti passati, su una riga: «20:15 · 12 min» */
 function clockAgo(t){if(!t)return"";const d=new Date(t);return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")} · ${ago(t)}`}
+/* storico in fondo alla pagina (cassa, cucina, bar, uscita): tasto viola che apre l'elenco */
+function histBox(p,count,summary,rows){const box=$(p+"-histbox");if(!box)return;box.hidden=!count;const list=$(p+"-hist");if(!count){list.innerHTML="";list.dataset.h="";return}
+  S.hist=S.hist||{};const show=!!S.hist[p];$(p+"-histbtn").setAttribute("aria-expanded",String(show));list.hidden=!show;
+  $(p+"-histbtn").innerHTML=`<span>Storico</span><small>${summary}</small><span class="chev" aria-hidden="true">${show?"▴":"▾"}</span>`;
+  if(!show)return;const html=rows();if(list.dataset.h!==html){list.innerHTML=html;list.dataset.h=html}}
+document.addEventListener("click",e=>{const b=e.target.closest("button.histbtn[data-hist]");if(!b)return;S.hist=S.hist||{};S.hist[b.dataset.hist]=!S.hist[b.dataset.hist];renderAll()});
 function ago(t){if(!t)return"";const m=Math.floor((Date.now()-t)/60000);return m<1?"adesso":m+" min"}
 function errText(e){
   const c=String((e&&e.code)||"");

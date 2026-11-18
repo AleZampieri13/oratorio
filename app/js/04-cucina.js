@@ -59,6 +59,16 @@ const partToast=(n,k,r)=>{const o=orderByNum(n);toast(`${o?kWho(o,o.portate&&o.p
 function kWrapCard(c){if(c.dataset.w)return;c.dataset.w="1";const ks=[...c.children];if(ks.length<3)return;
   const body=document.createElement("div");body.className="kbody";ks.slice(2,-1).forEach(x=>body.appendChild(x));c.insertBefore(body,ks[ks.length-1])}
 new MutationObserver(()=>document.querySelectorAll(".kq>.kcard:not([data-w])").forEach(kWrapCard)).observe(document.documentElement,{childList:true,subtree:true});
+/* storico di cucina, bar e uscita: i piatti finiti, i più recenti in alto, con le ore */
+function histPiatti(p,fin,fromT){const L=[];ordersArr().forEach(o=>orderCourses(o).forEach(c=>{if(fin(o,c))L.push({o,c})}));
+  const tReady=c=>c.p.stato==="pronta"?c.p.t:c.p.tp,tOf=x=>fromT(x.c)||0;L.sort((a,b)=>tOf(b)-tOf(a));
+  const n=L.reduce((a,x)=>a+cop(righeFor(x.o,x.c.k)),0);
+  histBox(p,L.length,`${n} ${n===1?"piatto":"piatti"}`,()=>L.map(({o,c})=>{const q=cop(righeFor(o,c.k)),r=tReady(c);
+    return `<div class="li plain hrow"><span class="n">${o.numero}</span><span><b>${q} <span style="color:${portColor(c.k)}">${esc(c.l)}</span></b>${scTxt(c.p)?` <small>(${esc(scTxt(c.p))})</small>`:""}
+      <div class="sub">${esc(kWho(o,c.p))}${o.nome?" · "+esc(o.nome):""}${c.p.tc?` · chiamato ${fmtTime(c.p.tc)}`:""}${r?` · pronto ${fmtTime(r)}`:""}${c.p.stato==="servita"?` · portato ${fmtTime(c.p.t)}`:""}</div></span></div>`}).join(""))}
+function renderHistK(sc){histPiatti("k",(o,c)=>(c.p.stato==="pronta"||c.p.stato==="servita")&&(!sc||courseReps(o,c.k).some(r=>sc.includes(r)))&&!barReps().some(r=>courseReps(o,c.k).includes(r)),c=>c.p.stato==="pronta"?c.p.t:c.p.tp||c.p.t)}
+function renderHistB(sc){histPiatti("b",(o,c)=>(c.p.stato==="pronta"||c.p.stato==="servita")&&courseReps(o,c.k).some(r=>sc.includes(r)),c=>c.p.stato==="pronta"?c.p.t:c.p.tp||c.p.t)}
+function renderHistO(sc){histPiatti("o",(o,c)=>c.p.stato==="servita"&&inOScope({o,k:c.k},sc),c=>c.p.t)}
 /* chiamate di un gruppo di reparti, raggruppate per cliente (usato da cucina e bar) */
 function renderRepView(sc,ids){
   const calls=repItems("chiamata",sc),ready=repItems("pronta",sc);
@@ -125,7 +135,7 @@ document.addEventListener("click",async e=>{const b=e.target.closest("button[dat
 document.addEventListener("click",e=>{const b=e.target.closest("button[data-runready]");if(!b||b.disabled)return;if(!armed(b,"Non pronto?"))return;
   const [n,k,r]=b.dataset.runready.split("|");setPart(Number(n),k,r,"chiamata")});
 function renderKitchen(){
-  renderKReps();const sc=kScope();if(sc){renderKitchenRep(sc);return}
+  renderKReps();const sc=kScope();renderHistK(sc);if(sc){renderKitchenRep(sc);return}
   const f=kFilt(),inF=c=>!f||kBase(c.k)===f;
   const calls=flatCourses("chiamata"),ready=flatCourses("pronta");
   $("k-sum").innerHTML=S.portate.map(p=>{const b=breakdown(calls.filter(c=>kBase(c.k)===p.id)),l=stockLeft(p.id);
@@ -189,7 +199,7 @@ function oScope(){const f=oFixed();if(f)return f;const ks=kitchenReps();if(S.oRe
 function courseReps(o,k){const p=o.portate&&o.portate[k];const snap=Object.keys((p&&p.rep)||{});return snap.length?snap:portReps(portataCfg(k)).map(x=>x.r)}
 function inOScope(c,sc){return !sc||courseReps(c.o,c.k).some(r=>sc.includes(r))}
 function renderUscita(){
-  const sc=oScope(),fixed=oFixed(),box=$("o-reps");
+  const sc=oScope(),fixed=oFixed(),box=$("o-reps");renderHistO(sc);
   if(fixed){box.hidden=false;box.innerHTML=`<span class="pill wait">Reparto ${fixed.map(r=>esc(repNome(r))).join(" + ")}</span>`}
   else if(kitchenReps().length<2){box.hidden=true;box.innerHTML=""}
   else{box.hidden=false;const cur=kitchenReps().includes(S.oRep)?S.oRep:"";

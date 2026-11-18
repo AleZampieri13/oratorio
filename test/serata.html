@@ -489,6 +489,10 @@ async function closing(){
   await waitFor(()=>screens.every(([d,s,re])=>re.test(txt(d,s))),3000).catch(()=>null);
   const busy=screens.filter(([d,s,re])=>!re.test(txt(d,s))).map(([d,s])=>`${d}: ${txt(d,s).slice(0,120)}`);
   check(!busy.length,"Cucine, bar e uscita: niente in coda a fine serata",busy.join(" | "));
+  {const hs=[["primo","k"],["bar","b"],["uscita","o"],[CASSE[0].dev,"c"]],res=[];
+   for(const [d,p] of hs){const bt=q(d,`#${p}-histbtn`);if(!bt||q(d,`#${p}-histbox`).hidden){res.push(`${d}: manca`);continue}await click(d,bt);await sleep(80);
+     const n=qa(d,`#${p}-hist .li`).length;res.push(`${d}: ${n}`);if(!n)res.push("vuoto");await click(d,q(d,`#${p}-histbtn`))}
+   check(!res.some(x=>/manca|vuoto/.test(x)),`Storico in fondo a cassa, cucina, bar e uscita (righe: ${res.join(", ")})`)}
   {const W_=W("master"),pasta=W_.eval(`S.portate.find(p=>p.nome==="Pasta").id`),withC=vals(db().ordini).filter(o=>vals(o.cambi).length);
    const okf=o=>W_.eval(`(()=>{const o=orderByNum(${o.numero}),cc=cambi(o),pz=cc.filter(c=>c.da==="p-primo").reduce((a,c)=>a+c.q,0),pa=cc.filter(c=>c.a==="${pasta}").reduce((a,c)=>a+c.q,0),
      men=righe(o).filter(r=>applies(portataCfg("p-primo"),r.id)).reduce((a,r)=>a+r.qta,0);return cop(righeAll(o,"${pasta}"))===pa&&cop(righeAll(o,"p-primo"))===men-pz&&(pa===0||!!o.portate["${pasta}"])&&Math.abs(o.importoMenu-(righe(o).reduce((a,r)=>a+r.qta*r.prezzo,0)-cc.reduce((a,c)=>a+(!c.a&&c.s>0?c.s*c.q:0),0)))<.01})()`),bad1=withC.filter(o=>!okf(o)),ok=!bad1.length;

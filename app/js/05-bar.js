@@ -11,7 +11,7 @@ function renderBReps(){
 }
 $("b-reps").addEventListener("click",e=>{const b=e.target.closest("button[data-brep]");if(!b)return;S.bRep=b.dataset.brep;lsSet("brep",S.bRep);S.seenBar=null;renderBar();checkEvents()});
 function renderBar(){
-  renderBReps();const sc=bScope();
+  renderBReps();const sc=bScope();renderHistB(sc);
   if(!sc.length){$("b-sum").innerHTML="";$("b-queue").innerHTML='<div class="panel"><div class="empty">Nessun reparto bar: il master ne segna uno in Listino → Reparti («Bar»).</div></div>';$("b-ready").innerHTML="";renderGive();return}
   $("b-sum").className="ksum";
   renderRepView(sc,{sum:"b-sum",queue:"b-queue",ready:"b-ready"});

@@ -287,13 +287,16 @@ $("c-last").addEventListener("click",async e=>{
 function dots(o){return `<span class="dots">${orderCourses(o).map(c=>`<span class="dot ${esc(c.p.stato||"attesa")}" title="${esc(c.l)}"></span>`).join("")}</span>`}
 function payTxt(o){const d=payDesc(o);return d?esc(d)+(o.offerta>0?` (offerta ${money(o.offerta)})`:""):""}
 function recentBtn(o){return isLocked(o)?`<button class="btn small" data-open="${o.numero}">Rettifica</button>`:`<button class="btn small" data-open="${o.numero}">Modifica</button>`}
+function recentRow(o,when){return `<div class="li plain"><span class="n">${o.numero}</span>
+    <span>${o.nome?`<b>${esc(o.nome)}</b>`:""}<div class="chips">${o.asporto?'<span class="pill asp">Asporto</span>':""}${righeChips(righe(o))}${singChips(singoli(o))}${cambiChips(cambi(o))}</div>${payTxt(o)?`<div class="sub">${payTxt(o)}</div>`:""}${when&&o.creato?`<div class="sub">alle ${fmtTime(o.creato)}${o.creatoDa?" · "+esc(o.creatoDa):""}</div>`:""}</span><span class="recact">${dots(o)}${recentBtn(o)}</span></div>`}
 function renderRecent(){
-  const list=ordersArr().sort((a,b)=>b.numero-a.numero).slice(0,15);
-  $("c-recent").innerHTML=list.length?list.map(o=>`<div class="li plain"><span class="n">${o.numero}</span>
-    <span>${o.nome?`<b>${esc(o.nome)}</b>`:""}<div class="chips">${o.asporto?'<span class="pill asp">Asporto</span>':""}${righeChips(righe(o))}${singChips(singoli(o))}${cambiChips(cambi(o))}</div>${payTxt(o)?`<div class="sub">${payTxt(o)}</div>`:""}</span><span class="recact">${dots(o)}${recentBtn(o)}</span></div>`).join("")
-    :'<div class="empty">Nessun ordine.</div>';
+  const all=ordersArr().sort((a,b)=>b.numero-a.numero),list=all.slice(0,15),old=all.slice(15);
+  $("c-recent").innerHTML=list.length?list.map(o=>recentRow(o)).join(""):'<div class="empty">Nessun ordine.</div>';
+  /* storico: gli ordini più vecchi, sotto i 15 recenti */
+  histBox("c",old.length,`${old.length} ${old.length===1?"ordine":"ordini"} più vecchi`,()=>old.map(o=>recentRow(o,true)).join(""));
 }
 $("c-recent").addEventListener("click",e=>{const b=e.target.closest("button[data-open]");if(b)openEdit(Number(b.dataset.open))});
+$("c-hist").addEventListener("click",e=>{const b=e.target.closest("button[data-open]");if(b)openEdit(Number(b.dataset.open))});
 function openTyped(){const n=parseInt($("c-opennum").value,10);if(!(n>0)){$("c-opennum").focus();return}$("c-opennum").value="";openEdit(n)}
 $("c-open").addEventListener("click",openTyped);
 $("c-opennum").addEventListener("keydown",e=>{if(e.key==="Enter")openTyped()});

@@ -206,6 +206,7 @@
             <span id="c-fondo-row" hidden><input type="text" id="c-fondo"><button id="c-fondo-save">Salva</button></span><span id="c-attesi" hidden></span></div>
           <div class="row"><input type="number" id="c-opennum" inputmode="numeric" min="1" placeholder="N. da modificare" aria-label="Numero dell'ordine da modificare"><button class="btn" id="c-open">Apri</button></div>
           <div class="list" id="c-recent"></div>
+          <div class="stack" id="c-histbox" hidden><button type="button" class="btn histbtn" id="c-histbtn" data-hist="c" aria-expanded="false" aria-controls="c-hist"></button><div class="list" id="c-hist" hidden></div></div>
         </div>
       </div>
     </div>
@@ -247,6 +248,7 @@
     <div class="kq" id="k-queue"></div>
     <div class="section-head"><h2>Pronti, in attesa del cameriere</h2></div>
     <div class="panel"><div class="list" id="k-ready"></div></div>
+    <div class="stack" id="k-histbox" hidden><button type="button" class="btn histbtn" id="k-histbtn" data-hist="k" aria-expanded="false" aria-controls="k-hist"></button><div class="list" id="k-hist" hidden></div></div>
     <details class="panel bstock" id="k-stock-box"><summary>Porzioni</summary>
       <div id="k-stock"></div>
       <div class="msg" id="k-stock-msg"></div>
@@ -263,6 +265,7 @@
     <div class="panel"><div class="list" id="o-wip"></div></div>
     <div class="section-head"><h2>Appena consegnati</h2></div>
     <div class="panel"><p class="hint">Se hai toccato «Consegnato» per sbaglio, tocca «Non consegnato»: il piatto torna pronto (per 3 minuti).</p><div class="list" id="o-done"></div></div>
+    <div class="stack" id="o-histbox" hidden><button type="button" class="btn histbtn" id="o-histbtn" data-hist="o" aria-expanded="false" aria-controls="o-hist"></button><div class="list" id="o-hist" hidden></div></div>
   </section>
 
   <!-- PERSONE -->
@@ -323,6 +326,7 @@
     <div class="kq" id="b-queue"></div>
     <div class="section-head"><h2>Pronte</h2></div>
     <div class="panel"><div class="list" id="b-ready"></div></div>
+    <div class="stack" id="b-histbox" hidden><button type="button" class="btn histbtn" id="b-histbtn" data-hist="b" aria-expanded="false" aria-controls="b-hist"></button><div class="list" id="b-hist" hidden></div></div>
     <details class="panel bstock" id="b-stock-box"><summary>Porzioni</summary>
       <div id="b-stock"></div>
       <div class="msg" id="b-stock-msg"></div>
