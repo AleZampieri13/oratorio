@@ -507,3 +507,8 @@ input,textarea,[contenteditable]{text-transform:none}
 .kcard.tint:not(.late){border-left-color:var(--pc)}
 .kcard.mixed li{background:color-mix(in srgb,var(--pc) 16%,var(--surface));border-radius:10px;padding:6px 8px}
 .kcard.mixed ul.kitems li+li{border-top:0;padding-top:6px}
+/* numero di piatti davanti al nome (uscita) */
+.kcard .kcourse .kqn{color:var(--ink);font-variant-numeric:tabular-nums}
+/* totali in alto: i nomi lunghi in maiuscolo vanno a capo invece di uscire dal riquadro */
+.ksum div{min-width:0}
+.ksum .label{display:block;overflow-wrap:break-word;letter-spacing:0}

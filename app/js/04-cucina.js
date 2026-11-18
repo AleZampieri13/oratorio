@@ -2,8 +2,8 @@
 /* ---------- CUCINA ---------- */
 function breakdown(items){
   const by={};items.forEach(c=>{const sc=toArr(((c.o.portate||{})[c.k]||{}).sc).filter(x=>x&&x.q>0);
-    if(sc.length)sc.forEach(x=>{by[x.n]=(by[x.n]||0)+x.q});else righeFor(c.o,c.k).forEach(r=>{by[r.nome]=(by[r.nome]||0)+r.qta})});
-  const tot=Object.values(by).reduce((a,b)=>a+b,0);
+    if(sc.length)sc.forEach(x=>{by[x.n]=(by[x.n]||0)+x.q});else by[""]=(by[""]||0)+cop(righeFor(c.o,c.k))});
+  const tot=Object.values(by).reduce((a,b)=>a+b,0);delete by[""];
   return {tot,txt:Object.entries(by).map(([n,q])=>`${q} ${esc(n)}`).join(" · ")};
 }
 function kFilt(){const f=S.kFilt;return f&&S.portate.some(p=>p.id===f)?f:""}
@@ -111,8 +111,7 @@ function renderKitchen(){
   $("k-queue").innerHTML=q.length?q.map(c=>{const late=isLate(c.k,c.t);const rf=righeFor(c.o,c.k);
     const wn=kWho(c.o,c.o.portate[c.k]),pt=partsTxt(c.o.portate[c.k]);
     return `<article class="kcard ${late?"late":""} tint" style="--pc:${portColor(c.k)}"><div class="top"><span class="n nm">${esc(wn)}</span><span class="age">${ago(c.t)}</span></div>
-      <div class="what kcourse"><span style="color:${portColor(c.k)}">${esc(c.l)}</span> <span class="label">· n. ${c.o.numero}</span>${c.o.asporto&&wn!=="Asporto"?' <span class="pill asp">Asporto</span>':""}</div>
-      <ul>${rf.map(r=>`<li><b>${r.qta}</b>${esc(r.nome)}</li>`).join("")}</ul>
+      <div class="what kcourse"><span class="kqn">${cop(rf)}</span> <span style="color:${portColor(c.k)}">${esc(c.l)}</span> <span class="label">· n. ${c.o.numero}</span>${c.o.asporto&&wn!=="Asporto"?' <span class="pill asp">Asporto</span>':""}</div>
       ${scTxt(c.o.portate[c.k])?`<div class="kparts ksc">${esc(scTxt(c.o.portate[c.k]))}</div>`:""}
       ${c.o.note?`<div class="note">${esc(c.o.note)}</div>`:""}
       ${pt?`<div class="kparts">Reparti: ${pt}</div>`:""}
@@ -191,10 +190,9 @@ function renderUscita(){
     const pp=partsOf(c.o.portate[c.k]),parts=pp.length>1?pp.map(x=>x.piatto||x.nome).join(" + "):"";
     return `<article class="kcard ${stale?"late":""} tint" style="--pc:${portColor(c.k)}"><div class="top"><span class="n nm">${esc(wn)}</span><span class="age">pronto ${ago(c.t)==="adesso"?"adesso":"da "+ago(c.t)}</span></div>
       <div class="what kcourse"><span class="label">${c.o.fila?esc(filaNome(c.o.fila))+" · ":""}n. ${c.o.numero}${c.o.nome?" · "+esc(c.o.nome):""}</span>${c.o.asporto&&wn!=="Asporto"?' <span class="pill asp">Asporto</span>':""}</div>
-      <div class="what kcourse"><span style="color:${portColor(c.k)}">${esc(c.l)}</span> <span class="label">· ${n} ${n===1?"piatto":"piatti"}</span></div>
+      <div class="what kcourse"><span class="kqn">${n}</span> <span style="color:${portColor(c.k)}">${esc(c.l)}</span></div>
       ${parts?`<div class="kparts">${esc(parts)}</div>`:""}
       ${scTxt(c.o.portate[c.k])?`<div class="kparts ksc">${esc(scTxt(c.o.portate[c.k]))}</div>`:""}
-      <ul>${rf.map(r=>`<li><b>${r.qta}</b>${esc(r.nome)}</li>`).join("")}</ul>
       ${c.o.note?`<div class="note">${esc(c.o.note)}</div>`:""}
       <button class="btn go big" ${dis} data-set="${c.o.numero}|${c.k}|servita">Consegnato</button></article>`}).join("")
     :'<div class="panel"><div class="empty">Niente da consegnare.</div></div>';
