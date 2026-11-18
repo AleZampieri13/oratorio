@@ -277,6 +277,8 @@ function clampCambi(cc,qty){const used={};return (cc||[]).map(c=>{const k=c.m+"|
 /* scelte di un piatto (es. Acqua: Naturale, Frizzante): il cameriere divide le quantità quando chiama */
 function scelteOf(k){const p=portataCfg(k),s=toArr(p&&p.scelte).map(String).filter(Boolean);return s.length>1?s:[]}
 function scDefault(o,k){const s=scelteOf(k),n=cop(righeFor(o,k));return s.length?s.map((x,i)=>({n:x,q:i?0:n})):null}
+/* scelte una per riga (schede di cucina, bar e uscita) */
+function scLines(p){return toArr(p&&p.sc).filter(x=>x&&x.q>0).map(x=>`<span class="scl">${x.q} ${esc(x.n)}</span>`).join("")}
 function scTxt(p){return toArr(p&&p.sc).filter(x=>x&&x.q>0).map(x=>`${x.q} ${x.n}`).join(" · ")}
 function orderCourses(o){
   const ps=o.portate||{};

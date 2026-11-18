@@ -516,3 +516,5 @@ ul.kitems li .kin .ksc{color:inherit}
 .kcard.tint.late{border-left-color:var(--danger)}
 /* asporto all'uscita: nome del piatto grande come nelle altre schede */
 .kcard li>span.aspn{font:800 1.6rem/1.15 var(--f-display);letter-spacing:.02em}
+/* ogni scelta su una riga */
+.ksc .scl{display:block}
