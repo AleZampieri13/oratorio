@@ -95,10 +95,16 @@ async function mergeCalled(n,k,quiet){const o=orderByNum(n),p=o&&o.portate&&o.po
   if(s1.length||s2.length){const m=new Map();[...s1,...s2].forEach(s=>m.set(s.n,(m.get(s.n)||0)+(s.q||0)));upd["portate/"+t+"/sc"]=[...m].map(([nn,q])=>({n:nn,q}))}
   try{await R("ordini/"+n).update(upd);const c=(orderCourses(o).find(x=>x.k===t)||{}).l||"";if(!quiet)toast(`${c} chiamato · aggiunto a quello già in preparazione · ${whereTxt(o)}`,{ms:5000});return true}
   catch(e){return false}}
+/* un piatto torna «da preparare» (Annulla dopo Pronto): se c'è un'altra riga uguale ancora da preparare si uniscono.
+   Lo fa solo il telefono che ha toccato «Annulla», così due telefoni non uniscono le stesse righe insieme. */
+async function mergeSame(n,k){await sleep(150);const o=orderByNum(n);if(!o||!o.portate)return;const b=kBase(k);
+  const fresh=x=>{const q=o.portate[x];return q&&q.stato==="chiamata"&&Object.values(q.rep||{}).every(v=>!v||v.s==="chiamata")};
+  const fr=Object.keys(o.portate).filter(x=>kBase(x)===b&&fresh(x)).sort((x,y)=>kRound(x)-kRound(y));
+  for(const x of fr.slice(1))if(kRound(x)>=2)await mergeCalled(n,x,true)}
 function afterAction(o,k,to,prev){
   const c=(orderCourses(o).find(x=>x.k===k)||{}).l||k;
   const prevT=o.portate&&o.portate[k]&&o.portate[k].t;
-  const undo={label:"Annulla",fn:()=>{const x=orderByNum(o.numero);const cur=x&&x.portate&&x.portate[k]&&x.portate[k].stato;if(cur===to)setStato(o.numero,k,prev,{silent:true,t:prevT,expect:to})}};
+  const undo={label:"Annulla",fn:()=>{const x=orderByNum(o.numero);const cur=x&&x.portate&&x.portate[k]&&x.portate[k].stato;if(cur===to)setStato(o.numero,k,prev,{silent:true,t:prevT,expect:to}).then(()=>{if(prev==="chiamata")mergeSame(o.numero,k)})}};
   if(S.role==="uscita"){toast(to==="pronta"?`${kWho(o,o.portate&&o.portate[k])} · ${c} pronto`:`n. ${o.numero} · ${c} consegnato a ${kWho(o,o.portate&&o.portate[k])}`,{ms:5000,action:undo});return}
   if(S.role==="cucina"||S.role==="bar"){const pp=o.portate&&o.portate[k];const wn=kWho(o,pp);
     toast(`${wn} · ${c} ${to==="servita"?"portato":"pronta"}`,{ms:5000,action:undo});return}

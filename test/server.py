@@ -16,8 +16,15 @@ class NoCache(http.server.SimpleHTTPRequestHandler):
 
 
 handler = functools.partial(NoCache, directory=str(DIR))
+
+
+class Server(http.server.ThreadingHTTPServer):
+    request_queue_size = 256  # la serata simulata apre ~40 telefoni insieme: con la coda da 5 alcuni file venivano rifiutati
+    daemon_threads = True
+
+
 try:
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", PORT), handler)
+    server = Server(("127.0.0.1", PORT), handler)
 except OSError:
     print(f"La porta {PORT} è già occupata: probabilmente il server di prova è già acceso.")
     input("Premi Invio per chiudere...")

@@ -1,7 +1,7 @@
 /* Copia di prova collegata all'EMULATORE di Firebase (database e accesso sul computer, con le regole vere).
    Si carica dopo gli script di Firebase e prima di config.js.
    - ogni "telefono" (?dev=nome) ha la sua memoria (__devStore) e il suo accesso anonimo
-   - il database è quello dell'emulatore su 127.0.0.1:9000, l'accesso su 127.0.0.1:9099 */
+   - il database è quello dell'emulatore su 127.0.0.1:9100, l'accesso su 127.0.0.1:9199 (porte diverse dal progetto magazzino) */
 (function () {
   const DEV = new URLSearchParams(location.search).get("dev");
   window.__devStore = DEV ? {
@@ -9,12 +9,14 @@
     setItem: (k, v) => localStorage.setItem("dev:" + DEV + ":" + k, v),
     removeItem: k => localStorage.removeItem("dev:" + DEV + ":" + k)
   } : sessionStorage;
+  /* l'app pulisce l'indirizzo dopo l'accesso: qui si tiene ?dev=, se no un telefono finto ricaricato perde la sua memoria */
+  if (DEV) { const rs = history.replaceState.bind(history); history.replaceState = (st, t, url) => { const u = new URL(url || location.href, location.href); if (!u.searchParams.get("dev")) u.searchParams.set("dev", DEV); return rs(st, t, u.pathname + u.search + u.hash); }; }
   const init = firebase.initializeApp.bind(firebase);
   firebase.initializeApp = function (cfg) {
     const app = init(cfg);
-    firebase.auth().useEmulator("http://127.0.0.1:9099", { disableWarnings: true });
+    firebase.auth().useEmulator("http://127.0.0.1:9199", { disableWarnings: true });
     firebase.auth().setPersistence(firebase.auth.Auth.Persistence.NONE);
-    firebase.database().useEmulator("127.0.0.1", 9000);
+    firebase.database().useEmulator("127.0.0.1", 9100);
     return app;
   };
   /* il pannello nascosto del browser rallenta requestAnimationFrame */

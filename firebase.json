@@ -51,15 +51,23 @@
   "emulators": {
     "database": {
       "host": "127.0.0.1",
-      "port": 9000
+      "port": 9100
     },
     "auth": {
       "host": "127.0.0.1",
-      "port": 9099
+      "port": 9199
     },
     "ui": {
       "enabled": false
     },
-    "singleProjectMode": true
+    "singleProjectMode": true,
+    "hub": {
+      "host": "127.0.0.1",
+      "port": 4410
+    },
+    "logging": {
+      "host": "127.0.0.1",
+      "port": 4510
+    }
   }
 }

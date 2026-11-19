@@ -77,16 +77,6 @@ function renderRepView(sc,ids){
     return `<div class="${b.tot?"":"zero"}"><span class="label" style="color:${portColor(p.id)}">${esc(p.nome)}</span><b>${b.tot}</b><span class="brk">${b.tot?b.txt:"—"}</span>${l!=null?`<span class="left ${stockCls(l)}">${l<=0?"Esaurito":l===1?"Resta 1 porzione":"Restano "+l+" porzioni"}</span>`:""}</div>`}).join("")
     :'<div class="zero"><span class="label">Nessun piatto</span><span class="brk">A questo reparto non è assegnato nessun piatto: chiedi al master (Listino → Piatti).</span></div>';
   const groups=[];calls.forEach(c=>{let g=groups.find(x=>x.o.numero===c.o.numero);if(!g){g={o:c.o,t:c.t,items:[]};groups.push(g)}g.items.push(c);if(c.t<g.t)g.t=c.t});
-  /* due righe dello stesso piatto ancora da preparare (chiamate prima dell'unione, o insieme da due telefoni): si uniscono */
-  const fresh=(o,x)=>{const q=(o.portate||{})[x];return q&&q.stato==="chiamata"&&Object.values(q.rep||{}).every(v=>!v||v.s==="chiamata")};
-  S.mergeTry=S.mergeTry||new Map();
-  groups.forEach(g=>{const seen=new Set(),hide=new Set();[...new Set(g.items.map(c=>c.k))].sort((x,y)=>kRound(x)-kRound(y)).forEach(k=>{const b=kBase(k);
-      if(!seen.has(b)||kRound(k)<2||!fresh(g.o,k)||![...seen].length){if(fresh(g.o,k))seen.add(b);return}
-      if(!Object.keys(g.o.portate).some(x=>x!==k&&kBase(x)===b&&fresh(g.o,x)))return;
-      const key=g.o.numero+"|"+k,t0=S.mergeTry.get(key);if(!t0||Date.now()-t0>5000){S.mergeTry.set(key,Date.now());setTimeout(()=>mergeCalled(g.o.numero,k,true),0)}
-      if(Date.now()-(S.mergeTry.get(key)||0)<3000)hide.add(k)});
-    if(hide.size)g.items=g.items.filter(c=>!hide.has(c.k))});
-  for(let i=groups.length-1;i>=0;i--)if(!groups[i].items.length)groups.splice(i,1);
   const key=c=>c.o.numero+"|"+c.k+"|"+c.r,dis=c=>S.pending.has(key(c))?"disabled":"";
   $(ids.queue).innerHTML=groups.length?groups.map(g=>{const o=g.o,late=g.items.some(c=>isLate(c.k,c.t)),wn=kWho(o,g.items[0].p),many=g.items.length>1;
     const tn=tintCls(g.items.map(c=>c.k));
@@ -121,7 +111,7 @@ async function setPart(n,k,r,to,opts){
     const v=done?tr.snapshot.val():null,pn=(v&&v.rep&&v.rep[r]&&(v.rep[r].piatto||v.rep[r].nome))||repNome(r),c=((o&&orderCourses(o).find(x=>x.k===k))||{}).l||k;
     if(!done){toast(to==="pronta"?"Qualcun altro l'ha appena aggiornato: guarda lo stato attuale.":`${c} · n. ${n}: già portato, non si può annullare`,{ms:4000});return}
     if(opts&&opts.silent)return;
-    if(to==="pronta")toast(`${o?kWho(o,v):"n. "+n} · ${pn} pronto${v.stato==="pronta"?` · ${c} completo`:""}`,{ms:5000,action:{label:"Annulla",fn:()=>setPart(n,k,r,"chiamata",{silent:true})}});
+    if(to==="pronta")toast(`${o?kWho(o,v):"n. "+n} · ${pn} pronto${v.stato==="pronta"?` · ${c} completo`:""}`,{ms:5000,action:{label:"Annulla",fn:()=>setPart(n,k,r,"chiamata",{silent:true}).then(()=>mergeSame(n,k))}});
     else toast(`${pn} · n. ${n}: di nuovo da preparare`,{ms:4000});
   }catch(e){showBanner(errText(e))}
   finally{S.pending.delete(key);schedule()}
@@ -133,7 +123,7 @@ document.addEventListener("click",async e=>{const b=e.target.closest("button[dat
   for(const [k,r] of its){const pr=await prepPart(Number(n),k,[r]);if(!pr)continue;if(!pr[2])await setPart(Number(n),k,r,"pronta",{silent:true})}
   const o=orderByNum(Number(n));toast(`${o?kWho(o,null)+" · ":""}n. ${n}: tutto pronto`,{ms:4000})});
 document.addEventListener("click",e=>{const b=e.target.closest("button[data-runready]");if(!b||b.disabled)return;if(!armed(b,"Non pronto?"))return;
-  const [n,k,r]=b.dataset.runready.split("|");setPart(Number(n),k,r,"chiamata")});
+  const [n,k,r]=b.dataset.runready.split("|");setPart(Number(n),k,r,"chiamata").then(()=>mergeSame(Number(n),k))});
 function renderKitchen(){
   renderKReps();const sc=kScope();renderHistK(sc);if(sc){renderKitchenRep(sc);return}
   const f=kFilt(),inF=c=>!f||kBase(c.k)===f;
@@ -262,6 +252,7 @@ $("o-ready").addEventListener("click",async e=>{const b=e.target.closest("button
   const [n,k]=b.dataset.ounready.split("|"),o=orderByNum(Number(n)),p=o&&o.portate&&o.portate[k];if(!p||p.stato!=="pronta")return;b.disabled=true;
   const sc=oScope(),rs=Object.keys(p.rep||{}).filter(r=>!sc||sc.includes(r));
   if(rs.length){for(const r of rs)await setPart(Number(n),k,r,"chiamata")}else await setStato(Number(n),k,"chiamata",{silent:true,t:p.tc||Date.now(),expect:"pronta"});
+  await mergeSame(Number(n),k);
   const c=(orderCourses(o).find(x=>x.k===k)||{}).l||k;toast(`${kWho(o,p)} · ${c}: di nuovo da preparare`,{ms:4000})});
 /* asporto: tutto pronto (i reparti dell'uscita) e tutto consegnato in un colpo */
 $("o-wip").addEventListener("click",async e=>{const b=e.target.closest("button[data-oreadyall]");if(!b||b.disabled)return;b.disabled=true;
