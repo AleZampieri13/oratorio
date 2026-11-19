@@ -277,6 +277,8 @@ function piattoNome(id,fb){const p=portataCfg(id);return p?p.nome:(fb||id)}
 /* un cambio senza piatto nuovo (a:"") vuol dire «senza»: il piatto si toglie dal menù */
 function cambioTxt(c){return c.a?`${c.q} ${piattoNome(c.da,c.dn)} → ${piattoNome(c.a,c.an)}`:`${c.q} senza ${piattoNome(c.da,c.dn)}${c.s>0?` (−${money(r2(c.s*c.q))})`:""}`}
 /* quanto si scala dal menù per i piatti tolti con «Scala» */
+/* prezzo dei menù meno lo sconto dei cambi («Scala»), come in bill() */
+function menuNetto(rr,cc){const m=importo(rr);return r2(m-Math.min(m,scontoCambi(cc)))}
 function scontoCambi(cc){return r2((cc||[]).reduce((a,c)=>a+(!c.a&&c.s>0?c.s*c.q:0),0))}
 function cambiTxt(cc){return cc.map(cambioTxt).join(", ")}
 function cambiChips(cc){return cc.map(c=>`<span class="chip">${esc(cambioTxt(c))}</span>`).join("")}

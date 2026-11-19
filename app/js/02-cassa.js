@@ -427,7 +427,10 @@ function fixCalc(o){
   let ss=singoli(o).map(s=>({...s,qta:Math.min(s.qta,F.sq[s.pid+"|"+s.k]!=null?F.sq[s.pid+"|"+s.k]:s.qta)}));
   const xx=extras(o).map(x=>({...x,qta:Math.min(x.qta,F.xq[x.id]!=null?F.xq[x.id]:x.qta)}));
   let refund=0;const desc=[];
-  righe(o).forEach((r,i)=>{const d=r.qta-rr[i].qta;if(d>0){if(!o.pagatoPrima)refund+=d*(r.prezzo||0);desc.push(`−${d} ${r.nome}`)}});
+  righe(o).forEach((r,i)=>{const d=r.qta-rr[i].qta;if(d>0)desc.push(`−${d} ${r.nome}`)});
+  /* menù: si restituisce la differenza vera, tenendo conto dello sconto dei cambi («Scala») */
+  if(!o.pagatoPrima){const qm={};rr.forEach(r=>{if(r.qta>0)qm[r.id]=r.qta});const r1=rr.filter(r=>r.qta>0);
+    refund+=Math.max(0,menuNetto(righe(o),cambi(o))-menuNetto(r1,clampCambi(cambi(o),qm)))}
   singoli(o).forEach((s,i)=>{const d=s.qta-ss[i].qta;if(d>0){refund+=d*(s.prezzo||0);desc.push(`−${d} ${s.nome} singolo`)}});
   extras(o).forEach((x,i)=>{const d=x.qta-xx[i].qta;if(d>0){refund+=d*(x.prezzo||0);desc.push(`−${d} ${x.nome}`)}});
   let noPrice=[];
@@ -476,9 +479,10 @@ async function saveFix(){
   if(reduced&&!c.noneCalled){m.textContent="Nel frattempo è stato chiamato un piatto: i coperti non si possono più togliere.";F.q={};F.sq={};renderFix(true);return}
   if(!c.rr.length&&!c.ss.length&&!c.xx.length){m.textContent="Così non resta niente: per togliere tutto serve «Annulla ordine» (solo il master).";return}
   const amt=r2(Math.max(0,Math.min(F.amt!=null?F.amt:c.refund,o.incassato||0)));
-  const upd={righe:c.rr,singoli:c.ss,extra:c.xx,importoMenu:importo(c.rr),importoSingoli:importo(c.ss),importoExtra:importo(c.xx)};
+  const qm={};c.rr.forEach(r=>{qm[r.id]=r.qta});const cc=clampCambi(cambi(o),qm);
+  const upd={righe:c.rr,singoli:c.ss,extra:c.xx,importoMenu:menuNetto(c.rr,cc),importoSingoli:importo(c.ss),importoExtra:importo(c.xx)};
   upd.importo=r2(upd.importoMenu+upd.importoSingoli+upd.importoExtra);
-  const qm={};c.rr.forEach(r=>{qm[r.id]=r.qta});const cc=clampCambi(cambi(o),qm);if(cambi(o).length)upd.cambi=cc.length?cc:null;
+  if(cambi(o).length)upd.cambi=cc.length?cc:null;
   const need=coursesFor(c.rr,c.ss,c.xx,cc);
   Object.keys(o.portate||{}).forEach(k=>{if((F.rm[k]||!need[kBase(k)])&&(o.portate[k].stato||"attesa")==="attesa")upd["portate/"+k]=null});
   upd.incassato=r2((o.incassato||0)-amt);upd.stornato=r2((o.stornato||0)+amt);

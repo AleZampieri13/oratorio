@@ -163,7 +163,7 @@ async function setup(){
     await type("master","#u-pin",pin);await click("master","#u-add");await waitFor(()=>U(nome),3000,"persona "+nome);await waitFor(()=>q("master","#u-nome").value==="",3000,"campo nome libero")}
   for(let f=0;f<NFILE;f++){const names=CAM.filter(c=>c.fila===f).map(c=>c.nome);if(!names.length)continue;
     await type("master","#u-wnames",names.join("\n"));q("master","#u-wfila").value=FILE_IDS[f];await click("master","#u-wadd");await waitFor(()=>names.every(U),3000,"camerieri fila "+(f+1));await waitFor(()=>!q("master","#u-wadd").disabled,3000,"aggiunta finita")}
-  check(CAM.every(c=>U(c.nome)&&U(c.nome).fila===FILE_IDS[c.fila]),`${NCAM} camerieri su ${NFILE} file, ${PEOPLE.length} altre persone (4 cuochi con il loro reparto, l'uscita piatti)`);
+  check(CAM.every(c=>U(c.nome)&&U(c.nome).fila===FILE_IDS[c.fila]),`${CAM.length} camerieri su ${NFILE} file, ${PEOPLE.length} altre persone (4 cuochi con il loro reparto, l'uscita piatti)`);
   await click("master","#u-joinqr");JOIN=await waitFor(()=>txt("master","#qr-code"),3000,"codice QR");await click("master","#qr-close");
   // porzioni: i dolci finiranno a metà serata, il vino anche
   DOLCI=+(P.get("dolci")||Math.round(ORDERS*1.4));VINI=+(P.get("vini")||Math.round(ORDERS*.35));
@@ -553,7 +553,7 @@ async function closing(){
   await type("master","#e-name","Serata simulata "+ORDERS);await click("master","#e-reset");await click("master","#e-reset-yes");
   await waitFor(()=>{const z=db();return !z.ordini&&!z.annullati&&!z.prenotazioni&&!z.log&&!(z.config&&z.config.scorte)&&vals(z.archivioIndice).length},8000,"archiviazione").catch(()=>null);
   const Z=db(),idx=vals(Z.archivioIndice)[0];
-  check(!Z.ordini&&!Z.annullati&&!Z.prenotazioni&&!(Z.config.scorte)&&vals(Z.config.utenti).length>=PEOPLE.length+NCAM&&Z.config.listino,"Nuovo evento: serata in corso svuotata, porzioni da reimpostare, persone e listino restano");
+  check(!Z.ordini&&!Z.annullati&&!Z.prenotazioni&&!(Z.config.scorte)&&vals(Z.config.utenti).length>=PEOPLE.length+CAM.length&&Z.config.listino,"Nuovo evento: serata in corso svuotata, porzioni da reimpostare, persone e listino restano");
   check(idx&&idx.nome==="Serata simulata "+ORDERS&&idx.ordini===nOrd&&Math.abs(idx.contanti-totC)<.01&&Math.abs(idx.pos-totP)<.01,`Archivio: «${idx&&idx.nome}» con ${idx&&idx.ordini} ordini e gli stessi incassi`);
   await click("master","#e-arch-load");await waitFor(()=>q("master","#e-arch [data-archxl]"),3000).catch(()=>null);
   await click("master","#e-arch [data-archxl]");await waitFor(()=>R.excel,3000).catch(()=>null);
