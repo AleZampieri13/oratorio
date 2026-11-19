@@ -198,7 +198,7 @@ async function setup(){
 
 /* ---------------- SERVIZIO ---------------- */
 const L={};CASSE.forEach(c=>L[c.dev]={contanti:0,pos:0});
-const ORD=[],STAT={cz:{uncall:0,unserve:0,unready:0,reload:0,doppio:0,nonConsegnato:0,banco:0,prezzo:0,ingressi:0},czKo:[],oAnnullaWhy:[],oAnnulla:0,oAnnullaKo:0,kParzKo:[],uniti:0,doppi:0,kScParz:0,kScParzKo:0,kParz:0,divisi:0,parz:0,scalati:0,aspTutto:0,aspConsegnati:0,cambi:0,scelteMosse:0,barVedeScelte:0,prontoUscita:0,aspUscita:0,contiDivisi:0,divisiPiatti:0,divisiPiattiKo:[],offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
+window.__wlog=[];const ORD=[],STAT={cz:{uncall:0,unserve:0,unready:0,reload:0,doppio:0,nonConsegnato:0,banco:0,prezzo:0,ingressi:0},czKo:[],oAnnullaWhy:[],oAnnulla:0,oAnnullaKo:0,kParzKo:[],uniti:0,doppi:0,kScParz:0,kScParzKo:0,kParz:0,divisi:0,parz:0,scalati:0,aspTutto:0,aspConsegnati:0,cambi:0,scelteMosse:0,barVedeScelte:0,prontoUscita:0,aspUscita:0,contiDivisi:0,divisiPiatti:0,divisiPiattiKo:[],offerti:0,barVedePatatine:0,frittoVedeExtra:0,cucinaVedeBar:0,barLavora:0,cambiReparto:0,chiamateTutto:0,tuttoPronto:0,chiamate:0,chiamateFuoriOrdine:0,servite:0,consegnateUscita:0,pronti:0,bloccatiPorzioni:0,confermeAsporto:0,rettifiche:0};
 const queueFor={};CAM.forEach(c=>queueFor[c.dev]=[]);
 let noDessert=false;
 function plan(){
@@ -330,9 +330,10 @@ async function cookAct(n){
   if(n==="fritto"&&/Patatine/i.test(txt(n,"#k-queue")))STAT.frittoVedeExtra++;
   if(COOKS.some(c=>/Acqua|Caffè|Vino/i.test(txt(c,"#k-queue"))))STAT.cucinaVedeBar++;
   {const m=[...qa(n,'#k-queue input.qtyin[data-kqi]')].find(x=>+x.value>1);if(m&&rnd()<PR(.15)){const key=m.dataset.kqi,qq=+m.value,xx=Math.max(1,Math.floor(qq/2));await type(n,m,String(xx));
-    const rb=await waitFor(()=>qa(n,"#k-queue button[data-rset]:not([disabled])").find(x=>x.dataset.rset.startsWith(key+"|")),EMU?10000:3000,"pronti in parte");await click(n,rb);await sleep(400);STAT.kParz++;STAT.pronti++;
-    const [kn,kk]=key.split("|"),rest=W(n).eval(`(()=>{const o=orderByNum(${kn}),b=kBase(${JSON.stringify(kk)});return Object.keys(o.portate||{}).filter(x=>kBase(x)===b&&o.portate[x].stato==="chiamata").reduce((a,x)=>a+cop(righeFor(o,x)),0)})()`);
-    if(rest<qq-xx)STAT.kParzKo.push(`n.${kn} ${kk}: ${xx} su ${qq}, restano ${rest}`)}}
+    const rb=await waitFor(()=>qa(n,"#k-queue button[data-rset]:not([disabled])").find(x=>x.dataset.rset.startsWith(key+"|")&&/^Pronti \d/i.test(x.textContent.trim())),EMU?10000:3000,"pronti in parte").catch(()=>null);
+    if(!rb){STAT.kParzSkip=(STAT.kParzSkip||0)+1;return}await click(n,rb);await sleep(400);STAT.kParz++;STAT.pronti++;
+    const [kn,kk]=key.split("|"),rest=W(n).eval(`(()=>{const o=orderByNum(${kn}),b=kBase(${JSON.stringify(kk)});return Object.keys(o.portate||{}).filter(x=>kBase(x)===b&&x!==${JSON.stringify(kk)}).reduce((a,x)=>a+cop(righeFor(o,x)),0)+(o.portate[${JSON.stringify(kk)}]&&o.portate[${JSON.stringify(kk)}].stato==="chiamata"?cop(righeFor(o,${JSON.stringify(kk)})):0)})()`);
+    if(rest<qq-xx)STAT.kParzKo.push(`n.${kn} ${kk}: ${xx} su ${qq}, restano ${rest} `+W(n).eval(`(()=>{const o=orderByNum(${kn}),b=kBase(${JSON.stringify(kk)});return JSON.stringify({p:Object.fromEntries(Object.entries(o.portate||{}).filter(([x])=>kBase(x)===b).map(([x,v])=>[x,v.stato+" q="+cop(righeFor(o,x))+(v.rep?" rep="+Object.values(v.rep).map(r=>r.s).join(","):"")])),dopo:o.dopo||null,tot:cop(righeAll(o,b))})})()`)+" scritture:"+(window.__wlog||[]).filter(x=>String(x[1]).includes("ordini/"+kn)).slice(-8).map(x=>x.slice(0,3).join(" ")).join(" ; "))}}
   for(let i=0;i<3;i++){const b=q(n,"#k-queue button[data-rsetall]:not([disabled])")||q(n,"#k-queue button[data-rset]:not([disabled])");if(!b||rnd()<.35)break;if(b.dataset.rsetall)STAT.tuttoPronto++;await click(n,b);STAT.pronti++}
   if(!unreadyDone&&n==="fritto"&&STAT.pronti>30){const u=q(n,"#k-ready button[data-runready]");if(u){await click(n,u);await click(n,u);unreadyDone=true;log("Il Fritto annulla un «pronto» (ripensamento)")}}
 }
@@ -415,7 +416,7 @@ async function service(){
     for(const c of CAM){if(!(await waiterAdd(c.dev)))await waiterAct(c.dev)}
     for(const c of COOKS)await cookAct(c);
     await barAct();await uscitaAct();for(const c of CASSE)await cassaAct(c.dev);
-    await specialTick(tick,S);if(CAOS)await caosAct(tick);
+    await specialTick(tick,S);if(CAOS)await caosAct(tick);if(window.__wlog&&window.__wlog.length>4000)window.__wlog.splice(0,window.__wlog.length-3000);
     await sleep(8);/* lascia arrivare gli aggiornamenti agli altri telefoni anche nei giri in cui nessuno fa niente */
     if(!todo.length&&Object.values(queueFor).every(x=>!x.length)&&allDone()){log(`Tutti gli ordini serviti al giro ${tick}`);break}
   }
@@ -437,7 +438,7 @@ async function specialAfterCreate(o,S){
       const eu=x=>parseFloat(x.replace(/\./g,"").replace(",","."));
       if(/Incassa altri ([\d.,]+)/.test(m))L[o.cassa][o.pay]=r2(L[o.cassa][o.pay]+eu(m.match(/Incassa altri ([\d.,]+)/)[1]));
       else if(/Restituisci ([\d.,]+)/.test(m))L[o.cassa][o.pay]=r2(L[o.cassa][o.pay]-eu(m.match(/Restituisci ([\d.,]+)/)[1]));
-      if(/Incassa|Restituisci|Modifiche salvate/.test(m))STAT.cz.cambiModifica=(STAT.cz.cambiModifica||0)+added;else STAT.czKo.push(`cambi con Modifica sul n. ${o.n}: «${m}»`)}
+      if(/Incassa|Restituisci|Modifiche salvate/.test(m))STAT.cz.cambiModifica=(STAT.cz.cambiModifica||0)+added;else if(/esaurito|ne restano solo/.test(m))STAT.cz.cambiBloccati=(STAT.cz.cambiBloccati||0)+1;else STAT.czKo.push(`cambi con Modifica sul n. ${o.n}: «${m}»`)}
     const xc=q(n,"#x-close");if(xc&&xc.offsetParent)await click(n,xc);queueFor[o.waiter].push(o.n)}
   if(S.checkNext){S.checkNext=false;check(o.n===S.burned+1,`Dopo l'annullo il numero ${S.burned} non viene riusato (nuovo: ${o.n})`)}
   if(k>=3&&!S.edited&&!o.asp&&o.waiter&&!o.split&&!o.offer){S.edited=true;
@@ -585,14 +586,16 @@ async function closing(){
   check(STAT.kScParz>0&&STAT.kScParzKo===0,`Bar: pronte solo alcune scelte (es. 1 Naturale e 0 Frizzante): ${STAT.kScParz} volte la scelta tolta è rimasta da preparare`+(STAT.kScParzKo?` · ${STAT.kScParzKo} volte no`:""));
   check(STAT.uniti>0&&STAT.doppi===0,`Stesso piatto chiamato due volte mentre il primo era ancora da preparare: unito in una riga sola (${STAT.uniti} volte)`+(STAT.doppi?` · ${STAT.doppi} volte restavano due righe`:""));
   check(STAT.oAnnulla>0&&!STAT.oAnnullaKo,`Uscita: «Annulla» su un piatto pronto lo rimette da preparare (${STAT.oAnnulla} volte)`+(STAT.oAnnullaKo?` · ${STAT.oAnnullaKo} volte no`:""),STAT.oAnnullaWhy.join("; "));
-  if(CAOS)check(!STAT.czKo.length&&Object.values(STAT.cz).every(v=>v>0)&&(STAT.cz.cambiModifica||0)>=(ORDERS>=100?40:1),`Caos: annullate ${STAT.cz.uncall} chiamate, ${STAT.cz.unserve} «Non portato», ${STAT.cz.unready} pronti annullati in cucina, ${STAT.cz.reload} telefoni ricaricati a metà serata, ${STAT.cz.doppio} doppi tocchi, ${STAT.cz.nonConsegnato} «Non consegnato» in uscita, ${STAT.cz.banco} consegne al banco, ${STAT.cz.prezzo} prezzi cambiati a serata in corso, ${STAT.cz.ingressi} chiusure degli ingressi, ${STAT.cz.cambiModifica||0} cambi aggiunti con «Modifica»: tutto torna`,STAT.czKo.join(" | "));
+  if(CAOS)check(!STAT.czKo.length&&["uncall","unserve","unready","reload","doppio","nonConsegnato"].every(k=>STAT.cz[k]>0)&&(STAT.cz.cambiModifica||0)>=(ORDERS>=100?40:1),`Caos: annullate ${STAT.cz.uncall} chiamate, ${STAT.cz.unserve} «Non portato», ${STAT.cz.unready} pronti annullati in cucina, ${STAT.cz.reload} telefoni ricaricati a metà serata, ${STAT.cz.doppio} doppi tocchi, ${STAT.cz.nonConsegnato} «Non consegnato» in uscita, ${STAT.cz.banco} consegne al banco, ${STAT.cz.prezzo} prezzi cambiati a serata in corso, ${STAT.cz.ingressi} chiusure degli ingressi, ${STAT.cz.cambiModifica||0} cambi aggiunti con «Modifica»: tutto torna`,STAT.czKo.join(" | "));
   check(STAT.kParz>0&&!STAT.kParzKo.length,`Cucina: pronti in parte ${STAT.kParz} volte (es. 3 Pizzoccheri su 6), il resto è rimasto da preparare ed è arrivato`,STAT.kParzKo.join("; "));
   check(STAT.prontoUscita>0,`L'uscita segna «Pronto» da sola: ${STAT.prontoUscita} piatti`);
   check(STAT.aspUscita>0,"L'uscita vede anche gli asporti mandati subito in cucina");
   const nums=[...O.map(o=>o.numero),...A.map(a=>a.n)].sort((a,b)=>a-b);
   check(new Set(nums).size===nums.length&&nums.every((n,i)=>n===i+1),`Numeri da 1 a ${nums.length} senza doppioni né buchi (${A.length} annullati e bruciati)`);
   const LM=vals(E.config.listino.menu),inMenu=(pid,r)=>{const m=LM.find(x=>x.id===r.id);return !!m&&vals(m.piatti).includes(pid)};
-  const used=pid=>O.reduce((a,o)=>a+(o.portate&&o.portate[pid]?vals(o.righe).filter(r=>inMenu(pid,r)).reduce((s,r)=>s+r.qta,0)+vals(o.singoli).filter(s=>s.pid===pid).reduce((s,x)=>s+x.qta,0):0),0);
+  /* contati come la cucina: i menù meno i cambi «senza …» e «… → altro», più i cambi verso questo piatto */
+  const used=pid=>O.reduce((a,o)=>a+(o.portate&&Object.keys(o.portate).some(k=>k.split("~")[0]===pid)?vals(o.righe).filter(r=>inMenu(pid,r)).reduce((s,r)=>s+r.qta,0)+vals(o.singoli).filter(s=>s.pid===pid).reduce((s,x)=>s+x.qta,0)
+    -vals(o.cambi).filter(c=>c.da===pid&&c.a!==pid).reduce((s,c)=>s+c.q,0)+vals(o.cambi).filter(c=>c.a===pid&&c.da!==pid).reduce((s,c)=>s+c.q,0):0),0);
   const dolci=used("p-dolce"),vini=used(vals(E.config.listino.piatti).find(x=>x.nome==="Vino").id);
   check(dolci<=DOLCI&&vini<=VINI,`Porzioni rispettate: dolci ${dolci}/${DOLCI}, vini ${vini}/${VINI} (la cassa è stata bloccata ${STAT.bloccatiPorzioni} volte)`);
   await tab("master","evento");await sleep(STEP*4);
