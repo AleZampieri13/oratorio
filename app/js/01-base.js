@@ -131,7 +131,8 @@ function startSession(u,k){
 }
 let wakeLock=null;
 async function keepAwake(){
-  if(S.role!=="cucina"){if(wakeLock){try{wakeLock.release()}catch(e){}wakeLock=null}return}
+  /* schermo sempre acceso per chi deve ricevere avvisi: cucina, camerieri, bar, uscita */
+  if(!["cucina","camerieri","bar","uscita"].includes(S.role)){if(wakeLock){try{wakeLock.release()}catch(e){}wakeLock=null}return}
   if(wakeLock||document.visibilityState!=="visible"||!navigator.wakeLock)return;
   try{wakeLock=await navigator.wakeLock.request("screen");wakeLock.addEventListener("release",()=>{wakeLock=null})}catch(e){wakeLock=null}
 }
