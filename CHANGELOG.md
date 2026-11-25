@@ -1,5 +1,8 @@
 # Versioni
 
+## 46
+- **Avvisi su Samsung Internet:** con l'app installata da Samsung Internet l'avviso arriva ma il telefono non lo mostra (limite di Samsung Internet, provato). La striscia lo dice e propone Chrome (installabile) oppure Samsung Internet senza installare l'app.
+
 ## 45
 - **Avvisi:** se il telefono scarta la notifica senza dare errore (succede con l'app installata da Samsung Internet), il service worker la rimostra in modo semplice; il tasto «Prova» dice se la notifica è stata davvero mostrata.
 
