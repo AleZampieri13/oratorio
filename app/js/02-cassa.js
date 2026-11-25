@@ -423,7 +423,7 @@ function openEdit(n){
   if(locked){const w=o.cameriereId?nameOf(o.cameriereId,o.cameriere):"";
     $("x-lockmsg").textContent=`Ordine già partito${w?` (l'ha preso ${w})`:""}: non si modifica più, ma puoi togliere quello che non è ancora stato chiamato e restituire i soldi.${boss?" Sei master: puoi anche annullarlo del tutto (cucina e cameriere vedranno sparire le schede).":""}`;
     S.fix={rm:{},q:{},sq:{},xq:{},amt:null,sig:""}}
-  S.editOrder=n;S.ecambi=cambi(o).map(c=>({...c}));S.cf=null;S.eqty={};righe(o).forEach(r=>{S.eqty[r.id]=r.qta});S.esqty={};singoli(o).forEach(s=>{S.esqty[s.pid+"|"+s.k]=s.qta});S.xpay=o.metodo||"contanti";
+  S.editOrder=n;S.xCop=copOf(o);S.ecambi=cambi(o).map(c=>({...c}));S.cf=null;S.eqty={};righe(o).forEach(r=>{S.eqty[r.id]=r.qta});S.esqty={};singoli(o).forEach(s=>{S.esqty[s.pid+"|"+s.k]=s.qta});S.xpay=o.metodo||"contanti";
   $("x-off").value=o.offerta?o.offerta.toFixed(2).replace(".",","):"";$("x-title").textContent=(locked?"Rettifica ordine ":"Modifica ordine ")+n+(o.nome?" · "+o.nome:"")+(o.asporto?" · asporto":"");$("x-nome").value=o.nome||"";$("x-note").value=o.note||"";$("x-paid").checked=!!o.pagatoPrima;
   $("x-msg").textContent="";$("x-del-row").hidden=locked&&!boss;$("x-confirm-row").hidden=true;$("x-panel").hidden=false;$("c-last-wrap").hidden=true;
   renderEditSteppers();if(locked)renderFix(true);$("x-panel").scrollIntoView({behavior:"smooth",block:"start"});
@@ -459,28 +459,34 @@ function refundM(o){return o.metodo==="misto"?((S.fix&&S.fix.m)||"contanti"):o.m
 function renderFix(force){
   const o=orderByNum(S.editOrder),F=S.fix,box=$("x-fix");if(!o||!F)return;
   const sig=JSON.stringify([o,{...F,sig:""}]);if(!force&&sig===F.sig)return;F.sig=sig;
-  const c=fixCalc(o),pend=orderCourses(o).filter(x=>(x.p.stato||"attesa")==="attesa");
+  const c=fixCalc(o),pend=orderCourses(o).filter(x=>(x.p.stato||"attesa")==="attesa"),copCh=S.xCop!==copOf(o);
   if(F.amt==null)$("x-fix").dataset.sugg=c.refund;
   const amt=F.amt!=null?F.amt:c.refund;
   box.innerHTML=`<span class="label">Piatti non ancora chiamati</span>
     ${pend.length?`<div class="chips">${pend.map(x=>`<button class="tog" data-fixrm="${esc(x.k)}" aria-pressed="${!F.rm[x.k]}">${esc(x.l)}</button>`).join("")}</div><p class="hint">Tocca un piatto per toglierlo dall'ordine (es. dolce finito, non lo vogliono).</p>`:'<div class="sub">Tutti i piatti sono già stati chiamati.</div>'}
-    ${c.noneCalled&&(righe(o).length||singoli(o).length)?`<span class="label">Coperti (nessun piatto ancora chiamato)</span>${fixStep(righe(o),F.q,"data-fq",r=>r.id)}${fixStep(singoli(o).map(s=>({...s,nome:s.nome+" singolo"})),F.sq,"data-fsq",s=>s.pid+"|"+s.k)}`:""}
+    ${c.noneCalled&&(righe(o).length||singoli(o).length)?`<span class="label">Menù e piatti da soli (nessun piatto ancora chiamato)</span>${fixStep(righe(o),F.q,"data-fq",r=>r.id)}${fixStep(singoli(o).map(s=>({...s,nome:s.nome+" singolo"})),F.sq,"data-fsq",s=>s.pid+"|"+s.k)}`:""}
     ${extras(o).length?`<span class="label">Bevande ed extra</span>${fixStep(extras(o),F.xq,"data-fxq",x=>x.id)}`:""}
-    <div class="sub">${c.desc.length?esc(c.desc.join(" · ")):"Scegli cosa togliere."}</div>
+    ${fixCopRow()}
+    <div class="sub">${c.desc.length?esc(c.desc.join(" · ")):copCh?esc(`Coperti ${copOf(o)} → ${S.xCop}`):"Scegli cosa togliere."}</div>
     ${c.noPrice.length?`<div class="note">${esc(c.noPrice.join(", "))}: nel Listino non c'è il prezzo da solo, quindi l'app non sa quanto vale dentro il menù. Scrivi tu quanto restituire.</div>`:""}
     ${o.metodo==="misto"?`<div class="payrow"><span class="label">Restituisci in</span><span class="seg" id="x-fixm">${["contanti","pos"].map(m=>`<button type="button" data-fixm="${m}" aria-pressed="${(F.m||"contanti")===m}">${m==="pos"?"POS":"Contanti"}</button>`).join("")}</span></div>`:""}
     <div class="payrow"><label class="label" for="x-fixamt">Da restituire (${PAY_LBL[refundM(o)]||"contanti"})</label><input type="text" id="x-fixamt" inputmode="decimal" class="pricein" value="${amt?amt.toFixed(2).replace(".",","):""}" placeholder="0,00 €"></div>
     ${c.refund>0&&F.amt!=null&&F.amt!==c.refund?`<div class="sub">Calcolato: ${money(c.refund)}</div>`:""}
-    <button class="btn primary big" id="x-fixsave" ${c.desc.length?"":"disabled"}>Togli${amt>0?" e restituisci "+money(amt):""}</button>`;
+    <button class="btn primary big" id="x-fixsave" ${c.desc.length||copCh?"":"disabled"}>${c.desc.length?`Togli${amt>0?" e restituisci "+money(amt):""}`:"Salva i coperti"}</button>`;
 }
 $("x-fix").addEventListener("click",async e=>{const b=e.target.closest("button");if(!b||!S.fix)return;const F=S.fix;
   if(b.dataset.fixrm){F.rm[b.dataset.fixrm]=!F.rm[b.dataset.fixrm];F.amt=null;renderFix(true);return}
   if(b.dataset.fixm){F.m=b.dataset.fixm;renderFix(true);return}
+  if(b.dataset.fcop){S.xCop=Math.max(0,S.xCop+Number(b.dataset.fcop));renderFix(true);return}
   for(const [a,map] of [["fq","q"],["fsq","sq"],["fxq","xq"]])if(b.dataset[a]!=null){const k=b.dataset[a],max=+b.dataset.max,cur=F[map][k]!=null?F[map][k]:max;
     F[map][k]=Math.max(0,Math.min(max,cur+Number(b.dataset.d)));F.amt=null;renderFix(true);return}
   if(b.id==="x-fixsave")saveFix()});
-$("x-fix").addEventListener("input",e=>{if(e.target.id==="x-fixamt"&&S.fix){S.fix.amt=parsePrice(e.target.value);S.fix.sig=JSON.stringify([orderByNum(S.editOrder),{...S.fix,sig:""}])}});
-$("x-fix").addEventListener("change",e=>{if(e.target.id==="x-fixamt"&&S.fix)renderFix(true)});
+$("x-fix").addEventListener("input",e=>{if(e.target.id==="x-fcop"&&S.fix){const o=orderByNum(S.editOrder);if(!o)return;const v=copParse(e.target.value);S.xCop=v==null?copOf(o):v;
+    const sv=$("x-fixsave");if(sv&&!fixCalc(o).desc.length){sv.disabled=S.xCop===copOf(o);sv.textContent="Salva i coperti"}return}
+  if(e.target.id==="x-fixamt"&&S.fix){S.fix.amt=parsePrice(e.target.value);S.fix.sig=JSON.stringify([orderByNum(S.editOrder),{...S.fix,sig:""}])}});
+$("x-fix").addEventListener("change",e=>{if(e.target.id==="x-fixamt"&&S.fix)renderFix(true);
+  /* coperti: solo il numero pulito, senza ridisegnare (il tocco su «Salva» non va perso) */
+  if(e.target.id==="x-fcop"&&S.fix){e.target.value=S.xCop;const m=e.target.parentNode.querySelector('button[data-fcop="-1"]');if(m)m.disabled=!(S.xCop>0)}});
 async function saveFix(){
   const n=S.editOrder,o=orderByNum(n),m=$("x-msg"),F=S.fix;if(!o||!F)return;m.className="msg err";
   const c=fixCalc(o),late=orderCourses(o).filter(x=>F.rm[x.k]&&(x.p.stato||"attesa")!=="attesa");
@@ -488,10 +494,17 @@ async function saveFix(){
   const reduced=Object.keys(F.q).some(k=>F.q[k]<(righe(o).find(r=>r.id===k)||{}).qta)||Object.keys(F.sq).length&&singoli(o).some(s=>F.sq[s.pid+"|"+s.k]!=null&&F.sq[s.pid+"|"+s.k]<s.qta);
   if(reduced&&!c.noneCalled){m.textContent="Nel frattempo è stato chiamato un piatto: i coperti non si possono più togliere.";F.q={};F.sq={};renderFix(true);return}
   if(!c.rr.length&&!c.ss.length&&!c.xx.length){m.textContent="Così non resta niente: per togliere tutto serve «Annulla ordine» (solo il master).";return}
+  const cop0=copOf(o),copTxt=S.xCop!==cop0?`Coperti ${cop0} → ${S.xCop}`:"";
+  /* cambiano solo i coperti: niente storno, si salva solo il numero */
+  if(!c.desc.length){if(!copTxt)return;
+    try{await R("ordini/"+n).update({coperti:S.xCop});m.className="msg ok";m.textContent="Coperti salvati.";
+      logChange(`Ordine ${n}${o.nome?" ("+o.nome+")":""} rettificato: ${copTxt}`);renderFix(true)}
+    catch(e){m.textContent=errText(e)}
+    return}
   const amt=r2(Math.max(0,Math.min(F.amt!=null?F.amt:c.refund,o.incassato||0)));
   const qm={};c.rr.forEach(r=>{qm[r.id]=r.qta});const cc=clampCambi(cambi(o),qm);
   const upd={righe:c.rr,singoli:c.ss,extra:c.xx,importoMenu:menuNetto(c.rr,cc),importoSingoli:importo(c.ss),importoExtra:importo(c.xx)};
-  upd.importo=r2(upd.importoMenu+upd.importoSingoli+upd.importoExtra);
+  upd.importo=r2(upd.importoMenu+upd.importoSingoli+upd.importoExtra);upd.coperti=S.xCop;
   if(cambi(o).length)upd.cambi=cc.length?cc:null;
   const need=coursesFor(c.rr,c.ss,c.xx,cc);
   Object.keys(o.portate||{}).forEach(k=>{if((F.rm[k]||!need[kBase(k)])&&(o.portate[k].stato||"attesa")==="attesa")upd["portate/"+k]=null});
@@ -501,7 +514,7 @@ async function saveFix(){
   /* se si tolgono piatti a un pasto offerto, cala anche la parte offerta */
   if(o.offerto>0){const nOff=r2(Math.min(o.offerto,Math.max(0,upd.importo-((o.incassato||0)-amt))));if(nOff<o.offerto){upd.offerto=nOff;upd["pagamenti/"+sid+"o"]={i:r2(nOff-o.offerto),m:"offerto",t:Date.now()}}}
   try{await R("ordini/"+n).update(upd);m.className="msg ok";m.textContent="Rettifica salvata."+(amt>0?` Restituisci ${money(amt)} (${PAY_LBL[rm]}).`:"");
-    logChange(`Ordine ${n}${o.nome?" ("+o.nome+")":""} rettificato: ${c.desc.join(", ")}${amt>0?` · restituiti ${money(amt)}`:""}`);
+    logChange(`Ordine ${n}${o.nome?" ("+o.nome+")":""} rettificato: ${c.desc.join(", ")}${copTxt?" · "+copTxt:""}${amt>0?` · restituiti ${money(amt)}`:""}`);
     S.fix={rm:{},q:{},sq:{},xq:{},amt:null,sig:"",m:F.m};renderFix(true)}
   catch(e){m.textContent=errText(e)}
 }
@@ -510,7 +523,14 @@ function renderEditSteppers(){
   S.ecambi=clampCambi(S.ecambi,S.eqty);$("x-cambi").innerHTML=cambiHtml("x",S.eqty,S.ecambi);
   const sl=singlesList();$("x-sing-box").hidden=!sl.length;$("x-sing").innerHTML=singlesHtml(S.esqty,"data-esstep");
   paintTotal("x",bill(S.eqty,{},$("x-paid").checked,S.esqty,ccX()),$("x-paid").checked,S.xpay);
+  paintXCop();
 }
+/* Coperti in Modifica / Rettifica: partono da quelli salvati e cambiano solo a mano (non seguono i menù) */
+function paintXCop(){const i=$("x-cop");if(document.activeElement!==i)i.value=S.xCop;$("x-coprow").querySelector('button[data-xcop="-1"]').disabled=!(S.xCop>0)}
+$("x-coprow").addEventListener("click",e=>{const b=e.target.closest("button[data-xcop]");if(!b)return;S.xCop=Math.max(0,S.xCop+Number(b.dataset.xcop));$("x-cop").value=S.xCop;paintXCop()});
+$("x-cop").addEventListener("input",e=>{const v=copParse(e.target.value),o=orderByNum(S.editOrder);S.xCop=v==null?copOf(o):v});
+$("x-cop").addEventListener("blur",paintXCop);
+function fixCopRow(){return `<div class="stepper coprow"><label class="name" for="x-fcop">Coperti</label><span class="ctl"><button type="button" data-fcop="-1" ${S.xCop>0?"":"disabled"} aria-label="Un coperto in meno">−</button><input type="text" id="x-fcop" class="copin" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="${S.xCop}"><button type="button" data-fcop="1" aria-label="Un coperto in più">+</button></span></div>`}
 $("x-steppers").addEventListener("click",e=>{const b=e.target.closest("button[data-estep]");if(!b)return;
   const id=b.dataset.estep;S.eqty[id]=Math.max(0,(S.eqty[id]||0)+Number(b.dataset.d));renderEditSteppers()});
 $("x-sing").addEventListener("click",e=>{const b=e.target.closest("button[data-esstep]");if(!b)return;
@@ -528,7 +548,7 @@ $("x-save").addEventListener("click",async()=>{
   const oOff=o.offerto||0,nOff=r2(Math.min(oOff,b.due)),xoff=parsePrice($("x-off").value);
   const cc=clampCambi(S.ecambi,S.eqty);
   const upd={nome:$("x-nome").value.trim(),note:$("x-note").value.trim(),cambi:cc.length?cc:null,righe:b.rr,extra:b.xx,importoMenu:b.menu,importoExtra:b.ext,importo:b.tot,
-    singoli:b.ss,importoSingoli:b.sing,pagatoPrima:paid,incassato:r2(b.due-nOff),offerta:xoff};
+    singoli:b.ss,importoSingoli:b.sing,pagatoPrima:paid,incassato:r2(b.due-nOff),offerta:xoff,coperti:S.xCop};
   if(oOff>0)upd.offerto=nOff;
   const moved=r2(upd.incassato+xoff-(o.incassato||0)-(o.offerta||0));
   upd.metodo=moved===0?(o.metodo||(nOff>0?"offerto":"")):(o.metodo&&o.metodo!=="offerto"&&o.metodo!==S.xpay&&(o.incassato||0)>0?"misto":S.xpay);
@@ -545,7 +565,7 @@ $("x-save").addEventListener("click",async()=>{
     await R("ordini/"+n).update(upd);m.className="msg ok";
     const money2=diff>0?` Incassa altri ${money(diff)} (${PAY_LBL[S.xpay]}).`:diff<0?` Restituisci ${money(-diff)}.`:"";
     m.textContent="Modifiche salvate."+money2;
-    const ch=[before!==after?`${before} → ${after}`:"",(o.nome||"")!==upd.nome?`nome «${o.nome||""}» → «${upd.nome}»`:"",(o.note||"")!==upd.note?"note cambiate":"",diff?(diff>0?`incassati altri ${money(diff)}`:`restituiti ${money(-diff)}`):""].filter(Boolean).join(" · ");
+    const ch=[before!==after?`${before} → ${after}`:"",(o.nome||"")!==upd.nome?`nome «${o.nome||""}» → «${upd.nome}»`:"",(o.note||"")!==upd.note?"note cambiate":"",copOf(o)!==upd.coperti?`Coperti ${copOf(o)} → ${upd.coperti}`:"",diff?(diff>0?`incassati altri ${money(diff)}`:`restituiti ${money(-diff)}`):""].filter(Boolean).join(" · ");
     if(ch)logChange(`Ordine ${n} modificato: ${ch}`)}
   catch(e){m.className="msg err";m.textContent=errText(e)}
 });
