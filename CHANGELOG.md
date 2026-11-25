@@ -1,5 +1,8 @@
 # Versioni
 
+## 45
+- **Avvisi:** se il telefono scarta la notifica senza dare errore (succede con l'app installata da Samsung Internet), il service worker la rimostra in modo semplice; il tasto «Prova» dice se la notifica è stata davvero mostrata.
+
 ## 44
 - **Avvisi:** nella barra in alto del telefono l'icona dell'app (forchetta, piatto e coltello) invece del quadratino bianco.
 

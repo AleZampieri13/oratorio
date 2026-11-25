@@ -68,8 +68,9 @@ async function pushInvia(subs,titolo,testo,tag){
 /* il service worker dice se un avviso è arrivato e se è riuscito a mostrarlo */
 if("serviceWorker" in navigator)navigator.serviceWorker.addEventListener("message",e=>{const d=e.data;if(!d||!d.avvisi)return;
   console.info("avvisi: arrivato al telefono",d);
-  if(d.errore)showBanner("È arrivato un avviso ma il telefono non è riuscito a mostrarlo: "+d.errore);
-  else if(d.tag==="prova"){S.pushMsg="✓ La prova è arrivata a questo telefono.";renderPushBar()}});
+  const det=` (notifiche presenti: ${d.presenti}, modo: ${d.modo}${d.errore?", errore: "+d.errore:""})`;
+  if(d.tag==="prova"){S.pushMsg=(d.mostrato?"✓ La prova è arrivata e il telefono l'ha mostrata":"✗ La prova è arrivata ma il telefono non l'ha mostrata")+det;renderPushBar()}
+  else if(!d.mostrato)showBanner("È arrivato un avviso ma il telefono non l'ha mostrato"+det)});
 async function pushDisattiva(){
   await pushTogli(S.me.id,authUid());
   pushSet("off");
