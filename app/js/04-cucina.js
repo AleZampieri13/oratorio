@@ -6,6 +6,14 @@ function breakdown(items){
   const tot=Object.values(by).reduce((a,b)=>a+b,0);delete by[""];
   return {tot,txt:Object.entries(by).map(([n,q])=>`${q} ${esc(n)}`).join(" · ")};
 }
+/* porzioni mancanti / totale della serata: totale = ordinate; fatte = pronte o portate (nei reparti: il pezzo del reparto pronto) */
+function missTot(pid,sc){const tot=usedFor(pid);let done=0;
+  ordersArr().forEach(o=>orderCourses(o).forEach(c=>{if(kBase(c.k)!==pid)return;const st=c.p.stato;
+    let ok=st==="pronta"||st==="servita";
+    if(!ok&&sc&&st==="chiamata"){const rp=Object.entries(c.p.rep||{}).filter(([r])=>sc.includes(r));ok=rp.length>0&&rp.every(([,v])=>v&&v.s==="pronta")}
+    if(ok)done+=cop(righeFor(o,c.k))}));
+  return {miss:Math.max(0,tot-done),tot}}
+function missHtml(pid,sc){const m=missTot(pid,sc);return m.tot?`<span class="miss${m.miss?"":" ok"}" title="Porzioni ancora da preparare su quelle ordinate"><b>${m.miss}</b> / ${m.tot}</span>`:""}
 function kFilt(){const f=S.kFilt;return f&&S.portate.some(p=>p.id===f)?f:""}
 function kWho(o,p){return o.asportoSubito||(o.asporto&&!ownerId(o))?"Asporto":(nameOf(p&&p.daId,p&&p.da)||nameOf(ownerId(o),o.cameriere)||"—")}
 function renderKReps(){
@@ -74,7 +82,7 @@ function renderRepView(sc,ids){
   const calls=repItems("chiamata",sc),ready=repItems("pronta",sc);
   const ports=S.portate.filter(p=>portReps(p).some(x=>sc.includes(x.r)));
   $(ids.sum).innerHTML=ports.length?ports.map(p=>{const b=breakdown(calls.filter(c=>kBase(c.k)===p.id)),l=stockLeft(p.id);
-    return `<div class="${b.tot?"":"zero"}"><span class="label" style="color:${portColor(p.id)}">${esc(p.nome)}</span><b>${b.tot}</b><span class="brk">${b.tot?b.txt:"—"}</span>${l!=null?`<span class="left ${stockCls(l)}">${l<=0?"Esaurito":l===1?"Resta 1 porzione":"Restano "+l+" porzioni"}</span>`:""}</div>`}).join("")
+    return `<div class="${b.tot?"":"zero"}"><span class="label" style="color:${portColor(p.id)}">${esc(p.nome)}</span><b>${b.tot}</b><span class="brk">${b.tot?b.txt:"—"}</span>${missHtml(p.id,sc)}${l!=null?`<span class="left ${stockCls(l)}">${l<=0?"Esaurito":l===1?"Resta 1 porzione":"Restano "+l+" porzioni"}</span>`:""}</div>`}).join("")
     :'<div class="zero"><span class="label">Nessun piatto</span><span class="brk">A questo reparto non è assegnato nessun piatto: chiedi al master (Listino → Piatti).</span></div>';
   /* una scheda per cliente; ordini uniti dal cameriere = una scheda sola, stesso piatto sommato */
   const groups=[];calls.forEach(c=>{const gk=gKey(c.o);let g=groups.find(x=>x.gk===gk);if(!g){g={gk,G:unitiOf(c.o),t:c.t,items:[]};groups.push(g)}
@@ -152,7 +160,7 @@ function renderKitchen(){
   const calls=flatCourses("chiamata"),ready=flatCourses("pronta");
   $("k-sum").innerHTML=S.portate.map(p=>{const b=breakdown(calls.filter(c=>kBase(c.k)===p.id)),l=stockLeft(p.id);
     const cls=[b.tot?"":"zero",f===p.id?"kon":f?"dim":""].join(" ");
-    return `<div class="${cls}" data-kf="${esc(p.id)}" role="button" tabindex="0"><span class="label" style="color:${portColor(p.id)}">${esc(p.nome)}</span><b>${b.tot}</b><span class="brk">${b.tot?b.txt:"—"}</span>${l!=null?`<span class="left ${stockCls(l)}">${l<=0?"Esaurito":l===1?"Resta 1 porzione":"Restano "+l+" porzioni"}</span>`:""}</div>`}).join("");
+    return `<div class="${cls}" data-kf="${esc(p.id)}" role="button" tabindex="0"><span class="label" style="color:${portColor(p.id)}">${esc(p.nome)}</span><b>${b.tot}</b><span class="brk">${b.tot?b.txt:"—"}</span>${missHtml(p.id,null)}${l!=null?`<span class="left ${stockCls(l)}">${l<=0?"Esaurito":l===1?"Resta 1 porzione":"Restano "+l+" porzioni"}</span>`:""}</div>`}).join("");
   const fp=S.portate.find(p=>p.id===f);
   $("k-filt").hidden=!fp;if(fp)$("k-filt").innerHTML=`<span>Solo ${esc(fp.nome)}</span><button class="btn" id="k-all">Mostra tutto</button>`;
   S.portate.forEach(p=>{const el=$("sl-"+p.id);if(el){const l=stockLeft(p.id);el.textContent=l==null?"nessun limite":leftTxt(l);el.className="sub "+stockCls(l)}});

@@ -178,6 +178,9 @@ pre.rules{background:var(--bg);border-radius:8px;padding:10px;overflow-x:auto;fo
 .pill.low{background:var(--call-bg);color:var(--call)} .pill.out{background:var(--danger-bg);color:var(--danger)}
 .ksum .left{display:block;font-size:.8rem;font-weight:700;margin-top:4px}
 .ksum .left.low{color:var(--call)} .ksum .left.out{color:var(--danger)}
+.ksum .miss{display:block;font-size:.85rem;margin-top:4px;color:var(--ink,inherit)}
+.ksum .miss b{display:inline;font:800 1rem var(--f-display);font-variant-numeric:tabular-nums}
+.ksum .miss.ok{color:var(--muted)}
 .srow{display:grid;grid-template-columns:minmax(0,1fr) 110px minmax(0,1fr);gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
 .srow:last-child{border-bottom:0}
 .bsum{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
