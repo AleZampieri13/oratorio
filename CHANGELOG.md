@@ -1,5 +1,9 @@
 # Versioni
 
+## 43
+- **Avvisi: tasto «Prova».** Con gli avvisi attivi, nella striscia della pagina Camerieri c'è «Prova»: manda un avviso vero a quel telefono (deve arrivare anche con l'app chiusa). Appena si attivano, il telefono mostra subito «Avvisi attivi». Se un avviso arriva ma il telefono non riesce a mostrarlo, l'app lo scrive in alto.
+- Avvisi: chiavi nuove (i telefoni che li avevano attivati devono toccare di nuovo «Attiva avvisi»).
+
 ## 42
 - **Avvisi con l'app chiusa (camerieri):** nella pagina Camerieri «Attiva avvisi». Arrivano anche con l'app chiusa o lo schermo spento: Pronto, Non ancora pronto, Ordine annullato. Su iPhone l'app va aggiunta alla schermata Home (iOS 16.4 o più recente). Serve il Worker su Cloudflare (vedi worker/README.md).
 - Avvisi bloccati: la striscia dice dove riattivarli in Samsung Internet, in Chrome o su iPhone. La striscia «Attiva avvisi» non è più rossa (il rosso resta per il suono bloccato).
