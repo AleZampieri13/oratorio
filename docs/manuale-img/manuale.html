@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Manuale d'uso – Ordini Oratorio</title>
+<style>
+  @page { size: A4; margin: 16mm 16mm 18mm 16mm; }
+  @page :first { margin: 0; }
+  :root { --accent:#0e6a53; --ink:#16201c; --muted:#5a6862; --line:#d5ddd8; --soft:#eef2ef; --warm:#a35d00; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin:0; font-family: "Segoe UI", Arial, sans-serif; color: var(--ink); font-size: 10.4pt; line-height: 1.45; }
+  h1, h2, h3 { font-weight: 700; letter-spacing: -.01em; }
+  b { font-weight: 650; }
+
+  /* copertina */
+  .cover { height: 297mm; width: 210mm; position: relative; background: var(--accent); color: #fff; padding: 34mm 22mm; page-break-after: always; overflow: hidden; }
+  .cover .tag { font-size: 10pt; letter-spacing: .18em; text-transform: uppercase; opacity: .8; }
+  .cover h1 { font-size: 40pt; line-height: 1.05; margin: 14mm 0 6mm; }
+  .cover .sub { font-size: 15pt; opacity: .92; max-width: 140mm; }
+  .cover .band { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; color: var(--ink); padding: 14mm 22mm; }
+  .cover .band .row { display: flex; gap: 14mm; }
+  .cover .band .k { font-size: 8pt; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+  .cover .band .v { font-size: 12pt; font-weight: 650; margin-top: 1mm; }
+  .cover .shot { position: absolute; right: -18mm; top: 108mm; width: 120mm; transform: rotate(-4deg); border-radius: 4mm; box-shadow: 0 10mm 24mm rgba(0,0,0,.35); border: 1.2mm solid #fff; }
+
+  /* indice */
+  .toc { page-break-after: always; }
+  .toc h2 { font-size: 20pt; margin: 0 0 6mm; color: var(--accent); }
+  .toc ol { list-style: none; padding: 0; margin: 0; counter-reset: s; }
+  .toc li { counter-increment: s; display: flex; align-items: baseline; gap: 4mm; padding: 3.2mm 0; border-bottom: .3mm solid var(--line); font-size: 12pt; }
+  .toc li::before { content: counter(s, decimal-leading-zero); color: var(--accent); font-weight: 700; width: 9mm; }
+  .toc li span { color: var(--muted); font-size: 9.5pt; margin-left: auto; }
+  .intro { margin: 0 0 8mm; font-size: 11pt; }
+  table.roles { width: 100%; border-collapse: collapse; margin-top: 8mm; font-size: 9.6pt; }
+  table.roles th { text-align: left; background: var(--soft); padding: 2.2mm 3mm; font-size: 8pt; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  table.roles td { padding: 2.4mm 3mm; border-bottom: .3mm solid var(--line); }
+
+  /* sezioni */
+  section.page { page-break-before: always; }
+  .head { display: flex; align-items: center; gap: 4mm; border-bottom: .8mm solid var(--accent); padding-bottom: 2.5mm; margin-bottom: 4mm; }
+  .head .n { background: var(--accent); color: #fff; font-weight: 700; font-size: 12pt; width: 10mm; height: 10mm; border-radius: 2mm; display: flex; align-items: center; justify-content: center; }
+  .head h2 { margin: 0; font-size: 20pt; }
+  .head .who { margin-left: auto; font-size: 8.5pt; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+  .lead { font-size: 11.2pt; margin: 0 0 4mm; }
+  figure { margin: 0 0 5mm; text-align: center; break-inside: avoid; }
+  figure img { max-width: 100%; max-height: 118mm; border: .3mm solid var(--line); border-radius: 2mm; box-shadow: 0 1.5mm 5mm rgba(0,0,0,.08); }
+  figure.tall img { max-height: 124mm; }
+  h3.newpage { page-break-before: always; margin-top: 0; }
+  figcaption { font-size: 8.5pt; color: var(--muted); margin-top: 2mm; font-style: italic; }
+  h3 { font-size: 11.5pt; color: var(--accent); margin: 4.5mm 0 1.5mm; text-transform: uppercase; letter-spacing: .05em; }
+  ol, ul { margin: 0 0 2mm; padding-left: 6mm; }
+  li { margin: .9mm 0; break-inside: avoid; }
+  .split { display: grid; grid-template-columns: 68mm 1fr; gap: 7mm; align-items: start; }
+  .split figure img { max-height: 205mm; }
+  .tip { background: var(--soft); border-left: 1.2mm solid var(--accent); padding: 3mm 4mm; margin: 4mm 0; border-radius: 0 2mm 2mm 0; break-inside: avoid; }
+  .tip b { color: var(--accent); }
+  table.help { width: 100%; border-collapse: collapse; font-size: 10pt; }
+  table.help th { text-align: left; background: var(--accent); color: #fff; padding: 2.6mm 3mm; font-size: 9pt; }
+  table.help td { padding: 3mm; border-bottom: .3mm solid var(--line); vertical-align: top; }
+  table.help td:first-child { width: 42%; font-weight: 600; }
+  table.help tr { break-inside: avoid; }
+  .k { display: inline-block; border: .3mm solid var(--line); background: #fff; border-radius: 1.2mm; padding: 0 1.6mm; font-size: 8.6pt; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; }
+  .k.g { background: var(--accent); color: #fff; border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="tag">Oratorio · Serate a tavola</div>
+  <h1>Ordini Oratorio<br>Manuale d'uso</h1>
+  <div class="sub">Come si usano cassa, camerieri, cucina, bar e uscita piatti durante la serata.</div>
+  <img class="shot" src="cucina.png" alt="">
+  <div class="band"><div class="row">
+    <div><div class="k">Serata</div><div class="v">21 novembre 2026</div></div>
+    <div><div class="k">App</div><div class="v">giovanichef.web.app</div></div>
+    <div><div class="k">Versione</div><div class="v">36</div></div>
+  </div></div>
+</div>
+
+<div class="toc">
+  <h2>Indice</h2>
+  <p class="intro">Questo manuale spiega, pagina per pagina, come si usa l'app degli ordini durante la serata. Le immagini vengono da una serata di prova con nomi e ordini inventati.</p>
+  <ol>
+    <li>Come si entra <span>tutti</span></li>
+    <li>Cassa <span>cassieri</span></li>
+    <li>Camerieri <span>camerieri</span></li>
+    <li>Cucina <span>cuochi</span></li>
+    <li>Bar <span>bar</span></li>
+    <li>Uscita piatti <span>bancone</span></li>
+    <li>Capo camerieri <span>capo camerieri</span></li>
+    <li>Master: listino ed evento <span>responsabile</span></li>
+    <li>Se qualcosa va storto <span>tutti</span></li>
+  </ol>
+  <table class="roles">
+    <tr><th>Chi</th><th>Pagina</th><th>Dispositivo</th></tr>
+    <tr><td>Cassieri</td><td>Cassa</td><td>PC o tablet</td></tr>
+    <tr><td>Camerieri</td><td>Camerieri</td><td>Il proprio telefono</td></tr>
+    <tr><td>Cuochi</td><td>Cucina (tutta o un solo reparto)</td><td>Tablet o PC in cucina</td></tr>
+    <tr><td>Bar</td><td>Bar</td><td>Tablet o telefono</td></tr>
+    <tr><td>Chi controlla il bancone</td><td>Uscita piatti</td><td>Tablet o PC</td></tr>
+    <tr><td>Capo camerieri</td><td>Persone e Camerieri</td><td>Telefono o tablet</td></tr>
+    <tr><td>Responsabile della serata</td><td>Master: tutte le pagine</td><td>PC</td></tr>
+  </table>
+</div>
+
+<section class="page">
+  <div class="head"><div class="n">1</div><h2>Come si entra</h2><div class="who">Tutti</div></div>
+  <p class="lead">Ogni telefono entra una volta sola con il link o il QR del responsabile; poi l'app si ricorda di lui.</p>
+  <ol>
+    <li>Apri il <b>link</b> (o inquadra il <b>QR</b>) che ti manda il master. Senza link compare «Telefono non autorizzato».</li>
+    <li>Alla schermata <b>«Chi sei?»</b> tocca il tuo nome, scrivi il <b>PIN</b> e tocca <span class="k g">Entra</span>.</li>
+    <li><b>Camerieri:</b> niente PIN. Inquadra il <b>QR d'iscrizione</b> del capo camerieri (oppure scrivi il codice sotto il QR in «Sei un cameriere?») e tocca il tuo nome.</li>
+  </ol>
+  <p>In alto ci sono le schede delle pagine che puoi usare. Chi ha più ruoli (per esempio Cassa e Master) passa da una all'altra toccando la scheda. In alto a destra vedi se sei <b>collegato</b>, il tuo nome e il tasto <span class="k">Esci</span>.</p>
+  <div class="tip"><b>Da sapere.</b> Cucina, camerieri, bar e uscita tengono lo schermo sempre acceso mentre la pagina è aperta. Tutte le pagine si aggiornano da sole: non serve ricaricare. Se compare «Suono bloccato dal telefono», toccalo una volta per attivare gli avvisi.</div>
+</section>
+
+<section class="page">
+  <div class="head"><div class="n">2</div><h2>Cassa</h2><div class="who">Cassieri</div></div>
+  <p class="lead">La cassa crea gli ordini e incassa: il numero dell'ordine è quello del biglietto che dai al cliente.</p>
+  <figure><img src="cassa.png" alt=""><figcaption>A sinistra il nuovo ordine, a destra gli ultimi ordini con Modifica e Rettifica.</figcaption></figure>
+  <h3>Nuovo ordine</h3>
+  <ol>
+    <li><b>Biglietto:</b> controlla il numero. Se il cliente ha prenotato, cercalo in «Cerca prenotazione»: il menù si compila da solo.</li>
+    <li><b>Nominativo:</b> obbligatorio.</li>
+    <li><b>Menù:</b> con <span class="k">+</span> e <span class="k">−</span> scegli quanti menù di ogni tipo.</li>
+    <li><b>Cambi nel menù:</b> «Aggiungi il cambio» se qualcuno vuole un piatto al posto di un altro, oppure «Niente» per toglierlo. Con «Scala» il piatto tolto si sconta dal prezzo.</li>
+    <li><b>Piatti da soli:</b> bevande ed extra fuori dal menù, divisi per reparto.</li>
+    <li><b>Note per la cucina:</b> allergie e intolleranze.</li>
+    <li><b>Da asporto:</b> scegli se la cucina lo prepara «Subito» o se «Lo chiama un cameriere».</li>
+    <li><b>Pagamento:</b> Contanti (scrivi il «Ricevuto» e l'app calcola il resto), POS oppure Offerto (scrivi da chi). «Dividi il conto» per pagare in più parti; «Offerta» per un'offerta in più.</li>
+    <li>Tocca <span class="k g">Crea ordine</span>.</li>
+  </ol>
+  <div class="head" style="page-break-before:always"><div class="n">2</div><h2>Cassa</h2><div class="who">Ordini già fatti</div></div>
+  <ul>
+    <li>A destra gli ultimi 15 ordini con lo stato dei piatti. Per un altro ordine scrivi il numero in «N. da modificare» e tocca <span class="k">Apri</span>.</li>
+    <li><span class="k">Modifica</span>: finché nessun cameriere ha preso l'ordine puoi cambiare tutto. L'app ti dice se «Incassare altri» soldi o «Restituire».</li>
+    <li><span class="k">Rettifica</span>: quando un cameriere l'ha già preso puoi togliere solo i piatti non ancora chiamati, con il rimborso calcolato.</li>
+    <li><span class="k">Annulla ordine</span>: chiede conferma. Il numero non viene più riusato.</li>
+    <li><span class="k">+ Offerta</span>: registra un'offerta senza ordine (contanti o POS).</li>
+    <li><b>Asporto da consegnare:</b> quando è pronto, consegnalo e tocca <span class="k">Consegnato</span>.</li>
+    <li>In alto vedi l'incasso della tua cassa e il fondo cassa. <b>Storico</b>, in fondo: gli ordini più vecchi.</li>
+  </ul>
+  <div class="tip"><b>Porzioni finite.</b> Quando un piatto è esaurito la cassa lo segnala («Esaurito», «Restano 2») e non lascia vendere oltre le porzioni rimaste.</div>
+</section>
+
+<section class="page">
+  <div class="head"><div class="n">3</div><h2>Camerieri</h2><div class="who">Camerieri</div></div>
+  <p class="lead">Il cameriere prende i clienti dal numero del biglietto, chiama i piatti quando è il momento e li porta al tavolo.</p>
+  <div class="split">
+    <figure><img src="camerieri.png" alt=""><figcaption>I clienti del cameriere, con le linguette dei reparti.</figcaption></figure>
+    <div>
+      <h3>Prendere un cliente</h3>
+      <ol>
+        <li>In «Nuovo cliente» scrivi il <b>numero sul biglietto</b> e tocca <span class="k g">Cerca</span>.</li>
+        <li>Controlla nome e piatti e tocca <span class="k g">Aggiungi</span>: il cliente passa in «I miei clienti».</li>
+      </ol>
+      <h3>Chiamare i piatti</h3>
+      <ul>
+        <li>Ogni cliente ha le <b>linguette dei reparti</b> (Primo, Fritto, Secondo, Dolce, Bar). Il pallino indica che c'è ancora qualcosa da chiamare.</li>
+        <li><span class="k g">Chiama</span> manda il piatto in cucina. <span class="k g">Chiama tutto</span> chiama insieme tutti i piatti del reparto.</li>
+        <li>Solo una parte adesso? Abbassa il numero (per esempio 2 su 3) prima di chiamare: il resto resta da chiamare dopo.</li>
+        <li><b>Scelte</b> (per esempio acqua Naturale o Frizzante): decidile prima di chiamare.</li>
+        <li>Chiamato per sbaglio? <span class="k">Annulla</span>, finché la cucina non l'ha ancora finito.</li>
+      </ul>
+      <h3>Portare i piatti</h3>
+      <ul>
+        <li>Quando la cucina finisce il piatto diventa <b>pronto</b> e il telefono suona.</li>
+        <li>Tocca <span class="k g">Porta…</span> quando lo porti al tavolo: diventa «portato ✓». Per sbaglio? <span class="k">Non portato</span>.</li>
+        <li>Un piatto in ritardo ha il <b>bordo rosso</b> a sinistra.</li>
+      </ul>
+      <h3>Altro</h3>
+      <ul>
+        <li><span class="k">Condividi</span> / <span class="k">Sposta</span>: servi il cliente insieme a un collega, o passalo a lui.</li>
+        <li><b>Storico</b>, in fondo: i clienti già finiti.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="page">
+  <div class="head"><div class="n">4</div><h2>Cucina</h2><div class="who">Cuochi</div></div>
+  <p class="lead">La cucina vede le chiamate dei camerieri e segna «Pronto» quando il piatto è sul bancone. Un cuoco con un reparto vede solo i piatti del suo reparto.</p>
+  <figure class="tall"><img src="cucina.png" alt=""><figcaption>In alto il riepilogo delle porzioni da fare, poi le schede da preparare e i piatti pronti.</figcaption></figure>
+  <h3>La schermata</h3>
+  <ul>
+    <li><b>Riepilogo:</b> quante porzioni di ogni piatto ci sono da fare in tutto. Il filtro «Reparto» mostra Tutti o uno solo.</li>
+    <li><b>Da preparare:</b> una scheda per ordine, colorata come il reparto. In grande il nome del cameriere; sotto l'ora della chiamata con i minuti passati, il numero dell'ordine e il cliente; poi il piatto con la quantità.</li>
+    <li>Le scelte (per esempio Naturale / Frizzante) sono su righe separate. Un piatto in ritardo ha il <b>bordo rosso</b>.</li>
+  </ul>
+  <h3>Segnare pronto</h3>
+  <ul>
+    <li><span class="k g">Pronto</span>: il piatto è pronto tutto.</li>
+    <li><b>Pronti in parte:</b> abbassa il numero (per esempio 3 su 5) e tocca «Pronto». Quelli fatti vanno al cameriere, il resto resta da preparare.</li>
+    <li>In «Pronti, in attesa del cameriere»: <span class="k g">Portato</span> se il piatto lo porta qualcuno dalla cucina; <span class="k">Annulla</span> se era sbagliato, e torna da preparare.</li>
+    <li><b>Suono</b> per sentire le chiamate, <b>Porzioni</b> per vedere e correggere quelle rimaste, <b>Storico</b> in fondo.</li>
+  </ul>
+</section>
+
+<section class="page">
+  <div class="head"><div class="n">5</div><h2>Bar</h2><div class="who">Bar</div></div>
+  <p class="lead">Il bar prepara le bevande e gli extra del bar (acqua, caffè, vino…) chiamati dai camerieri; funziona come la cucina.</p>
+  <figure><img src="bar.png" alt=""><figcaption>In alto «Al banco» e il riepilogo, poi le bevande da preparare e quelle pronte.</figcaption></figure>
+  <ul>
+    <li><b>Al banco:</b> se il cliente viene al bancone, scrivi il <b>numero del biglietto</b>. L'app mostra cosa dargli: consegna e tocca <span class="k g">Dato</span>.</li>
+    <li><b>Da preparare:</b> le chiamate, una scheda per ordine. <span class="k g">Pronto</span> su una bevanda, anche in parte abbassando il numero.</li>
+    <li><b>Pronte:</b> quello che aspetta il cameriere. <span class="k g">Portato</span> se la porta il bar, <span class="k">Annulla</span> se era sbagliata.</li>
+    <li><b>Suono</b>, <b>Porzioni</b> (per esempio i vini) e <b>Storico</b> come in cucina.</li>
+  </ul>
+</section>
+
+<section class="page">
+  <div class="head"><div class="n">6</div><h2>Uscita piatti</h2><div class="who">Bancone</div></div>
+  <p class="lead">L'uscita controlla il bancone: vede i piatti pronti, fila per fila, e aiuta i camerieri a non dimenticarli.</p>
+  <figure><img src="uscita.png" alt=""><figcaption>I piatti pronti sul bancone, con cameriere, numero, fila e cliente.</figcaption></figure>
+  <ul>
+    <li>In alto puoi scegliere il <b>reparto</b> da guardare (Tutti o uno solo) e vedere quanti piatti sono pronti e in preparazione.</li>
+    <li><b>Pronti da consegnare:</b> se il cameriere se ne dimentica e il piatto lo porta qualcun altro, tocca <span class="k g">Consegnato</span>.</li>
+    <li><span class="k">Annulla</span> (due tocchi, «Non pronto?»): il piatto torna da preparare in cucina.</li>
+    <li><b>In preparazione:</b> cosa sta facendo la cucina.</li>
+    <li><b>Appena consegnati:</b> toccato «Consegnato» per sbaglio? <span class="k">Non consegnato</span> entro 3 minuti e il piatto torna pronto.</li>
+  </ul>
+</section>
+
+<section class="page">
+  <div class="head"><div class="n">7</div><h2>Capo camerieri</h2><div class="who">Pagina Persone</div></div>
+  <p class="lead">Il capo camerieri fa entrare i camerieri, li divide nelle file e sistema i clienti se qualcuno cambia.</p>
+  <figure><img src="persone.png" alt=""><figcaption>Elenco dei camerieri, ingresso con il QR e file.</figcaption></figure>
+  <ul>
+    <li><b>Aggiungi camerieri:</b> un nome per riga, scegli la fila e tocca <span class="k g">Aggiungi</span>.</li>
+    <li><b>Ingresso camerieri:</b> <span class="k g">Mostra QR</span> e fallo inquadrare. Quando sono entrati tutti tocca <span class="k">Chiudi ingressi</span> («Riapri» per riaprirli). <span class="k">Nuovo QR</span> crea un QR nuovo: quello vecchio non funziona più.</li>
+    <li><b>Camerieri:</b> chi è «entrato», la sua fila, <span class="k">Libera</span> per scollegare il suo telefono (rientra con il QR), <span class="k">Rinomina</span>, <span class="k">Rimuovi</span>.</li>
+    <li><b>File:</b> aggiungi o togli le file; sotto ogni fila vedi i suoi camerieri.</li>
+    <li><b>Clienti:</b> dalla pagina Camerieri, «Sposta» passa un cliente a un altro cameriere e «Condividi» lo fa servire a due.</li>
+  </ul>
+</section>
+
+<section class="page">
+  <div class="head"><div class="n">8</div><h2>Master: listino ed evento</h2><div class="who">Responsabile</div></div>
+  <p class="lead">Il master prepara la serata, vede tutte le pagine e a fine serata chiude la cassa.</p>
+  <figure><img src="listino.png" alt=""><figcaption>Listino: menù, piatti, reparti e registro delle modifiche.</figcaption></figure>
+  <h3>Persone</h3>
+  <ul>
+    <li><b>Aggiungi persona:</b> nome, uno o più ruoli (Cassa, Cucina, Bar, Uscita piatti, Capo camerieri, Master, Cameriere) e PIN. A un cuoco puoi dare un <b>reparto</b>: vedrà solo quello.</li>
+  </ul>
+  <h3>Listino</h3>
+  <ul>
+    <li><b>Menù:</b> prezzo e piatti compresi (tocca un piatto per metterlo o toglierlo). «Aggiungi menù» per uno nuovo.</li>
+    <li><b>Piatti:</b> reparto, prezzo da solo (vuoto = non si vende da solo), «Pronto entro» in minuti, scelte del cameriere (per esempio Naturale / Frizzante).</li>
+    <li><b>Reparti:</b> ordine (↑ ↓) e colore; quelli segnati «Bar» vanno alla pagina Bar.</li>
+    <li>I prezzi nuovi valgono solo per gli ordini fatti dopo. Ogni modifica finisce nel «Registro modifiche».</li>
+  </ul>
+</section>
+
+<section class="page">
+  <div class="head"><div class="n">8</div><h2>Master: evento</h2><div class="who">Responsabile</div></div>
+  <figure><img src="evento.png" alt=""><figcaption>Evento: riepilogo della serata, collegamenti e nuovo evento.</figcaption></figure>
+  <ul>
+    <li><b>Riepilogo:</b> ordini, coperti, piatti, incassi e offerte; <span class="k">Scarica Excel</span>.</li>
+    <li><b>Tempi della cucina:</b> quanto ci mettono i piatti a essere pronti e a lasciare il bancone.</li>
+    <li><b>Chiusura cassa:</b> a fine serata conta i contanti di ogni cassa e scrivili in «Contati»: l'app dice se tornano.</li>
+    <li><b>Prenotazioni:</b> importa l'Excel (o scarica il modello). Si può ricaricare aggiornato senza doppioni.</li>
+    <li><b>Collega altri dispositivi:</b> link e QR per cassa, cucina e responsabili. <span class="k">Cambia codice di accesso</span> blocca tutti i link vecchi.</li>
+    <li><b>Nuovo evento:</b> archivia la serata e riparte dal numero 1 (persone, PIN e listino restano). <b>Va fatto prima della serata.</b></li>
+    <li><b>Serate passate:</b> le serate archiviate.</li>
+  </ul>
+</section>
+
+<section class="page">
+  <div class="head"><div class="n">9</div><h2>Se qualcosa va storto</h2><div class="who">Tutti</div></div>
+  <p class="lead">Quasi tutto si può annullare: niente panico, guarda qui.</p>
+  <table class="help">
+    <tr><th>Cosa succede</th><th>Cosa fare</th></tr>
+    <tr><td>In alto compare «Senza rete: salvo appena torna»</td><td>Continua pure: quello che fai parte appena torna la rete. Non chiudere l'app.</td></tr>
+    <tr><td>La pagina sembra ferma o strana</td><td>Ricarica la pagina: riparte da dove eri.</td></tr>
+    <tr><td>«Telefono non autorizzato»</td><td>Riapri il link o il QR del master (forse il codice è stato cambiato).</td></tr>
+    <tr><td>Un cameriere non riesce a entrare</td><td>Il capo camerieri controlla che gli ingressi siano aperti e mostra il QR attuale.</td></tr>
+    <tr><td>Non si sentono gli avvisi</td><td>Tocca «Suono bloccato dal telefono» o accendi «Suono» / «Avviso sonoro».</td></tr>
+    <tr><td>Toccato un tasto per sbaglio</td><td>«Annulla», «Non portato», «Non consegnato», oppure «Modifica» / «Rettifica» in cassa.</td></tr>
+    <tr><td>La cassa dice che un piatto è finito</td><td>Le porzioni sono esaurite: proponi un altro piatto o un altro menù.</td></tr>
+  </table>
+</section>
+
+</body>
+</html>
