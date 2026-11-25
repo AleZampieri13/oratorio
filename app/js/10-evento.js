@@ -1,8 +1,8 @@
 /* Evento: prenotazioni, Excel, nuovo evento, archivio */
 /* ---------- EVENTO: prenotazioni e import ---------- */
 function renderPrenList(){
-  const P=prensArr(),arr=P.filter(p=>p.stato==="arrivata").length,par=P.filter(p=>p.stato==="parziale").length;
-  $("e-prencount").textContent=P.length?`${arr} arrivati su ${P.length}${par?` · ${par} in parte`:""}`:"";
+  const P=prensArr(),par=P.filter(p=>p.stato==="parziale").length;
+  $("e-prencount").textContent=P.length?`${prenGestite(P)} gestite su ${P.length}${par?` · ${par} in parte`:""}`:"";
   const q=norm($("e-psearch").value);$("e-psearch").hidden=!P.length;
   const list=P.filter(p=>!q||norm(p.nome).includes(q)).sort((a,b)=>String(a.nome).localeCompare(String(b.nome))).slice(0,60);
   $("e-plist").innerHTML=P.length?(list.map(p=>`<div class="li plain two"><span><b>${esc(p.nome)}</b>
@@ -64,7 +64,12 @@ function prenLeft(p){const u=prenUsed(p);return {rr:righe(p).map(r=>({...r,qta:M
 function prenStato(p,arr){if(!Object.keys(arr).length)return "attesa";const L=prenLeft({...p,arr});return L.rr.length||L.ss.length?"parziale":"arrivata"}
 function prenRestTxt(p){const L=prenLeft(p),c=cop(L.rr);return c?`restano ${c} ${c===1?"coperto":"coperti"}`:"restano piatti da soli"}
 function prenMancaTxt(p){const c=cop(prenLeft(p).rr);return c?(c===1?"manca 1 coperto":`mancano ${c} coperti`):"mancano piatti da soli"}
-function prenPill(p){if(p.stato==="arrivata")return `<span class="pill ready">Arrivati · n. ${esc(prenNums(p).join(", ")||p.ordine)}</span>`;
+/* coperti arrivati su prenotati, es. 3 su 4 */
+function prenQuanti(p){const tot=cop(righe(p));return {arr:tot-cop(prenLeft(p).rr),tot}}
+/* gestite = arrivate + chiuse */
+function prenGestite(P){return P.filter(p=>p.stato==="arrivata"||p.stato==="chiusa").length}
+function prenPill(p){if(p.stato==="chiusa"){const q=prenQuanti(p);return `<span class="pill ready">Chiusa · n. ${esc(prenNums(p).join(", ")||p.ordine)} · ${q.arr} su ${q.tot}</span>`}
+  if(p.stato==="arrivata")return `<span class="pill ready">Arrivati · n. ${esc(prenNums(p).join(", ")||p.ordine)}</span>`;
   if(p.stato==="parziale")return `<span class="pill call">Arrivati in parte · n. ${esc(prenNums(p).join(", "))} · ${prenRestTxt(p)}</span>`;return ""}
 function prenChips(p){return (p.asporto?'<span class="pill asp">Asporto</span>':"")+(p.offerto?`<span class="pill ok">Offerto · ${esc(p.offerto)}</span>`:"")+righeChips(righe(p))+prenSing(p).map(x=>`<span class="chip">${x.q} ${esc(x.nome)} (da solo)</span>`).join("")}
 function planImport(built,prune){

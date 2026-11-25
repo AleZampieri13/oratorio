@@ -78,6 +78,9 @@ textarea{min-height:64px;resize:vertical}
 .results button{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;text-align:left;padding:10px 12px;border:0;border-bottom:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;font:inherit}
 .results button:last-child{border-bottom:0}
 .results button:disabled{cursor:default;opacity:.6}
+.results .pren-riapri{display:flex;align-items:center;gap:10px;padding:0 12px 10px;border-bottom:1px solid var(--line);background:var(--surface)}
+.results .pren-riapri:last-child{border-bottom:0}
+.results .pren-riapri button{display:inline-block;border:1px solid var(--line);border-radius:10px;padding:6px 12px;min-height:36px;font-weight:700;font-size:.9rem}
 .ticket{border:2px dashed var(--line);border-radius:var(--r);padding:16px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:center;background:var(--bg)}
 .ticket .n{font:800 3.6rem/1 var(--f-display);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .ticket .n small{display:block;font:700 .75rem var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}

@@ -246,18 +246,28 @@ function prefillNum(){if(!S.numDirty&&document.activeElement!==$("c-num"))$("c-n
 function renderSearch(){
   const q=norm($("c-search").value),box=$("c-results"),P=prensArr();
   $("c-searchbox").hidden=!P.length;
-  const arr=P.filter(p=>p.stato==="arrivata").length,par=P.filter(p=>p.stato==="parziale").length;
-  $("c-prencount").textContent=P.length?`${arr} arrivati su ${P.length} prenotati${par?` · ${par} in parte`:""}`:"";
+  const par=P.filter(p=>p.stato==="parziale").length;
+  $("c-prencount").textContent=P.length?`${prenGestite(P)} gestite su ${P.length}${par?` · ${par} in parte`:""}`:"";
   if(!q){box.hidden=true;return}
   const hits=P.filter(p=>norm(p.nome).includes(q)).slice(0,8);
   box.hidden=false;
   box.innerHTML=hits.length?hits.map(p=>`<button data-pren="${esc(p.id)}" ${p.stato==="arrivata"?"disabled":""}>
     <span><b>${esc(p.nome)}</b><div class="chips" style="margin-top:4px">${prenChips(p)}</div></span>
-    ${prenPill(p)||`<span class="pill wait">${copOf(p)} coperti</span>`}</button>`).join("")
+    ${prenPill(p)||`<span class="pill wait">${copOf(p)} coperti</span>`}</button>`+
+    (p.stato==="chiusa"&&S.prenOpen===p.id?`<div class="pren-riapri"><span class="sub">Chiusa: riaprila per caricare quello che manca</span><button data-prenriapri="${esc(p.id)}">Riapri</button></div>`:"")).join("")
     :'<div class="empty" style="padding:10px 12px">Nessuna prenotazione trovata. Puoi creare l\'ordine lo stesso.</div>';
 }
 $("c-search").addEventListener("input",renderSearch);
-$("c-results").addEventListener("click",e=>{const b=e.target.closest("button[data-pren]");if(b)selectPren(b.dataset.pren)});
+$("c-results").addEventListener("click",async e=>{
+  const r=e.target.closest("button[data-prenriapri]");
+  if(r){const id=r.dataset.prenriapri,p=S.prenMap[id];if(!p)return;r.disabled=true;
+    try{await R("prenotazioni/"+id).update({stato:"parziale",chiusaT:null,chiusaDa:null});logChange(`Prenotazione ${p.nome}: riaperta`);S.prenOpen=null;selectPren(id)}
+    catch(err){r.disabled=false;showBanner(errText(err))}
+    return}
+  const b=e.target.closest("button[data-pren]");if(!b)return;const p=S.prenMap[b.dataset.pren];
+  /* una prenotazione chiusa non si carica: prima «Riapri» */
+  if(p&&p.stato==="chiusa"){S.prenOpen=S.prenOpen===p.id?null:p.id;renderSearch();return}
+  selectPren(b.dataset.pren)});
 function selectPren(id){
   const p=S.prenMap[id];if(!p)return;
   const L=prenLeft(p);S.selPren=id;S.qty={};L.rr.forEach(r=>{if(S.varianti.some(v=>v.id===r.id))S.qty[r.id]=r.qta});
