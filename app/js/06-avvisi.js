@@ -67,15 +67,16 @@ function checkEvents(){
   const mine=(S.role==="cassa"?allReady.filter(x=>x.o.asportoSubito&&x.o.creatoDaId===S.me.id):allReady.filter(x=>!x.o.asportoSubito&&isMine(x))),readyKeys=new Map(mine.map(x=>[x.o.numero+":"+x.k+":"+x.t,x]));
   if(S.seenReady&&(S.me.ruolo==="cameriere"||hasRole(S.me,"capo")||S.role==="camerieri"||S.role==="cassa")){
     const fresh=[...readyKeys.entries()].filter(([k])=>!S.seenReady.has(k)).map(([,x])=>x);
-    if(fresh.length){buzz();toast(fresh.map(x=>`${x.o.asporto?"Asporto pronto":"Pronto"}: ${x.l} · ${whereTxt(x.o)}`).join("  ·  "),{ms:8000})}
+    if(fresh.length){buzz();toast(gAvvisi(fresh).map(x=>`${x.o.asporto?"Asporto pronto":"Pronto"}: ${x.l} · ${x.w}`).join("  ·  "),{ms:8000})}
   }
   S.seenReady=new Set(readyKeys.keys());
   const myReady=new Set();ordersArr().filter(mineOrder).forEach(o=>{orderCourses(o).forEach(c=>{if(c.p.stato==="pronta")myReady.add(o.numero+"|"+c.k)})});
   if(S.seenMyCalls&&(S.me.ruolo==="cameriere"||S.role==="camerieri")){
     const back=[...S.seenMyCalls].filter(x=>!myReady.has(x)).map(x=>{const [n,k]=x.split("|"),o=orderByNum(Number(n));
       const p=o&&o.portate&&o.portate[k];return p&&p.stato==="chiamata"&&p.annull==="pronta"?{o,l:(orderCourses(o).find(c=>c.k===k)||{}).l||k}:null}).filter(Boolean);
-    if(back.length){buzz();toast(back.map(x=>`Non ancora pronto: ${x.l} · ${whereTxt(x.o)}`).join("  ·  "),{ms:9000})}
+    if(back.length){buzz();toast(gAvvisi(back).map(x=>`Non ancora pronto: ${x.l} · ${x.w}`).join("  ·  "),{ms:9000})}
   }
   S.seenMyCalls=myReady;
 }
-
+/* ordini uniti: un avviso solo per lo stesso piatto («Pronto: Pizzoccheri · n. 12 + 13») */
+function gAvvisi(L){const m=new Map();L.forEach(x=>{const G=unitiOf(x.o),id=gKey(x.o)+"|"+x.l;if(!m.has(id))m.set(id,{...x,w:G.length>1?"n. "+gNums(G):whereTxt(x.o)})});return [...m.values()]}

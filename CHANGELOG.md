@@ -1,5 +1,8 @@
 # Versioni
 
+## 37
+- **Unire più ordini (cameriere):** sulla scheda di un cliente «Unisci» e poi l'altro cliente (es. due famiglie allo stesso tavolo, n. 12 e n. 13). Diventano una scheda sola «12 + 13»: lo stesso piatto è sommato (es. «6 Pizzoccheri»), un «Chiama» chiama tutti e due gli ordini, le scelte (Naturale / Frizzante) si dividono sul totale. Anche cucina, bar e uscita vedono una scheda sola con i piatti sommati e un solo «Pronto» / «Consegnato». «Separa» (tocca due volte) li rimette come prima; «Condividi» e «Sposta» valgono per tutti gli ordini uniti. In cassa restano ordini separati (biglietti, pagamenti, rettifiche non cambiano).
+
 ## 36
 - **Cucina e bar:** nelle schede il nome del piatto è come nell'uscita (grande, maiuscolo, colore del reparto) su una riga sua; numero e «Pronto» sotto.
 - **Cucina, bar e uscita:** nomi dei piatti e quantità più grandi; tutte le scritte delle schede in maiuscolo.

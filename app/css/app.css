@@ -278,6 +278,9 @@ input.bad{border-color:var(--danger);box-shadow:0 0 0 2px var(--danger-bg)}
 .tav{display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);border-radius:12px;min-height:60px;min-width:60px;padding:4px;font:800 1.6rem/1 var(--f-display);font-variant-numeric:tabular-nums;text-align:center;word-break:break-all}
 .tav small{font:700 .62rem var(--f-body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-top:4px}
 .tav.none{color:var(--danger);background:var(--danger-bg)}
+/* ordini uniti dal cameriere: «12 + 13» uno sotto l'altro */
+.tav.tg{font-size:1.2rem;line-height:1.05;padding:6px 8px}
+.tav.tg i{font-style:normal;font-size:.8rem;color:var(--muted)}
 .tmid{display:flex;flex-direction:column;gap:6px;min-width:0}
 .cprog{display:flex;flex-wrap:wrap;gap:4px}
 .cp{font-size:.78rem;font-weight:700;border-radius:999px;padding:3px 8px;background:var(--wait-bg);color:var(--muted)}
