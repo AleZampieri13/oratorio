@@ -1,5 +1,9 @@
 # Versioni
 
+## 39
+- **Cucina: niente più tasti Pronto / Portato / Annulla: il pronto lo segna l'uscita (anche in parte).** La cucina vede le schede da preparare (con le quantità, senza campi), le porzioni «30 / 80» con «+ Aggiungi», il filtro per reparto e la lista dei pronti, solo da leggere. Una scheda resta in cucina finché l'uscita non segna il piatto pronto. Il bar non cambia e tiene tutti i suoi tasti.
+- **Uscita: ordini uniti in una riga sola, anche per i pronti in parte.** In «In preparazione» lo stesso piatto degli ordini uniti è una riga sola («6 Pizzoccheri · n. 12 + 13») con il campo per segnarne pronta solo una parte («Pronti 4»): prima l'ordine col numero più basso, il resto resta da preparare in una riga sua.
+
 ## 38
 - **Cucina e bar: porzioni fatte / caricate.** Nel riquadro in alto, sotto ogni piatto, «30 / 80»: porzioni già pronte o portate su quelle caricate con «+ Aggiungi» (0 se non ne sono state caricate). Chi vede un solo reparto conta come fatte quelle dove il suo pezzo è pronto. Quando le fatte arrivano al totale la riga diventa grigia.
 
