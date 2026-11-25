@@ -1,5 +1,8 @@
 # Versioni
 
+## 38
+- **Cucina e bar: porzioni fatte / caricate.** Nel riquadro in alto, sotto ogni piatto, «30 / 80»: porzioni già pronte o portate su quelle caricate con «+ Aggiungi» (0 se non ne sono state caricate). Chi vede un solo reparto conta come fatte quelle dove il suo pezzo è pronto. Quando le fatte arrivano al totale la riga diventa grigia.
+
 ## 37
 - **Unire più ordini (cameriere):** sulla scheda di un cliente «Unisci» e poi l'altro cliente (es. due famiglie allo stesso tavolo, n. 12 e n. 13). Diventano una scheda sola «12 + 13»: lo stesso piatto è sommato (es. «6 Pizzoccheri»), un «Chiama» chiama tutti e due gli ordini, le scelte (Naturale / Frizzante) si dividono sul totale. Anche cucina, bar e uscita vedono una scheda sola con i piatti sommati e un solo «Pronto» / «Consegnato». «Separa» (tocca due volte) li rimette come prima; «Condividi» e «Sposta» valgono per tutti gli ordini uniti. In cassa restano ordini separati (biglietti, pagamenti, rettifiche non cambiano).
 - **Ordini uniti, piatti in parte:** anche sui piatti sommati il numero è un campo («4 / 5»): il cameriere chiama solo una parte (prima l'ordine col numero più basso, il resto diventa «2ª volta») e cucina e bar segnano pronta solo una parte («Pronti 2»). I piatti pronti, in preparazione o portati dello stesso tipo restano una riga sola anche se chiamati in volte diverse.
