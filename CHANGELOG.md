@@ -1,5 +1,8 @@
 # Versioni
 
+## 47
+- **Avvisi:** tolta la striscia verde «Avvisi attivi» con Prova e Disattiva; per provare gli avvisi c'è un tastino 📲 in alto accanto a quello del suono (solo per i camerieri con gli avvisi attivi). La striscia resta per attivarli o se c'è un problema.
+
 ## 46
 - **Avvisi su Samsung Internet:** con l'app installata da Samsung Internet l'avviso arriva ma il telefono non lo mostra (limite di Samsung Internet, provato). La striscia lo dice e propone Chrome (installabile) oppure Samsung Internet senza installare l'app.
 

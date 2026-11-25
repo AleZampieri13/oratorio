@@ -464,7 +464,7 @@ ul.kitems li .kin{flex:1;font-weight:700}
 .ccard.cdone{opacity:.6;padding-top:8px;padding-bottom:8px}
 .ccard.cdone .tav{transform:scale(.8);transform-origin:left center}
 .ccard.cdone .note{display:none}
-#sndtest{padding-left:10px;padding-right:10px}
+#sndtest,#pushtest{padding-left:10px;padding-right:10px}
 /* piatto in ritardo rispetto al suo «Pronto entro» */
 /* cassa: conto diviso in parti */
 #c-parts .part{display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid var(--line);border-radius:var(--r)}

@@ -47,18 +47,17 @@ async function pushAttiva(){
   await pushRef(S.me.id,authUid()).set({endpoint:j.endpoint,keys:{p256dh:j.keys.p256dh,auth:j.keys.auth},t:Date.now(),ua:navigator.userAgent.slice(0,120),kv:pushKv()});
   pushSet("on");
   /* prova subito che il telefono sa mostrare le notifiche (senza passare da internet) */
-  try{await reg.showNotification("Avvisi attivi",{body:"Così ti arriva l'avviso quando un piatto è pronto. Tocca «Prova» per provarli con l'app chiusa.",tag:"avvisi-attivi",icon:"icon-192.png",badge:"badge-96.png"})}
+  try{await reg.showNotification("Avvisi attivi",{body:"Così ti arriva l'avviso quando un piatto è pronto. Per provarli con l'app chiusa tocca 📲 in alto.",tag:"avvisi-attivi",icon:"icon-192.png",badge:"badge-96.png"})}
   catch(e){showBanner("Avvisi attivati, ma il telefono non riesce a mostrare le notifiche: "+(e&&e.message||e))}
 }
 /* «Prova»: manda un avviso vero (dal Worker) a questo telefono; con l'app chiusa deve arrivare entro pochi secondi */
 async function pushProva(){
-  S.pushMsg="Mando la prova…";renderPushBar();
+  toast("Mando la prova…");
   const s=(await pushRef(S.me.id,authUid()).once("value")).val();
-  if(!s||s.kv!==pushKv()){S.pushMsg="";pushSet("off");return}
+  if(!s||s.kv!==pushKv()){toast("Avvisi non attivi su questo telefono: tocca «Attiva avvisi».");pushSet("off");return}
   const j=await pushInvia([s],"Prova","Gli avvisi funzionano: questo telefono li riceve anche con l'app chiusa.","prova");
-  S.pushMsg=j.inviati?"✓ Prova mandata: chiudi l'app (o spegni lo schermo), deve arrivare entro pochi secondi."
-    :"✗ La prova non è partita"+((j.errori||[]).length?": "+j.errori.join(" | "):j.stato?": risposta "+j.stato:"")+".";
-  renderPushBar();
+  toast(j.inviati?"✓ Prova mandata: chiudi l'app (o spegni lo schermo), deve arrivare entro pochi secondi."
+    :"✗ La prova non è partita"+((j.errori||[]).length?": "+j.errori.join(" | "):j.stato?": risposta "+j.stato:"")+".",{ms:9000});
 }
 /* manda al Worker; ritorna {inviati, scaduti, errori, stato} */
 async function pushInvia(subs,titolo,testo,tag){
@@ -73,12 +72,8 @@ async function pushInvia(subs,titolo,testo,tag){
 if("serviceWorker" in navigator)navigator.serviceWorker.addEventListener("message",e=>{const d=e.data;if(!d||!d.avvisi)return;
   console.info("avvisi: arrivato al telefono",d);
   const det=` (notifiche presenti: ${d.presenti}, modo: ${d.modo}${d.errore?", errore: "+d.errore:""})`;
-  if(d.tag==="prova"){S.pushMsg=(d.mostrato?"✓ La prova è arrivata e il telefono l'ha mostrata":"✗ La prova è arrivata ma il telefono non l'ha mostrata")+det;renderPushBar()}
+  if(d.tag==="prova"){if(d.mostrato)toast("✓ La prova è arrivata e il telefono l'ha mostrata");else toast("✗ La prova è arrivata ma il telefono non l'ha mostrata"+det,{ms:9000})}
   else if(!d.mostrato)showBanner("È arrivato un avviso ma il telefono non l'ha mostrato"+det)});
-async function pushDisattiva(){
-  await pushTogli(S.me.id,authUid());
-  pushSet("off");
-}
 /* toglie le iscrizioni di una persona (tutte, o solo quella del telefono uid); se è questo telefono la toglie anche qui */
 async function pushTogli(id,uid){
   if(!id)return;
@@ -87,9 +82,10 @@ async function pushTogli(id,uid){
     try{const reg=await pushReg(),sub=await reg.pushManager.getSubscription();if(sub)await sub.unsubscribe()}catch(e){console.warn("avvisi:",e)}}
 }
 
-/* striscia nella pagina Camerieri */
+/* striscia nella pagina Camerieri (solo per attivare o se c'è un problema) e tastino 📲 «Prova avvisi» in alto */
 function renderPushBar(){
   const el=$("pushbar");if(!el)return;
+  $("pushtest").hidden=!(S.me&&S.role==="camerieri"&&pushConf()&&pushPronto()&&Notification.permission==="granted"&&S.push&&S.push.key===pushKeyNow()&&S.push.st==="on");
   if(!S.me||S.role!=="camerieri"||!pushConf()){el.hidden=true;return}
   let h="",ok=false,warn=false;
   if(!pushPronto()){
@@ -105,7 +101,7 @@ function renderPushBar(){
       :`🔕 Avvisi bloccati per questo sito. Apri <b>Chrome</b> (il browser) → menu ⋮ → <b>Impostazioni</b> → <b>Impostazioni sito</b> → <b>Notifiche</b>: tocca giovanichef.web.app e scegli <b>Consenti</b>. Poi chiudi e riapri l'app e tocca «Attiva avvisi».`}
   else{
     if(!S.push||S.push.key!==pushKeyNow()){pushStato();el.hidden=true;return}
-    if(S.push.st==="on"){ok=!(isSamsung()&&isStandalone());warn=!ok;h=(warn?`<div>${SAMSUNG_TXT()}</div>`:"")+`🔔 Avvisi attivi: ti arrivano anche con l'app chiusa. <button class="btn small" data-push="prova">Prova</button><button class="btn small" data-push="off">Disattiva avvisi</button>${S.pushMsg?`<div>${esc(S.pushMsg)}</div>`:""}`}
+    if(S.push.st==="on"){if(!(isSamsung()&&isStandalone())){el.hidden=true;return}warn=true;h=SAMSUNG_TXT()}
     else h=`<button class="btn primary" data-push="on">🔔 Attiva avvisi</button> <span>Ti avvisa quando un piatto è pronto, anche con l'app chiusa.</span>${isSamsung()?`<div>${SAMSUNG_TXT()}</div>`:""}`;
   }
   if(el._h!==h){el.innerHTML=h;el._h=h}
@@ -114,10 +110,14 @@ function renderPushBar(){
 $("pushbar").addEventListener("click",async e=>{
   const b=e.target.closest("button[data-push]");if(!b||b.disabled)return;
   b.disabled=true;
-  S.pushMsg="";
-  try{if(b.dataset.push==="on")await pushAttiva();else if(b.dataset.push==="prova")await pushProva();else await pushDisattiva()}
-  catch(err){console.warn("avvisi:",err);if(b.dataset.push==="prova"){S.pushMsg="✗ La prova non è partita: "+(err&&err.message||err);renderPushBar()}
-    else showBanner("Non sono riuscito ad attivare gli avvisi: riprova. ("+(err&&err.message||err)+")")}
+  try{await pushAttiva()}
+  catch(err){console.warn("avvisi:",err);showBanner("Non sono riuscito ad attivare gli avvisi: riprova. ("+(err&&err.message||err)+")")}
+  finally{b.disabled=false}
+});
+$("pushtest").addEventListener("click",async e=>{
+  const b=e.currentTarget;if(b.disabled)return;b.disabled=true;
+  try{await pushProva()}
+  catch(err){console.warn("avvisi:",err);toast("✗ La prova non è partita: "+(err&&err.message||err),{ms:9000})}
   finally{b.disabled=false}
 });
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&S.role==="camerieri"&&S.me&&pushPronto())pushStato()});
