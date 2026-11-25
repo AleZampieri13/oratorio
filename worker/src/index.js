@@ -34,17 +34,20 @@ export default {
     if (!(await tokenValido(d.token, env.PROGETTO))) return risposta(401, { errore: "telefono non autorizzato" });
 
     const payload = enc.encode(JSON.stringify({ titolo, testo, tag }));
-    const scaduti = [];
+    const scaduti = [], errori = [];
     let inviati = 0;
     await Promise.all(a.map(async s => {
+      const dove = s && typeof s.endpoint === "string" ? s.endpoint.slice(0, 40) : "?";
       try {
-        if (!s || typeof s.endpoint !== "string" || !s.endpoint.startsWith("https://") || !s.keys) return;
+        if (!s || typeof s.endpoint !== "string" || !s.endpoint.startsWith("https://") || !s.keys) { errori.push(dove + ": iscrizione non valida"); return; }
         const r = await spedisci(s, payload, env);
         if (r.status === 404 || r.status === 410) scaduti.push(s.endpoint);
         else if (r.ok) inviati++;
-      } catch (e) { /* un telefono che non risponde non ferma gli altri */ }
+        else { const t = (await r.text().catch(() => "")).slice(0, 200); errori.push(dove + ": " + r.status + " " + t); }
+      } catch (e) { /* un telefono che non risponde non ferma gli altri */ errori.push(dove + ": errore " + String(e && e.message || e).slice(0, 200)); }
     }));
-    return risposta(200, { inviati, scaduti });
+    if (errori.length) console.log("invio non riuscito:", errori.join(" | "));
+    return risposta(200, { inviati, scaduti, errori });
   }
 };
 
