@@ -234,6 +234,10 @@ function orderByNum(n){return S.ordMap[n]}
 function righe(o){const r=o&&o.righe;return (Array.isArray(r)?r:Object.values(r||{})).filter(Boolean)}
 function righeChips(rr){return (rr||[]).map(r=>`<span class="chip">${r.qta} ${esc(r.nome)}</span>`).join("")}
 function cop(rr){return (rr||[]).reduce((a,r)=>a+(r.qta||0),0)}
+/* persone di un ordine o di una prenotazione: i coperti scritti in cassa; gli ordini vecchi (senza) contano i menù */
+function copOf(o){const c=o&&o.coperti;return typeof c==="number"&&c>=0?c:cop(righe(o))}
+/* campo Coperti: solo cifre; vuoto = null */
+function copParse(v){const s=String(v==null?"":v).replace(/\D/g,"");return s===""?null:parseInt(s,10)}
 /* ora d'arrivo e minuti passati, su una riga: «20:15 · 12 min» */
 function clockAgo(t){if(!t)return"";const d=new Date(t);return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")} · ${ago(t)}`}
 /* storico in fondo alla pagina (cassa, cucina, bar, uscita): tasto viola che apre l'elenco */

@@ -485,6 +485,8 @@ ul.kitems li .kin{flex:1;font-weight:700}
 ul.kitems li .kqty{flex:none}
 /* campo della quantità («3 di 20») */
 .qtyf{display:inline-flex;align-items:baseline;gap:4px;flex:none;margin-right:6px}
+/* campo Coperti in cassa (nuovo ordine, Modifica, Rettifica): si scrive o si cambia con − / + */
+.coprow .copin{width:3.2em;padding:6px 4px;text-align:center;font:800 1.4rem var(--f-display);font-variant-numeric:tabular-nums}
 .qtyf .qtyin{width:3.4em;padding:6px 4px;text-align:center;font:800 1.15rem var(--f-display);font-variant-numeric:tabular-nums}
 .qtyf .qtyof{color:var(--ink);font-weight:700;white-space:nowrap}
 /* cucina e bar: nome del piatto come nell'uscita (grande, maiuscolo, colore del reparto) */

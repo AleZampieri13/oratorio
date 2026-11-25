@@ -222,9 +222,17 @@ function renderSteppers(){
   const sl=singlesList();$("c-sing-box").hidden=!sl.length;$("c-sing").innerHTML=singlesHtml(S.sqty,"data-sstep");
   paintTotal("c",bill(S.qty,{},$("c-paid").checked,S.sqty,ccC()),$("c-paid").checked,S.pay);
   $("c-asp-row").hidden=!$("c-asp").checked;$("c-aspmode").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.m===S.aspMode)));
-  renderStock();
+  renderStock();paintCop();
   if(S.editOrder!=null)renderEditSteppers();
 }
+/* Coperti del nuovo ordine: seguono i menù finché il cassiere non li cambia a mano (− / + o scrivendo) */
+function copMenu(){return S.varianti.reduce((a,v)=>a+(S.qty[v.id]||0),0)}
+function copNow(){return S.copHand?S.cop:copMenu()}
+function paintCop(){const n=copNow(),i=$("c-cop");if(document.activeElement!==i)i.value=n;$("c-coprow").querySelector('button[data-cop="-1"]').disabled=!(n>0)}
+$("c-coprow").addEventListener("click",e=>{const b=e.target.closest("button[data-cop]");if(!b)return;
+  S.cop=Math.max(0,copNow()+Number(b.dataset.cop));S.copHand=true;hideDone();$("c-cop").value=S.cop;paintCop()});
+$("c-cop").addEventListener("input",e=>{const v=copParse(e.target.value);if(v==null)S.copHand=false;else{S.cop=v;S.copHand=true}hideDone()});
+$("c-cop").addEventListener("blur",paintCop);
 $("c-sing").addEventListener("click",e=>{const b=e.target.closest("button[data-sstep]");if(!b)return;
   const id=b.dataset.sstep;S.sqty[id]=Math.max(0,(S.sqty[id]||0)+Number(b.dataset.d));S.stockWarn=null;renderSteppers();$("c-msg").textContent=""});
 $("c-asp").addEventListener("change",renderSteppers);
@@ -255,11 +263,13 @@ function selectPren(id){
   const L=prenLeft(p);S.selPren=id;S.qty={};L.rr.forEach(r=>{if(S.varianti.some(v=>v.id===r.id))S.qty[r.id]=r.qta});
   S.sqty={};L.ss.forEach(x=>{if(singlesList().some(i=>i.id===x.id+"|a"))S.sqty[x.id+"|a"]=x.q});$("c-asp").checked=!!p.asporto;
   S.split=false;S.parts=[];S.cambi=[];S.cf=null;if(p.offerto){S.pay="offerto";$("c-offby").value=p.offerto}
+  /* «Totale persone» del file: il campo parte da lì; se sono già arrivati in parte, parte dai menù rimasti */
+  const part=Object.keys(prenArr(p)).length>0;if(!part&&typeof p.coperti==="number"&&p.coperti>=0){S.cop=p.coperti;S.copHand=true}else{S.cop=0;S.copHand=false}
   $("c-nome").value=p.nome||"";$("c-note").value=p.note||"";$("c-search").value="";$("c-paid").checked=false;S.stockWarn=null;
   renderSearch();renderSteppers();renderSel();$("c-msg").textContent="";
 }
 function renderSel(){const p=S.selPren&&S.prenMap[S.selPren];$("c-sel").hidden=!p;if(p)$("c-sel-t").textContent="Prenotazione: "+p.nome+(p.stato==="parziale"?` (arrivati in parte: qui c'è solo quello che manca)`:"")}
-function resetForm(){S.smode="piatti";S.cambi=[];S.cf=null;S.selPren=null;S.qty={};S.sqty={};S.split=false;S.parts=[];$("c-offby").value="";$("c-partlist").innerHTML="";$("c-asp").checked=false;S.aspMode="subito";S.pay="contanti";S.stockWarn=null;$("c-off").value="";$("c-ric").value="";$("c-nome").value="";$("c-note").value="";$("c-paid").checked=false;renderSel();renderSteppers()}
+function resetForm(){S.cop=0;S.copHand=false;S.smode="piatti";S.cambi=[];S.cf=null;S.selPren=null;S.qty={};S.sqty={};S.split=false;S.parts=[];$("c-offby").value="";$("c-partlist").innerHTML="";$("c-asp").checked=false;S.aspMode="subito";S.pay="contanti";S.stockWarn=null;$("c-off").value="";$("c-ric").value="";$("c-nome").value="";$("c-note").value="";$("c-paid").checked=false;renderSel();renderSteppers()}
 $("c-sel-x").addEventListener("click",resetForm);
 function canUndo(o){return !!o&&!o.asportoSubito&&Date.now()-(o.creato||0)<60000&&!isLocked(o)}
 function renderTicket(){
@@ -355,7 +365,7 @@ async function createOrder(){
   const btn=$("c-create");btn.disabled=true;msg.className="msg";msg.textContent=S.online?"Creo l'ordine…":"Senza rete: l'ordine parte appena torna la connessione. Non chiudere la pagina.";
   const slow=setTimeout(()=>{msg.className="msg err";msg.textContent="Rete lenta: aspetto la connessione per confermare il numero. Non chiudere la pagina."},5000);
   const base={creato:Date.now(),creatoDa:myName(),creatoDaId:S.me?S.me.id:"",nome:$("c-nome").value.trim(),righe:b.rr,extra:b.xx,note:$("c-note").value.trim(),
-    tavolo:"",prenotazione:pren||"",importoMenu:b.menu,importoExtra:b.ext,importo:b.tot,pagatoPrima:paid,incassato:plan.incassato,offerta:plan.offerta,ricevuto:ric>0?ric:0,metodo:plan.metodo,pagamenti:plan.pagamenti,
+    coperti:copNow(),tavolo:"",prenotazione:pren||"",importoMenu:b.menu,importoExtra:b.ext,importo:b.tot,pagatoPrima:paid,incassato:plan.incassato,offerta:plan.offerta,ricevuto:ric>0?ric:0,metodo:plan.metodo,pagamenti:plan.pagamenti,
     ...(plan.offerto>0?{offerto:plan.offerto,offertoDa:plan.offertoDa}:{}),singoli:b.ss,importoSingoli:b.sing,
     ...(cc.length?{cambi:cc}:{}),asporto:$("c-asp").checked,asportoSubito:$("c-asp").checked&&S.aspMode==="subito",portate:coursesFor(b.rr,b.ss,b.xx,cc),v:2};
   if(base.asportoSubito){const now=Date.now();Object.entries(base.portate).forEach(([k,c])=>{c.stato="chiamata";c.t=now;c.da="Asporto";c.daId=S.me?S.me.id:"";const rs=repSnap(k);if(rs)c.rep=rs;const sc=scDefault(base,k);if(sc)c.sc=sc});if(base.bar)base.bar.stato="chiamata"}
