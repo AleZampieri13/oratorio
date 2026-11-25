@@ -263,10 +263,19 @@ function renderUscita(){
   const aspLine=o=>{const cs=orderCourses(o).filter(c=>c.p.stato!=="servita"),busy=cs.some(c=>S.pending.has(o.numero+"|"+c.k)),mine=cs.some(c=>c.p.stato==="chiamata"&&inOScope({o,k:c.k},sc));
     return `<div class="li plain two"><span><b class="kwho">Asporto</b> · n. ${o.numero}${o.nome?" · "+esc(o.nome):""}<div class="sub">tutto insieme: ${cs.map(c=>`<span style="color:${portColor(c.k)}">${esc(c.l)}</span> ${c.p.stato==="pronta"?"✓":"…"}`).join(" · ")}</div></span>
       ${mine?`<button class="btn small primary" ${busy?"disabled":""} data-oreadyall="${o.numero}">Pronto</button>`:""}</div>`};
-  $("o-wip").innerHTML=(wip.length||aspW.length)?aspW.map(aspLine).join("")+wip.map(c=>{const pt=partsTxt(c.o.portate[c.k]),wn=kWho(c.o,c.o.portate[c.k]);
+  /* ordini uniti dal cameriere: lo stesso piatto chiamato è una riga sola, con il numero sommato (come in cucina) */
+  const wG=[];wip.forEach(c=>{const gk=gKey(c.o);let g=gk[0]==="g"&&wG.find(x=>x.gk===gk&&(x.k===c.k||(kBase(x.k)===kBase(c.k)&&!x.its.some(y=>y.o.numero===c.o.numero))));
+    if(!g){g={gk,k:c.k,its:[]};wG.push(g)}g.its.push(c)});
+  const wipM=g=>{const its=g.its.slice().sort((a,b)=>a.o.numero-b.o.numero),c=its[0],wn=kWho(c.o,c.o.portate[c.k]),q=itsQ(its),key=oGKey(g.gk,c.k),x=gNowOf(key,q);
+    const busy=its.some(y=>S.pending.has(y.o.numero+"|"+y.k)||oReadyReps(y,sc).some(r=>S.pending.has(y.o.numero+"|"+y.k+"|"+r)));
+    const sp=scMerge(its.map(y=>y.o.portate[y.k])),t=Math.min(...its.map(y=>y.t||Date.now()));
+    return `<div class="li plain two"><span><b class="kwho">${esc(wn)}</b>${c.o.asporto&&wn!=="Asporto"?' <span class="pill asp">Asporto</span>':""} · <b style="color:${portColor(c.k)}">${esc(c.l)}</b><div class="sub">${c.o.fila?esc(filaNome(c.o.fila))+" · ":""}n. ${gNums(its.map(y=>y.o))} · chiamata ${ago(t)==="adesso"?"adesso":"da "+ago(t)}${scTxt(sp)?" · "+esc(scTxt(sp)):""}</div></span>
+      <span class="row nowrap">${q>=2?qtyField("kqg",esc(key),x,q,`Quanti ${piattoNome(c.k)} sono pronti`):`<b>${q}</b>`}<button class="btn small primary kbtn" ${busy?"disabled":""} data-ogm="${esc(its.map(y=>y.o.numero+">"+y.k).join(","))}" data-gqk="${esc(key)}" data-part="Pronti" data-full="Pronto">${x<q?"Pronti "+x:"Pronto"}</button></span></div>`};
+  const wipS=c=>{const pt=partsTxt(c.o.portate[c.k]),wn=kWho(c.o,c.o.portate[c.k]);
     const busy=S.pending.has(c.o.numero+"|"+c.k)||oReadyReps(c,sc).some(r=>S.pending.has(c.o.numero+"|"+c.k+"|"+r));
     return `<div class="li plain two"><span><b class="kwho">${esc(wn)}</b>${c.o.asporto&&wn!=="Asporto"?' <span class="pill asp">Asporto</span>':""} · <b style="color:${portColor(c.k)}">${esc(c.l)}</b><div class="sub">${c.o.fila?esc(filaNome(c.o.fila))+" · ":""}n. ${gNums(unitiOf(c.o))} · chiamata ${ago(c.t)==="adesso"?"adesso":"da "+ago(c.t)}${pt?" · "+pt:""}</div></span>
-      <span class="row nowrap">${kQtyHtml(c.o,c.k)}<button class="btn small primary kbtn" ${busy?"disabled":""} data-oready="${c.o.numero}|${c.k}">${prontoLbl(c.o,c.k)}</button></span></div>`}).join("")
+      <span class="row nowrap">${kQtyHtml(c.o,c.k)}<button class="btn small primary kbtn" ${busy?"disabled":""} data-oready="${c.o.numero}|${c.k}">${prontoLbl(c.o,c.k)}</button></span></div>`};
+  $("o-wip").innerHTML=(wip.length||aspW.length)?aspW.map(aspLine).join("")+wG.map(g=>g.its.length>1?wipM(g):wipS(g.its[0])).join("")
     :'<div class="empty">Niente in preparazione.</div>';
   const done=flatCourses("servita").filter(c=>inOScope(c,sc)&&c.t&&Date.now()-c.t<3*60000).sort((a,b)=>b.t-a.t).slice(0,12);
   $("o-done").innerHTML=done.length?done.map(c=>`<div class="li plain two"><span><b class="kwho">${esc(kWho(c.o,c.o.portate[c.k]))}</b> · <b style="color:${portColor(c.k)}">${esc(c.l)}</b> · ${cop(righeFor(c.o,c.k))} piatti<div class="sub">n. ${c.o.numero} · consegnato ${ago(c.t)==="adesso"?"adesso":"da "+ago(c.t)}</div></span>
@@ -275,6 +284,21 @@ function renderUscita(){
 }
 /* l'uscita può segnare pronto un piatto chiamato (come la cucina): solo i reparti che vede */
 function oReadyReps(c,sc){const rp=(c.o.portate[c.k]||{}).rep||{};return Object.keys(rp).filter(r=>rp[r].s!=="pronta"&&(!sc||sc.includes(r)))}
+/* ordini uniti all'uscita: «Pronto» su tutta la riga, oppure solo una parte («Pronti 4»): prima l'ordine col numero più basso,
+   l'ultimo si divide e il resto resta da preparare (come readyItM della cucina, ma con tutti i reparti che l'uscita vede) */
+const oGKey=(gk,k)=>`o${gk}|${k}`;
+async function oReadyM(its,key){const sc=oScope();
+  const L=its.map(([n,k])=>({o:orderByNum(n),k})).filter(y=>y.o&&y.o.portate&&y.o.portate[y.k]&&y.o.portate[y.k].stato==="chiamata").sort((a,b)=>a.o.numero-b.o.numero||kRound(a.k)-kRound(b.k));
+  if(!L.length)return null;const q=L.reduce((a,y)=>a+cop(righeFor(y.o,y.k)),0);let x=gNowOf(key,q);const x0=x;if(S.gNow)delete S.gNow[key];if(x<q)S.holdMerge=Date.now()+4000;
+  for(const {o,k} of L){if(x<=0)break;const m=cop(righeFor(o,k)),hasRep=Object.keys(o.portate[k].rep||{}).length>0,rs=hasRep?oReadyReps({o,k},sc):[];
+    if(x<m){await splitCalled(o.numero,k,x,null,rs);x=0}
+    else{if(hasRep){for(const r of rs)await setPart(o.numero,k,r,"pronta",{silent:true})}else await setStato(o.numero,k,"pronta",{notoast:true});x-=m}}
+  return [x0,q]}
+$("o-wip").addEventListener("click",async e=>{const b=e.target.closest("button[data-ogm]");if(!b||b.disabled)return;b.disabled=true;
+  const its=parseIts(b.dataset.ogm),res=await oReadyM(its,b.dataset.gqk);if(!res)return;
+  const o=orderByNum(its[0][0]),who=o?kWho(o,o.portate&&o.portate[its[0][1]])+" · ":"",nn=its.map(x=>x[0]).join(" + ");
+  if(res[0]<res[1])toast(`${who}n. ${nn} · ${res[0]} ${piattoNome(its[0][1])} pronti · ${res[1]-res[0]} ancora da preparare`,{ms:5000});
+  else toast(`${who}n. ${nn} · ${piattoNome(its[0][1])} pronto`,{ms:4000})});
 $("o-wip").addEventListener("click",async e=>{const b=e.target.closest("button[data-oready]");if(!b||b.disabled)return;b.disabled=true;
   const [n,k]=b.dataset.oready.split("|");if(!((orderByNum(Number(n))||{}).portate||{})[k]||orderByNum(Number(n)).portate[k].stato!=="chiamata")return;
   const o0=orderByNum(Number(n)),pp0=o0.portate[k],rs0=Object.keys(pp0.rep||{}).length?oReadyReps({o:o0,k},oScope()):[];
