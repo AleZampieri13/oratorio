@@ -29,7 +29,7 @@
 
 ---
 
-### Task 1: Il Worker
+### Task 1: Il Worker — GIÀ FATTO (25/11, cartella worker/, senza librerie esterne): saltalo
 
 **Files:**
 - Create: `worker/wrangler.toml`, `worker/package.json`, `worker/src/index.js`, `worker/README.md`
@@ -48,7 +48,7 @@
 
 **Files:**
 - Create: `app/js/12-notifiche.js` (aggiungerlo a `index.html` dopo `11-avvio.js` e alla lista `CORE` di `app/sw.js`)
-- Modify: `app/js/config.js` (`var PUSH_WORKER = ""; var PUSH_VAPID = "";` — vuoti = avvisi spenti, nessuna striscia)
+- Modify: `app/js/config.js` (`var PUSH_WORKER = "https://avvisi.oratoriopare.workers.dev"; var PUSH_VAPID = "<copia VAPID_PUBBLICA da worker/wrangler.toml>";` — vuoti = avvisi spenti, nessuna striscia)
 - Modify: `app/index.html` (striscia nella pagina Camerieri), `app/sw.js` (`push`, `notificationclick`), `app/js/01-base.js` («Esci»), `app/js/07-persone.js` («Libera»), `tools/regole.py` + `database.rules.json` rigenerato
 
 **Interfaces:**

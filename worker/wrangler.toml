@@ -1,0 +1,12 @@
+# Worker «avvisi»: notifiche ai camerieri con l'app chiusa. Istruzioni in worker/README.md.
+name = "avvisi"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+workers_dev = true
+
+[vars]
+PROGETTO = "giovanichef-65d46"
+VAPID_PUBBLICA = "BKV9LIPMoj9xSFKsINVZKpq7z4BkOBq2cqjJbJ9eXdbopfZuS8PWcNr8pRR5alAV0HRRxc-ZuelH1NeDdgrLMqU"
+VAPID_SUBJECT = "mailto:oratoriopare@gmail.com"
+ORIGINI = "https://giovanichef.web.app,https://giovanichef.firebaseapp.com,https://giovanichef-65d46.web.app,https://giovanichef-65d46.firebaseapp.com,http://localhost:5520"
+# VAPID_PRIVATA è un segreto: si salva con «npx.cmd wrangler secret put VAPID_PRIVATA», mai in questo file.
