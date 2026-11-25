@@ -12,7 +12,7 @@ function missTot(pid,sc){const lim=S.scorte[pid],tot=(lim==null||lim==="")?0:Num
     let ok=st==="pronta"||st==="servita";
     if(!ok&&sc&&st==="chiamata"){const rp=Object.entries(c.p.rep||{}).filter(([r])=>sc.includes(r));ok=rp.length>0&&rp.every(([,v])=>v&&v.s==="pronta")}
     if(ok)done+=cop(righeFor(o,c.k))}));
-  return {miss:Math.max(0,tot-done),tot}}
+  return {miss:tot-done,tot}}
 function missHtml(pid,sc){const m=missTot(pid,sc);return `<span class="miss${m.miss?"":" ok"}" title="Porzioni mancanti su quelle caricate"><b>${m.miss}</b> / ${m.tot}</span>`}
 function kFilt(){const f=S.kFilt;return f&&S.portate.some(p=>p.id===f)?f:""}
 function kWho(o,p){return o.asportoSubito||(o.asporto&&!ownerId(o))?"Asporto":(nameOf(p&&p.daId,p&&p.da)||nameOf(ownerId(o),o.cameriere)||"—")}
