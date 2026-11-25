@@ -39,7 +39,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches&&e.
 function renderAll(){
   const qf=qtyFocusKeep();try{renderAll0()}finally{qtyFocusBack(qf);armBack()}}
 function renderAll0(){
-  paintSoundBar();
+  paintSoundBar();if(typeof renderPushBar==="function")renderPushBar();
   if(!S.me)return;
   tryConvert();oldOrdersBanner();
   prefillNum();

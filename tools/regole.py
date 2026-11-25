@@ -47,6 +47,19 @@ rules = {
                        "(newData.child('h').isString() && newData.child('h').val() === root.child('pin').child(newData.child('u').val()).val()) || "
                        f"(newData.child('t').isString() && {UT}.child(newData.child('u').val()).child('ruolo').val() === 'cameriere' && "
                        f"newData.child('t').val() === {UT}.child(newData.child('u').val()).child('token').val()))))")}},
+        # push/<persona>/<telefono> = iscrizione agli avvisi ad app chiusa (Web Push).
+        # La scrive solo quel telefono, per la persona della sua sessione. Leggerle: chi ha una sessione
+        # (il telefono che segna «Pronto» le manda al Worker). Cancellarle: il capo/master («Libera»)
+        # tutte, e chiunque abbia una sessione la singola iscrizione che il Worker dice scaduta.
+        "push": {
+            ".read": ANY,
+            "$p": {
+                ".write": f"{has('master', 'capo')} && !newData.exists()",
+                "$uid": {
+                    ".write": (f"({ACC} && auth.uid === $uid && {SU} === $p) || "
+                               f"({ANY} && !newData.exists())"),
+                    ".validate": ("newData.child('endpoint').isString() && newData.child('endpoint').val().length < 1000 && "
+                                  "newData.child('keys').child('p256dh').isString() && newData.child('keys').child('auth').isString()")}}},
         "ev": {
             ".read": ACC,
             "config": {

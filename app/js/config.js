@@ -19,3 +19,8 @@ var SITI_VERI = ["giovanichef.web.app", "giovanichef.firebaseapp.com", "giovanic
 var DB_PROVA = !!CONFIG_PROVA && SITI_VERI.indexOf(location.hostname) < 0;
 var EMBEDDED_CONFIG = DB_PROVA ? CONFIG_PROVA : CONFIG_VERO;
 if (DB_PROVA) document.title = "PROVA · " + document.title;
+
+/* Avvisi ai camerieri con l'app chiusa (Web Push): indirizzo del Worker su Cloudflare e chiave
+   pubblica VAPID (VAPID_PUBBLICA in worker/wrangler.toml). Vuoti = avvisi spenti, nessuna striscia. */
+var PUSH_WORKER = "https://avvisi.oratoriopare.workers.dev";
+var PUSH_VAPID = "BKV9LIPMoj9xSFKsINVZKpq7z4BkOBq2cqjJbJ9eXdbopfZuS8PWcNr8pRR5alAV0HRRxc-ZuelH1NeDdgrLMqU";

@@ -108,7 +108,7 @@ $("u-list").addEventListener("click",async e=>{
   const id=t.dataset.editpin||t.dataset.rename||t.dataset.deluser||t.dataset.save||t.dataset.free||t.dataset.roles||t.dataset.reps;
   const u=S.users.find(x=>x.id===id);if(!canManage(u))return;
   try{
-    if(t.dataset.free){if(!armed(t,"Libera?"))return;await R("config/utenti/"+id+"/token").set(null);umsg(`${u.nome} liberato: può rientrare dal QR.`,true);return}
+    if(t.dataset.free){if(!armed(t,"Libera?"))return;await pushTogli(id);await R("config/utenti/"+id+"/token").set(null);umsg(`${u.nome} liberato: può rientrare dal QR.`,true);return}
     if(t.dataset.roles){if(!hasRole(S.me,"master"))return;S.editUser={id,mode:"ruoli"};renderUsers();return}
     if(t.dataset.reps){if(!hasRole(S.me,"master"))return;S.editUser={id,mode:"reparti"};renderUsers();return}
     if(t.dataset.editpin){S.editUser={id,mode:"pin"};renderUsers();$("u-edit").focus();return}

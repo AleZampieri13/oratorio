@@ -164,7 +164,9 @@ function renderGate(){
 $("tabs").addEventListener("click",e=>{const b=e.target.closest("button[data-role]");if(!b)return;S.role=b.dataset.role;lsSet("ruolo",S.role);renderGate()});
 $("logout").addEventListener("click",()=>{if(!armed($("logout"),"Esci davvero?"))return;$("toast").hidden=true;
   if(S.me&&S.me.ruolo==="cameriere"){lsSet("joinmode","1");S.joinCode=S.invite||null}
-  if(authUid())fdb("sessioni/"+authUid()).remove().catch(()=>{});
+  /* prima gli avvisi ad app chiusa (senza sessione le regole non lascerebbero più cancellarli), poi la sessione */
+  const a=authUid(),meId=S.me&&S.me.id;
+  if(a)(typeof pushTogli==="function"&&meId?pushTogli(meId,a):Promise.resolve()).finally(()=>fdb("sessioni/"+a).remove().catch(()=>{}));
   S.me=null;lsSet("sess",null);S.loginPick=null;$("l-pin").value="";S.role=null;keepAwake();renderGate()});
 
 /* ---------- primo avvio, accesso, iscrizione ---------- */

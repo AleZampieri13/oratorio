@@ -1,6 +1,6 @@
 /* Ordini Oratorio: fa aprire l'app anche senza rete. I dati restano su Firebase. */
 const CACHE = "ordini-oratorio-v41";
-const CORE = ["./", "index.html", "css/app.css", "js/01-base.js", "js/02-cassa.js", "js/03-camerieri.js", "js/04-cucina.js", "js/05-bar.js", "js/06-avvisi.js", "js/07-persone.js", "js/08-riepilogo.js", "js/09-listino.js", "js/10-evento.js", "js/11-avvio.js", "js/config.js", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png"];
+const CORE = ["./", "index.html", "css/app.css", "js/01-base.js", "js/02-cassa.js", "js/03-camerieri.js", "js/04-cucina.js", "js/05-bar.js", "js/06-avvisi.js", "js/07-persone.js", "js/08-riepilogo.js", "js/09-listino.js", "js/10-evento.js", "js/11-avvio.js", "js/12-notifiche.js", "js/config.js", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png"];
 const CDN = [
   "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js",
   "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js",
@@ -76,4 +76,26 @@ self.addEventListener("fetch", e => {
     })());
   }
   // Tutto il resto (database e accesso Firebase) passa direttamente dalla rete
+});
+
+/* Avvisi ai camerieri con l'app chiusa: il Worker su Cloudflare manda {titolo, testo, tag}.
+   Ogni push deve mostrare una notifica (su iPhone altrimenti l'iscrizione può essere tolta). */
+self.addEventListener("push", e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (err) { d = { testo: e.data ? e.data.text() : "" }; }
+  e.waitUntil(self.registration.showNotification(d.titolo || "Ordini Oratorio", {
+    body: d.testo || "", tag: d.tag || "avviso", renotify: true,
+    icon: "icon-192.png", badge: "icon-192.png", data: { url: "./" }
+  }));
+});
+
+self.addEventListener("notificationclick", e => {
+  e.notification.close();
+  e.waitUntil((async () => {
+    const list = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const c of list) {
+      if (new URL(c.url).origin === self.location.origin && "focus" in c) return c.focus();
+    }
+    if (self.clients.openWindow) return self.clients.openWindow("./");
+  })());
 });
