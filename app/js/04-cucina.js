@@ -6,14 +6,14 @@ function breakdown(items){
   const tot=Object.values(by).reduce((a,b)=>a+b,0);delete by[""];
   return {tot,txt:Object.entries(by).map(([n,q])=>`${q} ${esc(n)}`).join(" · ")};
 }
-/* porzioni mancanti / totali: totali = le porzioni caricate (scorte), 0 se non caricate; mancanti = totali − fatte (pronte o portate; nei reparti: il pezzo del reparto pronto) */
+/* porzioni fatte / caricate: caricate = le scorte (0 se non caricate); fatte = pronte o portate (nei reparti: il pezzo del reparto pronto) */
 function missTot(pid,sc){const lim=S.scorte[pid],tot=(lim==null||lim==="")?0:Number(lim)||0;let done=0;
   ordersArr().forEach(o=>orderCourses(o).forEach(c=>{if(kBase(c.k)!==pid)return;const st=c.p.stato;
     let ok=st==="pronta"||st==="servita";
     if(!ok&&sc&&st==="chiamata"){const rp=Object.entries(c.p.rep||{}).filter(([r])=>sc.includes(r));ok=rp.length>0&&rp.every(([,v])=>v&&v.s==="pronta")}
     if(ok)done+=cop(righeFor(o,c.k))}));
-  return {miss:tot-done,tot}}
-function missHtml(pid,sc){const m=missTot(pid,sc);return `<span class="miss${m.miss?"":" ok"}" title="Porzioni mancanti su quelle caricate"><b>${m.miss}</b> / ${m.tot}</span>`}
+  return {done,tot}}
+function missHtml(pid,sc){const m=missTot(pid,sc);return `<span class="miss${m.tot&&m.done>=m.tot?" ok":""}" title="Porzioni fatte su quelle caricate"><b>${m.done}</b> / ${m.tot}</span>`}
 function kFilt(){const f=S.kFilt;return f&&S.portate.some(p=>p.id===f)?f:""}
 function kWho(o,p){return o.asportoSubito||(o.asporto&&!ownerId(o))?"Asporto":(nameOf(p&&p.daId,p&&p.da)||nameOf(ownerId(o),o.cameriere)||"—")}
 function renderKReps(){
