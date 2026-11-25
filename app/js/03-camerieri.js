@@ -96,6 +96,7 @@ async function setStato(n,k,to,opts){
   try{
     const ok=await transStato(path,expect,f);
     if(!ok){const msg="Qualcun altro l'ha appena aggiornato: guarda lo stato attuale.";if(S.role==="camerieri")$("w-msg").textContent=msg;else toast(msg,{ms:4000});return}
+    if(typeof pushNota==="function")pushNota(n,k,expect,to,o?cop(righeFor(o,k)):0);
     if(o&&S.role==="camerieri"&&to!=="attesa"){const cu=claimUpd(o);if(Object.keys(cu).length)await R("ordini/"+n).update(cu)}
     if(to==="chiamata"&&!sil&&await mergeCalled(n,k))return true;
     if((S.role==="camerieri"||S.role==="bar"||S.role==="cucina"||S.role==="uscita")&&o&&!sil&&!(opts&&opts.notoast))afterAction(o,k,to,prev);

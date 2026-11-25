@@ -343,6 +343,7 @@ function orderDesc(rr,ss,xx,cc){return ([...(rr||[]).map(r=>`${r.qta} ${r.nome}`
 async function burnOrder(n,o,back,how){
   await R("annullati/"+n).set({n,t:Date.now(),da:myName(),daId:S.me?S.me.id:"",nome:o.nome||"",restituiti:back,partito:isLocked(o)});
   await R("ordini/"+n).remove();
+  if(typeof avvisaCamerieri==="function")avvisaCamerieri("annullato",[{n,o}]);
   if(o.prenotazione){const p=S.prenMap[o.prenotazione],k="n"+n;
     if(p&&prenArr(p)[k]){const arr={...prenArr(p)};delete arr[k];const ns=prenNums({arr});
       R("prenotazioni/"+o.prenotazione).update({["arr/"+k]:null,stato:prenStato(p,arr),ordine:ns.length?ns[ns.length-1]:0}).catch(()=>{})}

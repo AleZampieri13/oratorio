@@ -80,3 +80,61 @@ $("pushbar").addEventListener("click",async e=>{
   finally{b.disabled=false}
 });
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&S.role==="camerieri"&&S.me&&pushPronto())pushStato()});
+
+/* ---------- mandare gli avvisi ----------
+   Le azioni dell'uscita e del bar fanno più scritture una dopo l'altra (ordini uniti, «Tutto pronto», pronto in parte).
+   Ogni passaggio di stato di un piatto si annota qui (pushNota); dopo un attimo senza nuovi passaggi parte
+   un solo avviso per cameriere con tutti i piatti. Se un piatto torna allo stato di prima (Annulla subito) non parte niente. */
+const PUSH_ROLES=["uscita","bar","cucina"],PUSH_ATTESA=1500;
+function pushNota(n,k,from,to,q,part){
+  if(!pushConf()||!PUSH_ROLES.includes(S.role)||from===to)return;
+  S.pushQ=S.pushQ||new Map();const key=n+"|"+k,x=S.pushQ.get(key);
+  if(x){x.to=to;x.q=q;x.part=x.part||!!part}else S.pushQ.set(key,{n,k,from,to,q,part:!!part});
+  clearTimeout(S.pushT);S.pushT=setTimeout(pushFlush,PUSH_ATTESA);
+}
+function pushFlush(){
+  const L=[...(S.pushQ||new Map()).values()];S.pushQ=new Map();
+  const pr=L.filter(x=>x.to==="pronta"&&x.from!=="pronta"),np=L.filter(x=>x.from==="pronta"&&(x.to==="chiamata"||x.to==="attesa"));
+  if(pr.length)avvisaCamerieri("pronto",pr);
+  if(np.length)avvisaCamerieri("nonpronto",np);
+}
+const PUSH_TIT={pronto:"Pronto",nonpronto:"Non ancora pronto",annullato:"Ordine annullato"};
+/* tipo: "pronto" | "nonpronto" | "annullato"; voci: [{n, k?, q?, part?, o?}] (o = l'ordine, se è già stato tolto dal database).
+   Non c'è niente da aspettare: gli errori finiscono solo in console. */
+function avvisaCamerieri(tipo,voci){
+  if(!pushConf()||!voci||!voci.length)return;
+  pushManda(tipo,voci).catch(e=>console.warn("avvisi:",e));
+}
+async function pushManda(tipo,voci){
+  /* per cameriere: gruppi (ordine o ordini uniti) → piatti */
+  const per=new Map();
+  for(const v of voci){
+    const o=v.o||orderByNum(v.n);if(!o||o.asportoSubito)continue;
+    const G=tipo==="annullato"?[o]:unitiOf(o),gk=tipo==="annullato"?"n"+o.numero:gKey(o);
+    const ids=new Set();G.forEach(x=>{const w=ownerId(x);if(w)ids.add(w);sharedIds(x).forEach(s=>ids.add(s))});
+    for(const id of ids){
+      if(!per.has(id))per.set(id,new Map());const gm=per.get(id);
+      if(!gm.has(gk))gm.set(gk,{o,nums:G.length>1?gNums(G):String(o.numero),piatti:new Map()});
+      if(v.k){const g=gm.get(gk),b=kBase(v.k),p=g.piatti.get(b)||{q:0,part:false};p.q+=v.q||0;p.part=p.part||!!v.part;g.piatti.set(b,p)}
+    }
+  }
+  if(!per.size)return;
+  const user=firebase.auth().currentUser;if(!user||typeof user.getIdToken!=="function")return;
+  const token=await user.getIdToken();
+  await Promise.all([...per].map(async([id,gm])=>{
+    const groups=[...gm.entries()];
+    const testo=groups.map(([,g])=>{
+      if(tipo==="annullato")return "Ordine "+whereTxt(g.o)+" annullato";
+      const ps=[...g.piatti].map(([b,p])=>tipo==="pronto"&&p.part?(p.q>1?`Pronti ${p.q} ${piattoNome(b)}`:`1 ${piattoNome(b)}`):piattoNome(b));
+      return ps.join(", ")+" · n. "+g.nums}).join(" — ").slice(0,200);
+    const subs=(await pushRef(id).once("value")).val()||{};
+    const all=Object.entries(subs).filter(([,s])=>s&&s.endpoint&&s.keys);
+    for(let i=0;i<all.length;i+=20){const part=all.slice(i,i+20);
+      const r=await fetch(PUSH_WORKER.replace(/\/+$/,"")+"/invia",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({token,a:part.map(([,s])=>({endpoint:s.endpoint,keys:s.keys})),titolo:PUSH_TIT[tipo],testo,tag:"o"+groups[0][0]})});
+      if(!r.ok){console.warn("avvisi: il Worker ha risposto",r.status);continue}
+      const j=await r.json().catch(()=>({}));
+      for(const ep of (j.scaduti||[])){const hit=part.find(([,s])=>s.endpoint===ep);if(hit)pushRef(id,hit[0]).remove().catch(e=>console.warn("avvisi:",e))}
+    }
+  }));
+}

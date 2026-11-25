@@ -55,14 +55,15 @@ async function splitCalled(n,k,x,scx,rs){const o=orderByNum(n),p=o&&o.portate&&o
   const sc=toArr(p.sc).filter(Boolean);let a=x;const sc1=[],sc2=[];sc.forEach((s,i)=>{const t=scx?Math.min(s.q,scx[i]||0):Math.min(s.q,a);a-=t;sc1.push({n:s.n,q:t});sc2.push({n:s.n,q:s.q-t})});
   const rep=p.rep?Object.fromEntries(Object.entries(p.rep).map(([r,v])=>{const y={...v,s:"chiamata"};delete y.t;return [r,y]})):null;
   const nx={...p,stato:"chiamata"};if(rep)nx.rep=rep;if(sc.length)nx.sc=sc2;
-  const upd={["dopo/"+nk]:later,["portate/"+nk]:nx};if(k!==b)upd["dopo/"+k]=(D[k]||0)-later;
+  const upd={["dopo/"+nk]:later,["portate/"+nk]:nx};if(k!==b)upd["dopo/"+k]=(D[k]||0)-later;let pronto=false;
   if(rs){/* la parte pronta si segna insieme alla divisione: niente passaggi intermedi sullo schermo */
     const now=Date.now(),p1={...p};if(sc.length)p1.sc=sc1;let all=true;
     if(p.rep&&Object.keys(p.rep).length){p1.rep={...p.rep};rs.forEach(r=>{if(p1.rep[r])p1.rep[r]={...p1.rep[r],s:"pronta",t:now}});all=Object.values(p1.rep).every(v=>v&&v.s==="pronta")}
-    if(all){p1.tc=p.t||null;p1.stato="pronta";p1.t=now;delete p1.annull}
+    if(all){p1.tc=p.t||null;p1.stato="pronta";p1.t=now;delete p1.annull;pronto=true}
     upd["portate/"+k]=p1}
   else if(sc.length)upd["portate/"+k+"/sc"]=sc1;
-  try{await R("ordini/"+n).update(upd);delete S.kNow[n+"|"+k];return true}catch(e){showBanner(errText(e));return false}}
+  try{await R("ordini/"+n).update(upd);delete S.kNow[n+"|"+k];if(pronto&&typeof pushNota==="function")pushNota(n,k,"chiamata","pronta",x,true);return true}
+  catch(e){showBanner(errText(e));return false}}
 /* prima di segnare pronto: se il numero è stato abbassato, divide; ritorna [quanti pronti, quanti restano] */
 async function prepPart(n,k,rs){const o=orderByNum(n);if(!o)return null;const q=cop(righeFor(o,k)),x=kNowOf(o,k);if(x>=q)return [q,0,false];S.holdMerge=Date.now()+4000;return (await splitCalled(n,k,x,kScMode(o,k)?kScNow(o,k):null,rs))?[x,q-x,!!rs]:null}
 const partToast=(n,k,r)=>{const o=orderByNum(n);toast(`${o?kWho(o,o.portate&&o.portate[k])+" · ":""}${r[0]} ${piattoNome(k)} pronti · ${r[1]} ancora da preparare`,{ms:5000})};
@@ -117,9 +118,9 @@ function renderRepView(sc,ids,opts){const nb=!!(opts&&opts.noBtn);
 function renderKitchenRep(sc){$("k-filt").hidden=true;renderRepView(sc,{sum:"k-sum",queue:"k-queue",ready:"k-ready"},{noBtn:true})}
 async function setPart(n,k,r,to,opts){
   const key=n+"|"+k+"|"+r;if(S.pending.has(key))return;S.pending.add(key);schedule();
-  const o=orderByNum(n);let done=false;
+  const o=orderByNum(n);let done=false,prima=null;
   try{
-    const tr=await R(`ordini/${n}/portate/${k}`).transaction(cur=>{if(cur==null)return cur;const rep=cur.rep||{};if(!rep[r])return;
+    const tr=await R(`ordini/${n}/portate/${k}`).transaction(cur=>{if(cur==null)return cur;prima=cur.stato||"attesa";const rep=cur.rep||{};if(!rep[r])return;
       if(to==="pronta"){if(cur.stato!=="chiamata"||rep[r].s==="pronta")return;
         const nx={...cur,rep:{...rep,[r]:{...rep[r],s:"pronta",t:Date.now()}}};
         if(Object.values(nx.rep).every(x=>x.s==="pronta")){nx.tc=cur.t||null;nx.stato="pronta";nx.t=Date.now();delete nx.annull}
@@ -131,6 +132,7 @@ async function setPart(n,k,r,to,opts){
     done=!!(tr&&tr.committed&&tr.snapshot&&tr.snapshot.val()!=null);
     const v=done?tr.snapshot.val():null,pn=(v&&v.rep&&v.rep[r]&&(v.rep[r].piatto||v.rep[r].nome))||repNome(r),c=((o&&orderCourses(o).find(x=>x.k===k))||{}).l||k;
     if(!done){toast(to==="pronta"?"Qualcun altro l'ha appena aggiornato: guarda lo stato attuale.":`${c} · n. ${n}: già portato, non si può annullare`,{ms:4000});return}
+    if(typeof pushNota==="function")pushNota(n,k,prima,v.stato||"attesa",o?cop(righeFor(o,k)):0);
     if(opts&&opts.silent)return;
     if(to==="pronta")toast(`${o?kWho(o,v):"n. "+n} · ${pn} pronto${v.stato==="pronta"?` · ${c} completo`:""}`,{ms:5000,action:{label:"Annulla",fn:()=>setPart(n,k,r,"chiamata",{silent:true}).then(()=>mergeSame(n,k))}});
     else toast(`${pn} · n. ${n}: di nuovo da preparare`,{ms:4000});

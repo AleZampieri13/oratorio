@@ -24,9 +24,10 @@ App per gestire le serate a tavola dell'oratorio: cassa, camerieri, cucina divis
 app/      ← il sito (Firebase pubblica solo questa cartella, vedi firebase.json)
 test/     ← copia di prova con database finto + serata simulata
 docs/     ← GUIDA-GITHUB.md: come si lavora con GitHub e Firebase
+worker/   ← il Worker su Cloudflare che spedisce gli avvisi ad app chiusa
 ```
 
-Dentro `app/`: `index.html` (schermate), `css/app.css` (aspetto), `js/config.js` (collegamento Firebase), `js/01-…11-*.js` (funzionamento, un file per argomento, caricati in ordine), `sw.js` (funzionamento senza rete).
+Dentro `app/`: `index.html` (schermate), `css/app.css` (aspetto), `js/config.js` (collegamento Firebase), `js/01-…12-*.js` (funzionamento, un file per argomento, caricati in ordine), `sw.js` (funzionamento senza rete).
 
 ## Pubblicare una versione
 
@@ -54,4 +55,15 @@ Dopo una modifica, dal terminale nella cartella del progetto:
 npx.cmd -y firebase-tools@15.35.0 deploy --only hosting --project giovanichef-65d46 --account oratoriopare@gmail.com
 ```
 
-**Accesso:** il sito si apre solo con il link o il QR (contengono il codice di accesso, `#k=…`). Le regole del database (anche per ruolo) si generano con `py toolsegole.py` in `database.rules.json` e si pubblicano con `--only hosting,database`. Prima di pubblicarle: serata simulata sull'emulatore (`firebase emulators:start --only database,auth`, `py test\genera-emu.py`, poi `serata.html?emu=1`). Il codice si cambia da Evento → «Cambia codice di accesso».
+**Accesso:** il sito si apre solo con il link o il QR (contengono il codice di accesso, `#k=…`). Le regole del database (anche per ruolo) si generano con `py tools
+egole.py` in `database.rules.json` e si pubblicano con `--only hosting,database`. Prima di pubblicarle: serata simulata sull'emulatore (`firebase emulators:start --only database,auth`, `py test\genera-emu.py`, poi `serata.html?emu=1`). Il codice si cambia da Evento → «Cambia codice di accesso».
+
+## Avvisi ad app chiusa (camerieri)
+
+Nella pagina Camerieri la striscia **«Attiva avvisi»**: il telefono riceve «Pronto», «Non ancora pronto» e «Ordine annullato» anche con l'app chiusa o lo schermo spento. Su iPhone serve iOS 16.4 o più recente e l'app aggiunta alla schermata Home (la striscia spiega come).
+
+Le notifiche le spedisce un Worker gratuito su Cloudflare (cartella `worker/`, istruzioni in `worker/README.md`). Indirizzo del Worker e chiave pubblica VAPID sono in `app/js/config.js` (`PUSH_WORKER`, `PUSH_VAPID`; vuoti = avvisi spenti). Le iscrizioni stanno nel database in `push/`: dopo una modifica alle regole pubblicare con
+
+```
+npx.cmd -y firebase-tools@15.35.0 deploy --only hosting,database --project giovanichef-65d46 --account oratoriopare@gmail.com
+```

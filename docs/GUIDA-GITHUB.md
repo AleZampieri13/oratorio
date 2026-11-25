@@ -31,7 +31,7 @@ ordini-oratorio/
 │   ├── index.html       ← le schermate
 │   ├── css/app.css      ← l'aspetto (colori, dimensioni)
 │   ├── js/config.js     ← il collegamento a Firebase
-│   ├── js/01-base.js … js/11-avvio.js   ← il funzionamento, diviso per argomento
+│   ├── js/01-base.js … js/12-notifiche.js   ← il funzionamento, diviso per argomento
 │   ├── sw.js            ← fa aprire l'app anche senza rete
 │   └── icone, manifest
 ├── test/                ← copia di prova con database finto e serata simulata (non va online)
@@ -58,6 +58,7 @@ I file in `js/` sono numerati: il browser li carica in quell'ordine.
 | `09-listino.js` | Reparti, piatti, menù fissi, prezzi |
 | `10-evento.js` | Prenotazioni, Excel, nuovo evento, archivio |
 | `11-avvio.js` | Aggiornamento delle schermate e collegamento a Firebase |
+| `12-notifiche.js` | Avvisi ai camerieri con l'app chiusa (Attiva avvisi, invio al Worker) |
 
 ---
 
