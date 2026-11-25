@@ -2,6 +2,7 @@
 
 ## 42
 - **Avvisi con l'app chiusa (camerieri):** nella pagina Camerieri «Attiva avvisi». Arrivano anche con l'app chiusa o lo schermo spento: Pronto, Non ancora pronto, Ordine annullato. Su iPhone l'app va aggiunta alla schermata Home (iOS 16.4 o più recente). Serve il Worker su Cloudflare (vedi worker/README.md).
+- Avvisi bloccati: la striscia dice dove riattivarli in Samsung Internet, in Chrome o su iPhone. La striscia «Attiva avvisi» non è più rossa (il rosso resta per il suono bloccato).
 
 ## 41
 - **Prenotazione arrivata in parte:** dopo l'ordine la cassa chiede **Aspetta** o **Chiudi**. Una prenotazione chiusa è «Chiusa · 3 su 4», si può riaprire con **Riapri**; il contatore dice «gestite» e nell'Excel c'è «Chiusa» e la colonna «Quanti».

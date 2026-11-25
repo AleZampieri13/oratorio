@@ -54,23 +54,25 @@ async function pushTogli(id,uid){
 function renderPushBar(){
   const el=$("pushbar");if(!el)return;
   if(!S.me||S.role!=="camerieri"||!pushConf()){el.hidden=true;return}
-  let h="",ok=false;
+  let h="",ok=false,warn=false;
   if(!pushPronto()){
     if(isIOS()&&!isStandalone())
-      h=`🔔 <b>Avvisi con l'app chiusa</b>: su iPhone tocca <b>Condividi</b> (il quadrato con la freccia) → <b>Aggiungi alla schermata Home</b>, poi apri l'app dall'icona sulla Home e qui tocca «Attiva avvisi».`;
+      {warn=true;h=`🔔 <b>Avvisi con l'app chiusa</b>: su iPhone tocca <b>Condividi</b> (il quadrato con la freccia) → <b>Aggiungi alla schermata Home</b>, poi apri l'app dall'icona sulla Home e qui tocca «Attiva avvisi».`}
     else if(isIOS())
-      h=`🔔 Per gli avvisi con l'app chiusa serve iOS 16.4 o più recente: aggiorna l'iPhone da Impostazioni → Generali → Aggiornamento software.`;
+      {warn=true;h=`🔔 Per gli avvisi con l'app chiusa serve iOS 16.4 o più recente: aggiorna l'iPhone da Impostazioni → Generali → Aggiornamento software.`}
     else{el.hidden=true;return}
   }
-  else if(Notification.permission==="denied")
-    h=`🔕 Avvisi bloccati su questo telefono. Per riattivarli: impostazioni del telefono → Notifiche → ${isIOS()?"l'app Ordini Oratorio":"il browser (o questo sito)"} → Consenti. Poi riapri l'app.`;
+  else if(Notification.permission==="denied"){warn=true;
+    h=isIOS()?`🔕 Avvisi bloccati su questo telefono. Per riattivarli: Impostazioni dell'iPhone → Notifiche → Ordini Oratorio → Consenti notifiche. Poi riapri l'app.`
+      :/SamsungBrowser/.test(navigator.userAgent)?`🔕 Avvisi bloccati per questo sito in Samsung Internet. Apri <b>Samsung Internet</b> (il browser) → menu ☰ → <b>Impostazioni</b> → <b>Siti e download</b> → <b>Notifiche</b>: tocca giovanichef.web.app e scegli <b>Consenti</b>. Poi chiudi e riapri l'app e tocca «Attiva avvisi».`
+      :`🔕 Avvisi bloccati per questo sito. Apri <b>Chrome</b> (il browser) → menu ⋮ → <b>Impostazioni</b> → <b>Impostazioni sito</b> → <b>Notifiche</b>: tocca giovanichef.web.app e scegli <b>Consenti</b>. Poi chiudi e riapri l'app e tocca «Attiva avvisi».`}
   else{
     if(!S.push||S.push.key!==pushKeyNow()){pushStato();el.hidden=true;return}
     if(S.push.st==="on"){ok=true;h=`🔔 Avvisi attivi: ti arrivano anche con l'app chiusa. <button class="btn small" data-push="off">Disattiva avvisi</button>`}
     else h=`<button class="btn primary" data-push="on">🔔 Attiva avvisi</button> <span>Ti avvisa quando un piatto è pronto, anche con l'app chiusa.</span>`;
   }
   if(el._h!==h){el.innerHTML=h;el._h=h}
-  el.classList.toggle("ok",ok);el.hidden=false;
+  el.classList.toggle("ok",ok);el.classList.toggle("warn",warn);el.hidden=false;
 }
 $("pushbar").addEventListener("click",async e=>{
   const b=e.target.closest("button[data-push]");if(!b||b.disabled)return;
