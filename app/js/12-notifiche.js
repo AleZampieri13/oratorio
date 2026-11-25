@@ -90,6 +90,7 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 const PUSH_ROLES=["uscita","bar","cucina"],PUSH_ATTESA=1500;
 function pushNota(n,k,from,to,q,part){
   if(!pushConf()||!PUSH_ROLES.includes(S.role)||from===to)return;
+  console.info("avvisi: annotato",n,k,from,"→",to);
   S.pushQ=S.pushQ||new Map();const key=n+"|"+k,x=S.pushQ.get(key);
   if(x){x.to=to;x.q=q;x.part=x.part||!!part}else S.pushQ.set(key,{n,k,from,to,q,part:!!part});
   clearTimeout(S.pushT);S.pushT=setTimeout(pushFlush,PUSH_ATTESA);
@@ -120,7 +121,7 @@ async function pushManda(tipo,voci){
       if(v.k){const g=gm.get(gk),b=kBase(v.k),p=g.piatti.get(b)||{q:0,part:false};p.q+=v.q||0;p.part=p.part||!!v.part;g.piatti.set(b,p)}
     }
   }
-  if(!per.size)return;
+  if(!per.size){console.info("avvisi:",tipo,"nessun cameriere da avvisare",voci.map(v=>v.n));return}
   const user=firebase.auth().currentUser;if(!user||typeof user.getIdToken!=="function")return;
   const token=await user.getIdToken();
   await Promise.all([...per].map(async([id,gm])=>{
@@ -131,11 +132,13 @@ async function pushManda(tipo,voci){
       return ps.join(", ")+" · n. "+g.nums}).join(" — ").slice(0,200);
     const subs=(await pushRef(id).once("value")).val()||{};
     const all=Object.entries(subs).filter(([,s])=>s&&s.endpoint&&s.keys);
+    if(!all.length)console.info("avvisi:",tipo,"il cameriere",nameOf(id,id),"non ha attivato gli avvisi");
     for(let i=0;i<all.length;i+=20){const part=all.slice(i,i+20);
       const r=await fetch(PUSH_WORKER.replace(/\/+$/,"")+"/invia",{method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({token,a:part.map(([,s])=>({endpoint:s.endpoint,keys:s.keys})),titolo:PUSH_TIT[tipo],testo,tag:"o"+groups[0][0]})});
       if(!r.ok){console.warn("avvisi: il Worker ha risposto",r.status);continue}
       const j=await r.json().catch(()=>({}));
+      console.info("avvisi:",tipo,"a",nameOf(id,id),"·",testo,"· telefoni",part.length,"· inviati",j.inviati,"· scaduti",(j.scaduti||[]).length);
       for(const ep of (j.scaduti||[])){const hit=part.find(([,s])=>s.endpoint===ep);if(hit)pushRef(id,hit[0]).remove().catch(e=>console.warn("avvisi:",e))}
     }
   }));
