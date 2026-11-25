@@ -102,9 +102,19 @@ async function hmac(chiave, dati) {
   const k = await crypto.subtle.importKey("raw", chiave, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   return new Uint8Array(await crypto.subtle.sign("HMAC", k, dati));
 }
+/* la chiave privata incollata con «wrangler secret put» può avere spazi, a capo, virgolette, la scritta
+   «Private Key:» davanti o i caratteri + / = del base64 normale: qui si ripulisce (deve restare di 32 byte) */
+function privataPulita(v) {
+  let s = String(v || "").trim().replace(/^["']+|["']+$/g, "");
+  if (s.includes(":")) s = s.slice(s.lastIndexOf(":") + 1);
+  s = s.replace(/\s+/g, "").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const n = deB64u(s).length;
+  if (n !== 32) throw new Error(`VAPID_PRIVATA non valida: ${n} byte invece di 32 (${s.length} caratteri). Salvala di nuovo con «wrangler secret put VAPID_PRIVATA».`);
+  return s;
+}
 async function vapidJwt(endpoint, env) {
-  const pub = deB64u(env.VAPID_PUBBLICA);
-  const jwk = { kty: "EC", crv: "P-256", d: env.VAPID_PRIVATA,
+  const pub = deB64u(String(env.VAPID_PUBBLICA || "").trim());
+  const jwk = { kty: "EC", crv: "P-256", d: privataPulita(env.VAPID_PRIVATA),
     x: b64u(pub.slice(1, 33)), y: b64u(pub.slice(33, 65)), ext: true };
   const key = await crypto.subtle.importKey("jwk", jwk, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
   const head = b64u(enc.encode(JSON.stringify({ typ: "JWT", alg: "ES256" })));
