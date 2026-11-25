@@ -108,9 +108,11 @@ function privataPulita(v) {
   let s = String(v || "").trim().replace(/^["']+|["']+$/g, "");
   if (s.includes(":")) s = s.slice(s.lastIndexOf(":") + 1);
   s = s.replace(/\s+/g, "").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  const n = deB64u(s).length;
-  if (n !== 32) throw new Error(`VAPID_PRIVATA non valida: ${n} byte invece di 32 (${s.length} caratteri). Salvala di nuovo con «wrangler secret put VAPID_PRIVATA».`);
-  return s;
+  let b = deB64u(s);
+  /* alcuni programmi scrivono la chiave con uno 0 davanti (33 byte): è la stessa chiave */
+  while (b.length > 32 && b[0] === 0) b = b.slice(1);
+  if (b.length !== 32) throw new Error(`VAPID_PRIVATA non valida: ${b.length} byte invece di 32 (${s.length} caratteri, primo byte ${b[0] === 0 ? "0" : "non 0"}). Salvala di nuovo con «wrangler secret put VAPID_PRIVATA».`);
+  return b64u(b);
 }
 async function vapidJwt(endpoint, env) {
   const pub = deB64u(String(env.VAPID_PUBBLICA || "").trim());
