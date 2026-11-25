@@ -46,7 +46,8 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:12px;padding:12p
 const P=new URLSearchParams(location.search),STEP=+P.get("step")||40,ORDERS=+P.get("ordini")||200,NCASSE=+P.get("casse")||4,NCAM=+P.get("camerieri")||21,NFILE=+P.get("file")||7;
 const $devs=document.getElementById("devs"),$log=document.getElementById("log"),$st=document.getElementById("status");
 const sleep=ms=>new Promise(r=>{const end=performance.now()+ms,ch=new MessageChannel();ch.port1.onmessage=()=>{performance.now()>=end?(ch.port1.close(),r()):ch.port2.postMessage(0)};ch.port2.postMessage(0)});
-const CAOS=P.get("caos")==="1",PR=x=>CAOS?Math.min(.6,x*3):x;
+/* caos=1: imprevisti frequenti; caos=2 («estremo»): ancora più spesso, più cambi, più ricariche e, con l'emulatore, telefoni senza rete */
+const ESTREMO=P.get("caos")==="2",CAOS=ESTREMO||P.get("caos")==="1",PR=x=>ESTREMO?Math.min(.8,x*5):CAOS?Math.min(.6,x*3):x;
 let seed=+P.get("seme")||20261106;const rnd=()=>{seed=(seed*1103515245+12345)%2147483648;return seed/2147483648};
 const pick=a=>a[Math.floor(rnd()*a.length)];
 const R={ok:0,ko:0,checks:[],issues:[],stats:{},events:[],done:false,error:null,fase:""};window.__report=R;if(P.get("wlog"))window.__wlog=[];
@@ -347,7 +348,9 @@ async function uscitaAct(){
   const ac=q("uscita","#o-ready button[data-ocons]:not([disabled])");if(ac){const n=Number(ac.dataset.ocons),card=ac.closest(".kcard"),o=W("uscita").eval(`orderCourses(orderByNum(${n})).filter(c=>c.p.stato!=="servita").length`);
     if(card.querySelectorAll("li").length===o&&o>0)STAT.aspTutto=Math.max(STAT.aspTutto,o);if(rnd()<.5){await click("uscita",ac);await sleep(30);
       if(W("uscita").eval(`orderCourses(orderByNum(${n})).every(c=>c.p.stato==="servita")`))STAT.aspConsegnati++}}const un=q("uscita",'#o-ready button[data-ounready]:not([disabled])');if(un&&(CAOS||STAT.oAnnulla<3)&&rnd()<PR(.05)&&(((db().ordini||{})[un.dataset.ounready.split("|")[0]]||{}).portate||{})[un.dataset.ounready.split("|")[1]]&&db().ordini[un.dataset.ounready.split("|")[0]].portate[un.dataset.ounready.split("|")[1]].stato==="pronta"){const [an,ak]=un.dataset.ounready.split("|");await click("uscita",un);await sleep(200);const un2=q("uscita",`#o-ready button[data-ounready="${an}|${ak}"]`);if(un2)await click("uscita",un2);
-    for(let i=0;i<20;i++){if(W("uscita").eval(`((orderByNum(${an}).portate||{})[${JSON.stringify(ak)}]||{}).stato`)!=="pronta")break;await sleep(50)}
+    const offU=OFF&&OFF.d==="uscita",pend0=W("uscita").eval(`[...S.pending].join(",")`),t0u=performance.now();
+    for(let i=0;i<60;i++){if(W("uscita").eval(`((orderByNum(${an}).portate||{})[${JSON.stringify(ak)}]||{}).stato`)!=="pronta")break;await sleep(50)}
+    if(W("uscita").eval(`((orderByNum(${an}).portate||{})[${JSON.stringify(ak)}]||{}).stato`)==="pronta")STAT.oAnnullaWhy.push(`[uscita ${offU?"SENZA RETE":"in rete"}, secondo tocco ${un2?"sì":"NO"}, in sospeso prima: «${pend0}», dopo: «${W("uscita").eval(`[...S.pending].join(",")`)}», ${Math.round(performance.now()-t0u)} ms]`);
     const st=W("uscita").eval(`(()=>{const o=orderByNum(${an}),k=${JSON.stringify(ak)},p=(o.portate||{})[k];if(p)return p.stato;return Object.keys(o.portate||{}).some(x=>kBase(x)===kBase(k)&&o.portate[x].stato==="chiamata")?"unito":"sparito"})()`);
     if(st==="chiamata"||st==="unito")STAT.oAnnulla++;else if(st==="servita"&&/già portato/.test(toasts("uscita").slice(-3).join(" ")))STAT.oAnnullaPortato=(STAT.oAnnullaPortato||0)+1;else{STAT.oAnnullaKo++;STAT.oAnnullaWhy.push(`n.${an} ${ak}: ${st}`)}return}
   const b=q("uscita",'#o-ready button[data-set$="|servita"]:not([disabled])');if(b&&rnd()<.25){await click("uscita",b);STAT.consegnateUscita++}
@@ -358,8 +361,15 @@ async function uscitaAct(){
 /* modalità caos: ripensamenti, telefoni che si ricaricano, doppi tocchi */
 const stOf_=(dev,n,k)=>W(dev).eval(`(()=>{const o=orderByNum(${n});const p=o&&(o.portate||{})[${JSON.stringify(k)}];return p?p.stato:"sparito"})()`);
 async function waitSt(dev,n,k,ok,ms=1500){let st;for(let i=0;i<ms/50;i++){st=stOf_(dev,n,k);if(ok.includes(st))return st;await sleep(50)}return st}
+/* estremo con l'emulatore: un telefono perde la rete per qualche secondo e continua a lavorare; quando torna deve rimettersi in pari */
+let OFF=null;
+async function backOnline(){if(!OFF)return;const d=OFF.d;OFF=null;try{W(d).firebase.database().goOnline()}catch(e){}
+  let on=false;for(let i=0;i<300&&!on;i++){await sleep(50);try{on=!!W(d).eval("S.online")}catch(e){}}
+  if(on)STAT.cz.offline=(STAT.cz.offline||0)+1;else STAT.czKo.push(`rete ${d}: non si ricollega`)}
 async function caosAct(tick){
   const devs=[...CAM.map(c=>c.dev),...COOKS,"bar","uscita"];
+  if(ESTREMO&&EMU){if(OFF&&performance.now()>OFF.until)await backOnline();
+    else if(!OFF&&rnd()<.06){const d=pick(devs);try{W(d).firebase.database().goOffline();OFF={d,until:performance.now()+2000+rnd()*6000}}catch(e){}}}
   /* cameriere: chiama e poi ci ripensa */
   if(rnd()<.25){const w=pick(CAM).dev,b=q(w,'button[data-uncall]:not([disabled])');if(b){const [n,k]=b.dataset.uncall.split("|");
     if(stOf_(w,n,k)==="chiamata"&&W(w).eval(`Object.values(((orderByNum(${n}).portate||{})[${JSON.stringify(k)}]||{}).rep||{}).every(v=>!v||v.s==="chiamata")`)){
@@ -375,8 +385,8 @@ async function caosAct(tick){
       let st;for(let i=0;i<30;i++){st=rs();if(st!=="pronta")break;await sleep(50)}
       if(st==="chiamata")STAT.cz.unready++;else if(st!=="servita")STAT.czKo.push(`annulla pronto n.${n} ${k}: ${st}`)}}}
   /* un telefono si ricarica a metà serata */
-  if(rnd()<.08){const d=pick(devs),role=W(d).eval("S.role");F[d].contentWindow.location.reload();
-    let ok=false;for(let i=0;i<160&&!ok;i++){await sleep(50);try{ok=W(d).eval("typeof S!=='undefined'&&S.role")===role&&!!W(d).eval("document.querySelector('section[id^=p-]:not([hidden])')")}catch(e){}}
+  if(rnd()<(ESTREMO?.15:.08)){const d=pick(devs),role=W(d).eval("S.role");F[d].contentWindow.location.reload();
+    let ok=false;for(let i=0;i<400&&!ok;i++){await sleep(50);try{ok=W(d).eval("typeof S!=='undefined'&&typeof orderByNum==='function'&&typeof renderAll==='function'&&S.role")===role&&!!W(d).eval("document.querySelector('section[id^=p-]:not([hidden])')")}catch(e){}}
     if(ok)STAT.cz.reload++;else STAT.czKo.push(`ricarica ${d} (${role}): non riparte`)}
   /* uscita: «Non consegnato» da «Appena consegnati» */
   if(rnd()<.2){const b=q("uscita",'#o-done button[data-unserve]:not([disabled])');if(b){const [n,k]=b.dataset.unserve.split("|");
@@ -412,15 +422,21 @@ async function service(){
   const todo=plan(),total=todo.length,S={};let tick=0;const t0=performance.now();
   while(tick<3000){
     tick++;$st.textContent=`Servizio: giro ${tick} · ordini ${ORD.length}/${total} · ${Math.round((performance.now()-t0)/1000)}s`;
+    try{
     for(let k=0;k<2&&todo.length;k++){const o=await createOrder(todo.shift());if(o)await specialAfterCreate(o,S)}
     for(const c of CAM){if(!(await waiterAdd(c.dev)))await waiterAct(c.dev)}
     for(const c of COOKS)await cookAct(c);
     await barAct();await uscitaAct();for(const c of CASSE)await cassaAct(c.dev);
     await specialTick(tick,S);if(CAOS)await caosAct(tick);if(window.__wlog&&window.__wlog.length>4000)window.__wlog.splice(0,window.__wlog.length-3000);
+    }catch(e){/* la prova ha chiesto qualcosa a un telefono mentre l'app si stava ancora caricando: lo segno e vado avanti (non è un errore dell'app) */
+      /* l'errore nasce dentro il telefono (un'altra finestra): «instanceof Error» qui sarebbe falso, si guarda il nome */
+      if(!(e&&e.name==="ReferenceError"&&/is not defined/.test(e.message))||(STAT.evalKo=(STAT.evalKo||0)+1)>20)throw e;
+      const where=String(e.stack||"").split("\n").slice(0,4).join(" ← ");R.issues.push(`Telefono non ancora pronto (giro ${tick}): ${where}`);log(`Avviso: telefono non ancora pronto al giro ${tick}: ${e.message} · ${where}`,"warn");
+      [...document.querySelectorAll("iframe")].forEach(f=>{try{if(typeof f.contentWindow.orderByNum!=="function")log(`  ${f.id}: ${f.contentWindow.location.href.slice(-80)} (${f.contentWindow.document.readyState})`)}catch(_){}})}
     await sleep(8);/* lascia arrivare gli aggiornamenti agli altri telefoni anche nei giri in cui nessuno fa niente */
     if(!todo.length&&Object.values(queueFor).every(x=>!x.length)&&allDone()){log(`Tutti gli ordini serviti al giro ${tick}`);break}
   }
-  R.stats.giri=tick;R.stats.secondiServizio=Math.round((performance.now()-t0)/1000);
+  await backOnline();R.stats.giri=tick;R.stats.secondiServizio=Math.round((performance.now()-t0)/1000);
 }
 async function specialAfterCreate(o,S){
   const k=ORD.length;
@@ -429,7 +445,7 @@ async function specialAfterCreate(o,S){
     queueFor[o.waiter]=queueFor[o.waiter].filter(x=>x!==o.n);
     await click(n,`#c-recent button[data-open="${o.n}"]`);await waitFor(()=>q(n,"#x-cambi button[data-cadd]"),3000,"cambi in modifica").catch(()=>null);
     const selR=async f=>{const e=q(n,`#x-cambi select[data-cf="${f}"]`);if(!e)return "";const ops=[...e.options].filter(x=>x.value!==""&&!x.disabled);if(!ops.length)return "";const op=pick(ops);e.value=op.value;e.dispatchEvent(new Event("change",{bubbles:true}));await sleep(STEP);return op.textContent};
-    let added=0;const nC=1+(rnd()<.4?1:0);
+    let added=0;const nC=1+(rnd()<.4?1:0)+(ESTREMO&&rnd()<.5?1:0);
     for(let c=0;c<nC;c++){const add=q(n,"#x-cambi button[data-cadd]");if(!add)break;await click(n,add);
       await selR("m");await selR("da");const a=await selR("a");const qn=Math.floor(rnd()*3);for(let i=0;i<qn;i++){const b=q(n,'#x-cambi button[data-cfq="1"]:not([disabled])');if(b)await click(n,b)}
       if(/^Niente/.test(a)&&rnd()<.5){const sc=q(n,'#x-cambi button[data-cfp="1"]');if(sc){await click(n,sc);STAT.scalati++}}
@@ -586,7 +602,7 @@ async function closing(){
   check(STAT.kScParz>0&&STAT.kScParzKo===0,`Bar: pronte solo alcune scelte (es. 1 Naturale e 0 Frizzante): ${STAT.kScParz} volte la scelta tolta è rimasta da preparare`+(STAT.kScParzKo?` · ${STAT.kScParzKo} volte no`:""));
   check(STAT.uniti>0&&STAT.doppi===0,`Stesso piatto chiamato due volte mentre il primo era ancora da preparare: unito in una riga sola (${STAT.uniti} volte)`+(STAT.doppi?` · ${STAT.doppi} volte restavano due righe`:""));
   check(STAT.oAnnulla>0&&!STAT.oAnnullaKo,`Uscita: «Annulla» su un piatto pronto lo rimette da preparare (${STAT.oAnnulla} volte)`+(STAT.oAnnullaKo?` · ${STAT.oAnnullaKo} volte no`:""),STAT.oAnnullaWhy.join("; "));
-  if(CAOS)check(!STAT.czKo.length&&["uncall","unserve","unready","reload","doppio","nonConsegnato"].every(k=>STAT.cz[k]>0)&&(STAT.cz.cambiModifica||0)>=(ORDERS>=100?40:1),`Caos: annullate ${STAT.cz.uncall} chiamate, ${STAT.cz.unserve} «Non portato», ${STAT.cz.unready} pronti annullati in cucina, ${STAT.cz.reload} telefoni ricaricati a metà serata, ${STAT.cz.doppio} doppi tocchi, ${STAT.cz.nonConsegnato} «Non consegnato» in uscita, ${STAT.cz.banco} consegne al banco, ${STAT.cz.prezzo} prezzi cambiati a serata in corso, ${STAT.cz.ingressi} chiusure degli ingressi, ${STAT.cz.cambiModifica||0} cambi aggiunti con «Modifica»: tutto torna`,STAT.czKo.join(" | "));
+  if(CAOS)check(!STAT.czKo.length&&["uncall","unserve","unready","reload","doppio","nonConsegnato"].every(k=>STAT.cz[k]>0)&&(STAT.cz.cambiModifica||0)>=(ORDERS>=100?40:1)&&(!(ESTREMO&&EMU)||STAT.cz.offline>0),`Caos: annullate ${STAT.cz.uncall} chiamate, ${STAT.cz.unserve} «Non portato», ${STAT.cz.unready} pronti annullati in cucina, ${STAT.cz.reload} telefoni ricaricati a metà serata, ${STAT.cz.doppio} doppi tocchi, ${STAT.cz.nonConsegnato} «Non consegnato» in uscita, ${STAT.cz.banco} consegne al banco, ${STAT.cz.prezzo} prezzi cambiati a serata in corso, ${STAT.cz.ingressi} chiusure degli ingressi, ${STAT.cz.cambiModifica||0} cambi aggiunti con «Modifica»${ESTREMO&&EMU?`, ${STAT.cz.offline||0} telefoni rimasti senza rete e poi tornati`:""}: tutto torna`,STAT.czKo.join(" | "));
   check(STAT.kParz>0&&!STAT.kParzKo.length,`Cucina: pronti in parte ${STAT.kParz} volte (es. 3 Pizzoccheri su 6), il resto è rimasto da preparare ed è arrivato`,STAT.kParzKo.join("; "));
   check(STAT.prontoUscita>0,`L'uscita segna «Pronto» da sola: ${STAT.prontoUscita} piatti`);
   check(STAT.aspUscita>0,"L'uscita vede anche gli asporti mandati subito in cucina");
@@ -636,7 +652,7 @@ async function run(){
   document.getElementById("go").disabled=true;const t0=performance.now();
   try{localStorage.clear();if(EMU){emuReq("PUT",{segreto:EMU_KEY});log("Emulatore di Firebase: database vuoto, regole vere","h")}
     await setup();if(EMU)await emuRuleChecks();await service();await closing();if(EMU)emuDeniedCheck()}
-  catch(e){R.error=`[${R.fase}] `+String(e&&e.message||e);log("ERRORE: "+R.error,"ko")}
+  catch(e){R.error=`[${R.fase}] `+String(e&&e.message||e);log("ERRORE: "+R.error+" · "+String(e&&e.stack||"").split("\n").slice(1,5).join(" ← "),"ko")}
   R.done=true;R.stats.secondi=Math.round((performance.now()-t0)/1000);
   $st.textContent=`Finita in ${R.stats.secondi}s · ${R.ok} controlli ok, ${R.ko} non ok${R.issues.length?`, ${R.issues.length} avvisi`:""}${R.error?" · ERRORE":""}`;
   log(`— Fine: ${R.ok} ok, ${R.ko} non ok —`,"h");
