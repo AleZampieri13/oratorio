@@ -40,7 +40,9 @@ function flatCourses(stato){
   const out=[];ordersArr().forEach(o=>orderCourses(o).forEach(c=>{if(c.p.stato===stato)out.push({o,k:c.k,l:c.l,t:c.p.t||0,daId:c.p.daId||"",da:nameOf(c.p.daId,c.p.da)})}));
   return out.sort((a,b)=>a.t-b.t);
 }
-function claimUpd(o){const upd={};if(!ownerId(o)&&S.me){upd.cameriereId=S.me.id;upd.cameriere=S.me.nome;upd.fila=myFila()||null}return upd}
+function claimUpd(o){const upd={};if(!ownerId(o)&&S.me){upd.cameriereId=S.me.id;upd.cameriere=S.me.nome;upd.fila=myFila()||null;upd.presoT=Date.now()}return upd}
+/* quando il cameriere ha preso il cliente (per gli ordini vecchi senza quest'ora: quando è stato creato) */
+const presoT=o=>o.presoT||o.creato||0;
 
 /* aggiungi un cliente: anteprima e conferma */
 function previewOrder(){
@@ -67,7 +69,7 @@ $("w-prev").addEventListener("click",async e=>{
   const upd=claimUpd(o);
   try{if(Object.keys(upd).length)await R("ordini/"+n).update(upd);
     $("w-prev").hidden=true;S.prevNum=null;$("w-num").value="";
-    toast(`${whereTxt(o)} aggiunto`,{ms:5000,action:{label:"Annulla",fn:()=>{R("ordini/"+n).update({fila:null,cameriereId:null,cameriere:null,condivisi:null}).catch(()=>{})}}});
+    toast(`${whereTxt(o)} aggiunto`,{ms:5000,action:{label:"Annulla",fn:()=>{R("ordini/"+n).update({fila:null,cameriereId:null,cameriere:null,condivisi:null,presoT:null}).catch(()=>{})}}});
     setTimeout(()=>flashCard(n),100)}
   catch(err){$("w-msg").textContent=errText(err)}
 });
@@ -336,7 +338,7 @@ $("w-tables").addEventListener("click",async e=>{
     try{
       if(mode==="share"){const on=!sharedIds(o).includes(u.id);await Promise.all(G.map(x=>R(`ordini/${x.numero}/condivisi/${u.id}`).set(on?true:null)));
         toast(on?`n. ${nn} condiviso con ${u.nome}`:`${u.nome} tolto dal n. ${nn}`,{ms:4000})}
-      else{await Promise.all(G.map(x=>R("ordini/"+x.numero).update({cameriereId:u.id,cameriere:u.nome,fila:u.fila||null,["condivisi/"+u.id]:null})));
+      else{await Promise.all(G.map(x=>R("ordini/"+x.numero).update({cameriereId:u.id,cameriere:u.nome,fila:u.fila||null,presoT:Date.now(),["condivisi/"+u.id]:null})));
         S.pick=null;toast(`n. ${nn} spostato a ${u.nome}`,{ms:4000})}
     }catch(err){$("w-msg").textContent=errText(err)}
     renderWaiterLists()}
@@ -349,13 +351,14 @@ function renderWaiterLists(){
   $("w-tt").textContent=seesAll()?"Tutti i clienti":"I miei clienti";
   $("w-tt-sub").textContent="";
   $("w-nofila").hidden=true;
-  const hasReady=o=>orderCourses(o).some(c=>c.p.stato==="pronta");
   const recent=o=>Math.max(0,...orderCourses(o).map(c=>c.p.t||0));
   /* una scheda per cliente; gli ordini uniti sono una scheda sola */
   const seen=new Set(),groups=[];ordersArr().filter(wVisible).forEach(o=>{const k=gKey(o);if(seen.has(k))return;seen.add(k);groups.push(unitiOf(o))});
-  const gDone=G=>G.every(orderDone),gReady=G=>G.some(hasReady),gRecent=G=>Math.max(...G.map(recent));
+  const gDone=G=>G.every(orderDone),gRecent=G=>Math.max(...G.map(recent));
+  /* ordine fisso: prima chi è stato preso prima; le schede non saltano quando un piatto diventa pronto o viene servito */
+  const gPreso=G=>Math.min(...G.map(presoT));
   const list=groups.filter(G=>!gDone(G)||Date.now()-gRecent(G)<3*60000)
-    .sort((a,b)=>(gDone(a)-gDone(b))||(gReady(b)-gReady(a))||a[0].numero-b[0].numero);
+    .sort((a,b)=>(gPreso(a)-gPreso(b))||a[0].numero-b[0].numero);
   $("w-tables").innerHTML=list.length?list.map(custCard).join("")
     :`<div class="empty">${seesAll()?"Nessun cliente servito per ora.":"Nessun cliente."}</div>`;
   renderWHist(recent);
