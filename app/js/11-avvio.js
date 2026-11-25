@@ -8,10 +8,14 @@ function tryConvert(){if(!S.listinoConv||!S.me||S.convTried)return;S.convTried=t
 function oldOrdersBanner(){const old=S.ordLoaded&&isBoss()&&ordersArr().some(o=>o.v!==2),t="Ci sono ordini fatti con la versione precedente: chiudi la serata con «Nuovo evento» (scheda Evento) prima di cominciare.";
   if(old&&$("banner").hidden)showBanner(t);else if(!old&&$("banner").textContent===t)showBanner("")}
 /* mentre si scrive nel campo della quantità la pagina si aggiorna lo stesso: il campo resta com'era, con il cursore */
-const qtyKind=el=>el.dataset.kqi!=null?"kqi":el.dataset.kqs!=null?"kqs":"wqi";
+const qtyKind=el=>el.dataset.kqi!=null?"kqi":el.dataset.kqs!=null?"kqs":el.dataset.wqg!=null?"wqg":el.dataset.kqg!=null?"kqg":"wqi";
 function qtyFocusKeep(){const a=document.activeElement;if(!a||!a.matches||!a.matches("input.qtyin"))return null;const at=qtyKind(a);let s=null,e=null;try{s=a.selectionStart;e=a.selectionEnd}catch(x){}return {at,key:a.dataset[at],v:a.value,s,e}}
 function qtyFocusBack(f){if(!f)return;const el=[...document.querySelectorAll(`input.qtyin[data-${f.at}]`)].find(x=>x.dataset[f.at]===f.key);if(!el||el===document.activeElement)return;S.qtyBack=true;el.value=f.v;el.focus();try{const n=f.v.length;el.setSelectionRange(f.s==null?n:f.s,f.e==null?n:f.e)}catch(x){}S.qtyBack=false}
 function qtyInput(el,commit){if(/\D/.test(el.value)){el.value=el.value.replace(/\D/g,"")}
+  /* piatti sommati di ordini uniti (cameriere «wqg», cucina e bar «kqg») */
+  if(el.dataset.wqg!=null||el.dataset.kqg!=null){const at=qtyKind(el),key=el.dataset[at],q=+(el.closest(".qtyf").querySelector(".qtyof").textContent.replace(/\D/g,""))||1,v=parseInt(el.value,10),G=S.gNow||(S.gNow={});
+    if(v>=1&&v<=q)G[key]={q,x:v};else if(commit)G[key]={q,x:v>q?q:(G[key]||{}).x||q};else return;
+    if(commit){renderAll();return}const x=G[key].x;document.querySelectorAll("button[data-gqk]").forEach(b=>{if(b.dataset.gqk===key)b.textContent=x<q?b.dataset.part+" "+x:b.dataset.full});return}
   if(el.dataset.kqs!=null){const [n,k,i]=el.dataset.kqs.split("|"),o=orderByNum(Number(n));if(!o)return;const L=kScList(o,k),cur=kScNow(o,k),v=parseInt(el.value,10),s=L[Number(i)];if(!s)return;
     const nx=cur.slice();if(v>=0&&v<=s.q)nx[Number(i)]=v;else if(commit)nx[Number(i)]=v>s.q?s.q:cur[Number(i)];else return;
     if(nx.reduce((a,b)=>a+b,0)<1){if(!commit)return;nx[Number(i)]=cur[Number(i)]}

@@ -30,6 +30,8 @@ const itsAttr=its=>its.map(x=>x.o.numero+">"+x.k).join(",");
 const parseIts=s=>String(s).split(",").filter(Boolean).map(x=>{const i=x.indexOf(">");return [Number(x.slice(0,i)),x.slice(i+1)]});
 const itsQ=its=>its.reduce((a,x)=>a+cop(righeFor(x.o,x.k)),0);
 /* scelte sommate (es. 2 Naturale del 12 + 1 Naturale del 13 = 3 Naturale) */
+/* piatti sommati: si può chiamare / segnare pronta solo una parte («3 / 6»); S.gNow[chiave]={q,x} */
+function gNowOf(key,q){const st=(S.gNow||{})[key];return st&&st.q===q?Math.max(1,Math.min(q,st.x)):q}
 function scMerge(ps){const m=new Map();ps.forEach(p=>toArr(p&&p.sc).forEach(x=>{if(x&&x.q>0)m.set(x.n,(m.get(x.n)||0)+x.q)}));return {sc:[...m].map(([n,q])=>({n,q}))}}
 function since(t){const a=ago(t);return a==="adesso"?"adesso":"da "+a}
 function nextCourse(o){return orderCourses(o).find(c=>(c.p.stato||"attesa")==="attesa")}
@@ -175,19 +177,27 @@ async function splitCourse(n,k,now,opts){const o=orderByNum(n);if(!o||!o.portate
 async function mergeCourse(n,k){const o=orderByNum(n),t=o&&canMerge(o,k);if(!t)return;const D=o.dopo||{},upd={["dopo/"+k]:null,["portate/"+k]:null};
   if(kRound(t)>1)upd["dopo/"+t]=(D[t]||0)+(D[k]||0);
   try{await R("ordini/"+n).update(upd);toast(`${(portataCfg(k)||{}).nome||""}: di nuovo insieme · ${whereTxt(o)}`,{ms:4000})}catch(e){$("w-msg").textContent=errText(e)}}
-/* righe della scheda: lo stesso piatto (stessa chiamata, stesso stato) di più ordini uniti è una riga sola */
-function gRows(G){const m=new Map();G.forEach(o=>orderCourses(o).forEach(c=>{const st=c.p.stato||"attesa",id=c.k+"|"+st;let r=m.get(id);
-  if(!r){r={k:c.k,l:c.l,st,ord:c.ord,its:[]};m.set(id,r)}r.its.push({o,k:c.k,c})}));
-  return [...m.values()].sort((a,b)=>a.ord-b.ord)}
+/* righe della scheda: lo stesso piatto nello stesso stato di più ordini uniti è una riga sola.
+   Da chiamare conta anche la volta («2ª volta» resta a parte); chiamato, pronto e portato si sommano anche se chiamati
+   in volte diverse. In cucina (sameDish) due righe dello stesso ordine restano separate, come negli ordini non uniti. */
+const sameDish=(x,o,k,ord)=>x.k===k||(kBase(x.k)===kBase(k)&&!x.its.some(y=>y.o.numero===o.numero)&&ord);
+function gRows(G){const rs=[];G.forEach(o=>orderCourses(o).forEach(c=>{const st=c.p.stato||"attesa";let r=rs.find(x=>x.st===st&&(x.k===c.k||(st!=="attesa"&&kBase(x.k)===kBase(c.k))));
+  if(!r){r={k:c.k,l:c.l,st,ord:c.ord,its:[]};rs.push(r)}r.its.push({o,k:c.k,c})}));
+  return rs.sort((a,b)=>a.ord-b.ord)}
 /* scelte di una riga di più ordini: si dividono sul totale, poi alla chiamata si spartiscono tra gli ordini */
-function wScForG(gk,its,k){const s=scelteOf(k);if(!s.length)return null;const n=itsQ(its),st=S.wSc[gk+"|"+k];
+function wScForG(gk,its,k){const s=scelteOf(k);if(!s.length)return null;const n=gNowOf(gk+"|"+k,itsQ(its)),st=S.wSc[gk+"|"+k];
   const q=st&&st.n===n&&st.q.length===s.length?st.q:s.map((x,i)=>i?0:n);return s.map((x,i)=>({n:x,q:q[i]}))}
 function wScHtmlG(gk,its,k){const sc=wScForG(gk,its,k);if(!sc)return "";const tot=sc.reduce((a,y)=>a+y.q,0);
   return `<div class="wsc">${sc.map((x,i)=>`<span class="stepper sm"><span class="name">${esc(x.n)}</span><span class="ctl"><button type="button" data-wscg="${gk}|${esc(k)}|${i}" data-d="-1" ${x.q?"":"disabled"} aria-label="Meno ${esc(x.n)}">−</button><output>${x.q}</output><button type="button" data-wscg="${gk}|${esc(k)}|${i}" data-d="1" ${x.q<tot?"":"disabled"} aria-label="Più ${esc(x.n)}">+</button></span></span>`).join("")}</div>`}
 function scStep(q,i,d){if(d>0){let j=-1;q.forEach((v,x)=>{if(x!==i&&v>0&&(j<0||v>q[j]))j=x});if(j<0)return;q[j]--;q[i]++}else{if(!q[i])return;const j=i===0?1:0;q[i]--;q[j]++}}
-function wScDist(gk,its,k){const sc=wScForG(gk,its,k);if(!sc)return;const left=sc.map(x=>x.q);
+function wScDist(gk,its,k,scIn){const sc=scIn||wScForG(gk,its,k);if(!sc)return;const left=sc.map(x=>x.q);
   its.forEach(x=>{delete S.wNow[x.o.numero+"|"+k];const n=cop(righeFor(x.o,k));let need=n;const q=left.map(v=>{const t=Math.min(v,need);need-=t;return t});
     q.forEach((v,i)=>{left[i]-=v});if(need>0)q[0]+=need;S.wSc[x.o.numero+"|"+k]={n,q}})}
+/* chiamare una parte di un piatto sommato: gli ordini in fila (dal numero più basso), l'ultimo si divide */
+async function callRowM(gk,its,k){const key=gk+"|"+k;let x=gNowOf(key,itsQ(its));const sc=wScForG(gk,its,k),go=[];
+  for(const it of its.slice().sort((a,b)=>a.o.numero-b.o.numero)){if(x<=0)break;const n=it.o.numero,m=cop(righeFor(it.o,k));
+    if(x<m&&!(await splitCourse(n,k,x,{silent:true})))break;go.push(n);x-=Math.min(x,m)}
+  if(S.gNow)delete S.gNow[key];const cur=go.map(n=>({o:orderByNum(n),k})).filter(y=>y.o);wScDist(gk,cur,k,sc);return cur.map(y=>[y.o.numero,k])}
 function cardAction(G){
   const o=G[0],gk=gKey(o),multi=G.length>1,act=G.every(canAct),rws=gRows(G),cs=rws.flatMap(r=>r.its.map(x=>x.c));
   const dis=its=>its.some(x=>S.pending.has(x.o.numero+"|"+x.k))||!act?"disabled":"";
@@ -213,11 +223,13 @@ function cardAction(G){
 }
 /* riga con lo stesso piatto di più ordini uniti: numero sommato, un tasto per tutti */
 function wRowM(gk,r,act,dis){const st=r.st,q=itsQ(r.its),a=esc(itsAttr(r.its));let right="";
-  if(st==="attesa")right=act?`<button class="btn primary wcall" ${dis} data-callm="${a}" data-gk="${gk}">Chiama</button>`:'<span class="pill wait">da chiamare</span>';
+  const part=st==="attesa"&&act&&q>=2,x=part?gNowOf(gk+"|"+r.k,q):q;
+  if(st==="attesa")right=act?`<button class="btn primary wcall" ${dis} data-callm="${a}" data-gk="${gk}" data-gqk="${gk}|${esc(r.k)}" data-part="Chiama" data-full="Chiama">${x<q?"Chiama "+x:"Chiama"}</button>`:'<span class="pill wait">da chiamare</span>';
   else if(st==="chiamata"){const t=Math.min(...r.its.map(x=>x.c.p.t||Date.now())),late=isLate(r.k,t);right=`<span class="pill ${late?"out":"call"}">in preparazione · ${ago(t)}</span>${act?`<button class="btn small" ${dis} data-uncallm="${a}">Annulla</button>`:""}`}
   else if(st==="pronta")right='<span class="pill ready">pronto</span>';
   else{const t=Math.max(...r.its.map(x=>x.c.p.t||0));right=`<span class="pill wait">portato ✓</span>${act&&t&&Date.now()-t<3*60000?`<button class="btn small" ${dis} data-unservem="${a}">Non portato</button>`:""}`}
   const sx=scTxt(scMerge(r.its.map(x=>x.c.p))),scx=st==="attesa"?(act?wScHtmlG(gk,r.its,r.k):""):sx?`<div class="sub wscd">${esc(sx)}</div>`:"";
+  if(part)return `<div class="wpiatto ${st} wpart"><span class="wpn">${esc(r.l)}</span><span class="wbar">${qtyField("wqg",`${gk}|${esc(r.k)}`,x,q,`Quante ${r.l} chiamare adesso`)}<span class="row">${right}</span></span>${scx}</div>`;
   return `<div class="wpiatto ${st}"><span class="wpn"><b>${q}</b> ${esc(r.l)}</span><span class="row">${right}</span>${scx}</div>`}
 function wRow1(o,c,act){const n=o.numero,dis=k=>S.pending.has(n+"|"+k)||!act?"disabled":"";
   {const st=c.p.stato||"attesa",q=cop(righeFor(o,c.k));let right="";
@@ -282,19 +294,18 @@ $("w-tables").addEventListener("click",async e=>{
   const t=e.target.closest("button");if(!t)return;
   if(t.dataset.wtab){const [n,r]=t.dataset.wtab.split("|");S.wTab[n]=r;renderWaiterLists();return}
   if(t.dataset.callall){const [ns,r]=t.dataset.callall.split("|"),G=ns.split(",").map(Number).map(orderByNum).filter(Boolean);if(!G.length||!G.every(canAct))return;t.disabled=true;
-    /* ordini uniti: le scelte decise sulla riga sommata si spartiscono tra gli ordini */
-    if(G.length>1){const gk=gKey(G[0]);gRows(G).filter(x=>x.st==="attesa"&&x.its.length>1&&kRound(x.k)===1).forEach(x=>wScDist(gk,x.its,x.k))}
-    const done=[];
-    for(const o of G){const n=o.numero,ks=orderCourses(o).filter(c=>repOfC(o,c)===r&&isTodo(c)&&kRound(c.k)===1).map(c=>c.k);
-      for(const k of ks){const y=orderByNum(n),x=y?wNowOf(y,k):0;if(y&&x<cop(righeFor(y,k)))await splitCourse(n,k,x,{silent:true})}
-      (await setMany(n,ks,"chiamata")).forEach(k=>done.push([n,k]))}
+    const done=[],gk=gKey(G[0]),rows=gRows(G).filter(x=>x.st==="attesa"&&kRound(x.k)===1&&repOfC(x.its[0].o,x.its[0].c)===r);
+    for(const row of rows){let pairs;
+      if(row.its.length>1)pairs=await callRowM(gk,row.its,row.k);
+      else{const n=row.its[0].o.numero,k=row.k,y=orderByNum(n),x=y?wNowOf(y,k):0;if(y&&x<cop(righeFor(y,k)))await splitCourse(n,k,x,{silent:true});pairs=[[n,k]]}
+      for(const [n,k] of pairs)if(await setStato(n,k,"chiamata",{notoast:true}))done.push([n,k])}
     if(done.length){const np=new Set(done.map(x=>x[1])).size;toast(`${repNome(r)}: chiamati ${np} piatti · ${G.length>1?"n. "+gNums(G):whereTxt(orderByNum(G[0].numero)||G[0])}`,{ms:5000,action:{label:"Annulla",fn:()=>{done.forEach(([n,k])=>{const y=orderByNum(n);if(y&&y.portate&&y.portate[k]&&y.portate[k].stato==="chiamata")setStato(n,k,"attesa",{silent:true})})}}})}
     return}
   if(t.dataset.carryall){const G=t.dataset.carryall.split(",").map(Number).map(orderByNum).filter(Boolean);if(!G.length||!G.every(canAct))return;t.disabled=true;const done=[];
     for(const o of G)(await setMany(o.numero,orderCourses(o).filter(c=>c.p.stato==="pronta").map(c=>c.k),"servita")).forEach(k=>done.push([o.numero,k]));
     if(done.length)toast(`${new Set(done.map(x=>x[1])).size} piatti portati · ${G.length>1?"n. "+gNums(G):whereTxt(G[0])}`,{ms:10000,action:{label:"Annulla",fn:()=>done.forEach(([n,k])=>unserve(n,k))}});return}
   if(t.dataset.callm){const its=parseIts(t.dataset.callm),G=[...new Set(its.map(x=>x[0]))].map(orderByNum).filter(Boolean);if(!G.length||!G.every(canAct))return;t.disabled=true;
-    const k=its[0][1];wScDist(t.dataset.gk,its.map(([n])=>({o:orderByNum(n),k})).filter(x=>x.o),k);await setStatoM(its,"chiamata");return}
+    const k=its[0][1],pairs=await callRowM(t.dataset.gk,its.map(([n])=>({o:orderByNum(n),k})).filter(x=>x.o),k);if(pairs.length)await setStatoM(pairs,"chiamata");return}
   if(t.dataset.uncallm){if(!armed(t,"Annullo?"))return;const its=parseIts(t.dataset.uncallm).filter(([n,k])=>stOf(orderByNum(n)||{},k)==="chiamata");
     for(const [n,k] of its)await setStato(n,k,"attesa",{silent:true});
     if(its.length)toast(`${piattoNome(its[0][1])} non più chiamato · n. ${its.map(x=>x[0]).join(" + ")}`,{ms:4000});return}

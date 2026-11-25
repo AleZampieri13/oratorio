@@ -78,19 +78,20 @@ function renderRepView(sc,ids){
     :'<div class="zero"><span class="label">Nessun piatto</span><span class="brk">A questo reparto non è assegnato nessun piatto: chiedi al master (Listino → Piatti).</span></div>';
   /* una scheda per cliente; ordini uniti dal cameriere = una scheda sola, stesso piatto sommato */
   const groups=[];calls.forEach(c=>{const gk=gKey(c.o);let g=groups.find(x=>x.gk===gk);if(!g){g={gk,G:unitiOf(c.o),t:c.t,items:[]};groups.push(g)}
-    let it=g.items.find(x=>x.k===c.k&&x.r===c.r);if(!it){it={k:c.k,r:c.r,l:c.l,t:c.t,its:[]};g.items.push(it)}it.its.push(c);if(c.t<it.t)it.t=c.t;if(c.t<g.t)g.t=c.t});
+    let it=g.items.find(x=>x.r===c.r&&sameDish(x,c.o,c.k,true));if(!it){it={k:c.k,r:c.r,l:c.l,t:c.t,its:[]};g.items.push(it)}it.its.push(c);if(c.t<it.t)it.t=c.t;if(c.t<g.t)g.t=c.t});
   const key=c=>c.o.numero+"|"+c.k+"|"+c.r,dis=c=>S.pending.has(key(c))?"disabled":"",disM=it=>it.its.some(c=>S.pending.has(key(c)))?"disabled":"";
   const ent=it=>it.its.map(c=>`${c.o.numero}>${c.k}>${c.r}`).join(",");
   $(ids.queue).innerHTML=groups.length?groups.map(g=>{const o=g.G[0],multi=g.G.length>1,late=g.items.some(c=>isLate(c.k,c.t)),wn=kWho(g.items[0].its[0].o,g.items[0].its[0].p),many=g.items.length>1;
     const tn=tintCls(g.items.map(c=>c.k)),nome=multi?gNome(g.G):o.nome;
-    const btn1=it=>it.its.length>1?`<button class="btn ${many?"small kbtn":"primary big"}" ${disM(it)} data-rsetm="${esc(ent(it))}">Pronto</button>`
+    const gq=it=>`${g.gk}|${esc(kBase(it.k))}|${esc(it.r)}`,gx=it=>gNowOf(`${g.gk}|${kBase(it.k)}|${it.r}`,itsQ(it.its));
+    const btn1=it=>it.its.length>1?`<button class="btn ${many?"small kbtn":"primary big"}" ${disM(it)} data-rsetm="${esc(ent(it))}" data-gqk="${gq(it)}" data-part="Pronti" data-full="Pronto">${gx(it)<itsQ(it.its)?"Pronti "+gx(it):"Pronto"}</button>`
       :`<button class="btn ${many?"small kbtn":"primary big"}" ${dis(it.its[0])} data-rset="${it.its[0].o.numero}|${it.k}|${esc(it.r)}">${prontoLbl(it.its[0].o,it.k)}</button>`;
     return `<article class="kcard ${late?"late":""}${tn.c}"${tn.s}><div class="top"><span class="n nm">${esc(wn)}</span><span class="age">${clockAgo(g.t)}</span></div>
       <div class="what kcourse oline"><b class="onum">n. ${gNums(g.G)}</b>${nome?`<span class="ocli">${esc(nome)}</span>`:""}${g.G.some(x=>x.asporto)&&wn!=="Asporto"?'<span class="pill asp">Asporto</span>':""}</div>
       <ul class="kitems">${g.items.map(it=>{const c=it.its[0],m=it.its.length>1,sp=m?scMerge(it.its.map(x=>x.p)):c.p;
-        return `<li class="${isLate(it.k,it.t)?"klate":""}" style="--pc:${portColor(it.k)}">${m?`<b>${itsQ(it.its)}</b>`:kQtyHtml(c.o,it.k)}<span class="kin" style="color:${portColor(it.k)}">${esc(it.l)}${scTxt(sp)&&(m||!kScMode(c.o,it.k))?` <small class="ksc">${scLines(sp)}</small>`:""}</span>${many?btn1(it):""}</li>`}).join("")}</ul>
+        return `<li class="${isLate(it.k,it.t)?"klate":""}" style="--pc:${portColor(it.k)}">${m?(itsQ(it.its)>=2?qtyField("kqg",gq(it),gx(it),itsQ(it.its),`Quanti ${piattoNome(it.k)} sono pronti`):`<b>${itsQ(it.its)}</b>`):kQtyHtml(c.o,it.k)}<span class="kin" style="color:${portColor(it.k)}">${esc(it.l)}${scTxt(sp)&&(m||!kScMode(c.o,it.k))?` <small class="ksc">${scLines(sp)}</small>`:""}</span>${many?btn1(it):""}</li>`}).join("")}</ul>
       ${g.G.filter(x=>x.note).map(x=>`<div class="note">${multi?`<b>n. ${x.numero}:</b> `:""}${esc(x.note)}</div>`).join("")}
-      ${many?`<button class="btn primary big" data-rsetall="${multi?esc(g.items.map(ent).join(",")):o.numero+"|"+esc(g.items.map(it=>it.k+"~"+it.r).join(","))}">${g.items.some(it=>it.its.length===1&&kNowOf(it.its[0].o,it.k)<cop(righeFor(it.its[0].o,it.k)))?"Segna pronti questi":"Tutto pronto"}</button>`
+      ${many?`<button class="btn primary big" data-rsetall="${multi?esc(g.items.map(ent).join(";")):o.numero+"|"+esc(g.items.map(it=>it.k+"~"+it.r).join(","))}">${g.items.some(it=>it.its.length===1?kNowOf(it.its[0].o,it.k)<cop(righeFor(it.its[0].o,it.k)):gx(it)<itsQ(it.its))?"Segna pronti questi":"Tutto pronto"}</button>`
         :btn1(g.items[0])}</article>`}).join("")
     :'<div class="panel"><div class="empty">Niente da preparare.</div></div>';
   $(ids.ready).innerHTML=ready.length?ready.map(c=>{const wn=kWho(c.o,c.p),q=cop(righeFor(c.o,c.k)),stale=c.p.t&&(Date.now()-c.p.t)>5*60000;
@@ -125,15 +126,23 @@ async function setPart(n,k,r,to,opts){
 document.addEventListener("click",async e=>{const b=e.target.closest("button[data-rset]");if(!b||b.disabled)return;const [n,k,r]=b.dataset.rset.split("|");
   const pr=await prepPart(Number(n),k,[r]);if(!pr)return;if(!pr[2])await setPart(Number(n),k,r,"pronta");if(pr[1])partToast(Number(n),k,pr)});
 document.addEventListener("click",async e=>{const b=e.target.closest("button[data-rsetall]");if(!b||b.disabled)return;b.disabled=true;
-  /* «12|k~r,k~r» (un ordine) oppure «12>k>r,13>k>r» (ordini uniti) */
-  const v=b.dataset.rsetall,its=v.includes(">")?v.split(",").map(x=>x.split(">")):(([n,l])=>l.split(",").map(x=>{const i=x.lastIndexOf("~");return [n,x.slice(0,i),x.slice(i+1)]}))([v.slice(0,v.indexOf("|")),v.slice(v.indexOf("|")+1)]),ns=[...new Set(its.map(x=>Number(x[0])))];
-  for(const [n,k,r] of its){const pr=await prepPart(Number(n),k,[r]);if(!pr)continue;if(!pr[2])await setPart(Number(n),k,r,"pronta",{silent:true})}
+  /* «12|k~r,k~r» (un ordine) oppure «12>k>r,13>k>r;12>k>r» (ordini uniti: «;» tra un piatto e l'altro) */
+  const v=b.dataset.rsetall,groups=v.includes(">")?v.split(";").map(g=>g.split(",").map(x=>{const [n,k,r]=x.split(">");return [Number(n),k,r]}))
+    :(([n,l])=>l.split(",").map(x=>{const i=x.lastIndexOf("~");return [[Number(n),x.slice(0,i),x.slice(i+1)]]}))([v.slice(0,v.indexOf("|")),v.slice(v.indexOf("|")+1)]);
+  const ns=[...new Set(groups.flat().map(x=>x[0]))];
+  for(const ents of groups){if(ents.length>1){await readyItM(ents);continue}const [n,k,r]=ents[0];const pr=await prepPart(n,k,[r]);if(!pr)continue;if(!pr[2])await setPart(n,k,r,"pronta",{silent:true})}
   const o=orderByNum(ns[0]);toast(`${o?kWho(o,null)+" · ":""}n. ${ns.join(" + ")}: tutto pronto`,{ms:4000})});
-/* lo stesso piatto di più ordini uniti: pronto tutto insieme */
+/* lo stesso piatto di più ordini uniti: pronto tutto insieme, oppure solo una parte («Pronti 3»: gli ordini in fila, l'ultimo si divide) */
+async function readyItM(ents){const [n0,k0,r]=ents[0],o0=orderByNum(n0);if(!o0)return null;const key=`${gKey(o0)}|${kBase(k0)}|${r}`;
+  const L=ents.map(([n,k])=>({o:orderByNum(n),k})).filter(y=>y.o&&y.o.portate&&y.o.portate[y.k]&&y.o.portate[y.k].stato==="chiamata").sort((a,b)=>a.o.numero-b.o.numero||kRound(a.k)-kRound(b.k));
+  const q=L.reduce((a,y)=>a+cop(righeFor(y.o,y.k)),0);let x=gNowOf(key,q);const x0=x;if(S.gNow)delete S.gNow[key];if(x<q)S.holdMerge=Date.now()+4000;
+  for(const {o,k} of L){if(x<=0)break;const m=cop(righeFor(o,k));if(x<m){await splitCalled(o.numero,k,x,null,[r]);x=0}else{await setPart(o.numero,k,r,"pronta",{silent:true});x-=m}}
+  return [x0,q]}
 document.addEventListener("click",async e=>{const b=e.target.closest("button[data-rsetm]");if(!b||b.disabled)return;b.disabled=true;
-  const its=b.dataset.rsetm.split(",").map(x=>x.split(">")).map(([n,k,r])=>[Number(n),k,r]);
-  for(const [n,k,r] of its)await setPart(n,k,r,"pronta",{silent:true});
-  const o=orderByNum(its[0][0]);toast(`${o?kWho(o,o.portate&&o.portate[its[0][1]])+" · ":""}n. ${its.map(x=>x[0]).join(" + ")} · ${piattoNome(its[0][1])} pronto`,{ms:5000,
+  const its=b.dataset.rsetm.split(",").map(x=>x.split(">")).map(([n,k,r])=>[Number(n),k,r]),res=await readyItM(its);if(!res)return;
+  const o=orderByNum(its[0][0]),who=o?kWho(o,o.portate&&o.portate[its[0][1]])+" · ":"",nn=its.map(x=>x[0]).join(" + ");
+  if(res[0]<res[1]){toast(`${who}n. ${nn} · ${res[0]} ${piattoNome(its[0][1])} pronti · ${res[1]-res[0]} ancora da preparare`,{ms:5000});return}
+  toast(`${who}n. ${nn} · ${piattoNome(its[0][1])} pronto`,{ms:5000,
     action:{label:"Annulla",fn:()=>its.forEach(([n,k,r])=>setPart(n,k,r,"chiamata",{silent:true}).then(()=>mergeSame(n,k)))}})});
 document.addEventListener("click",e=>{const b=e.target.closest("button[data-runready]");if(!b||b.disabled)return;if(!armed(b,"Non pronto?"))return;
   const [n,k,r]=b.dataset.runready.split("|");setPart(Number(n),k,r,"chiamata").then(()=>mergeSame(Number(n),k))});
@@ -226,16 +235,16 @@ function renderUscita(){
   $("o-sum").innerHTML=ports.map(p=>{const r=tot(rdy,p.id),w=tot(cal,p.id);
     return `<div class="${r||w?"":"zero"}"><span class="label" style="color:${portColor(p.id)}">${esc(p.nome)}</span><b>${r}</b><span class="brk">${r===1?"pronto":"pronti"}${w?` · ${w} in preparazione`:""}</span></div>`}).join("");
   /* ordini uniti dal cameriere: lo stesso piatto pronto è una scheda sola */
-  const rG=[];ready.forEach(c=>{const id=gKey(c.o)+"|"+c.k;let g=rG.find(x=>x.id===id);if(!g){g={id,G:unitiOf(c.o),its:[]};rG.push(g)}g.its.push(c)});
+  const rG=[];ready.forEach(c=>{const gk=gKey(c.o);let g=rG.find(x=>x.gk===gk&&kBase(x.k)===kBase(c.k));if(!g){g={gk,k:c.k,G:unitiOf(c.o),its:[]};rG.push(g)}g.its.push(c)});
   $("o-ready").innerHTML=(ready.length||aspR.length)?aspR.map(aspCard).join("")+rG.map(({G,its})=>{const c=its[0],t=Math.min(...its.map(x=>x.t||Date.now())),stale=t&&(Date.now()-t)>5*60000,n=itsQ(its),wn=kWho(c.o,c.o.portate[c.k]),multi=its.length>1;
-    const dis=its.some(x=>S.pending.has(x.o.numero+"|"+x.k))?"disabled":"",os=its.map(x=>x.o),nome=multi?gNome(os):c.o.nome,a=esc(itsAttr(its)),sp=multi?scMerge(its.map(x=>x.o.portate[x.k])):c.o.portate[c.k];
+    const dis=its.some(x=>S.pending.has(x.o.numero+"|"+x.k))?"disabled":"",os=[...new Map(its.map(x=>[x.o.numero,x.o])).values()],nome=os.length>1?gNome(os):c.o.nome,a=esc(itsAttr(its)),sp=multi?scMerge(its.map(x=>x.o.portate[x.k])):c.o.portate[c.k];
     const pp=partsOf(c.o.portate[c.k]),parts=pp.length>1?pp.map(x=>x.piatto||x.nome).join(" + "):"";
     return `<article class="kcard ${stale?"late":""} tint" style="--pc:${portColor(c.k)}"><div class="top"><span class="n nm">${esc(wn)}</span><span class="age">pronto ${clockAgo(t)}</span></div>
       <div class="what kcourse oline"><b class="onum">n. ${gNums(os)}</b>${c.o.fila?`<span class="label ofila">${esc(filaNome(c.o.fila))}</span>`:""}${nome?`<span class="ocli">${esc(nome)}</span>`:""}${c.o.asporto&&wn!=="Asporto"?'<span class="pill asp">Asporto</span>':""}</div>
       <div class="what kcourse"><span class="kqn">${n}</span> <span style="color:${portColor(c.k)}">${esc(c.l)}</span></div>
       ${parts?`<div class="kparts">${esc(parts)}</div>`:""}
       ${scTxt(sp)?`<div class="kparts ksc">${scLines(sp)}</div>`:""}
-      ${os.filter(x=>x.note).map(x=>`<div class="note">${multi?`<b>n. ${x.numero}:</b> `:""}${esc(x.note)}</div>`).join("")}
+      ${os.filter(x=>x.note).map(x=>`<div class="note">${os.length>1?`<b>n. ${x.numero}:</b> `:""}${esc(x.note)}</div>`).join("")}
       <div class="oacts"><button class="btn small" ${dis} data-ounready="${multi?a:c.o.numero+"|"+esc(c.k)}">Annulla</button><button class="btn go big" ${dis} ${multi?`data-setm="${a}|servita"`:`data-set="${c.o.numero}|${c.k}|servita"`}>Consegnato</button></div></article>`}).join("")
     :'<div class="panel"><div class="empty">Niente da consegnare.</div></div>';
   const wip=flatCourses("chiamata").filter(c=>!c.o.asportoSubito&&inOScope(c,sc));
