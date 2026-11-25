@@ -35,7 +35,16 @@ Aprendo l'indirizzo nel browser deve rispondere `{"errore":"origine non ammessa"
 
 ## Se cambi le chiavi
 
-Se generi chiavi nuove: metti la nuova pubblica in `wrangler.toml` (`VAPID_PUBBLICA`) e in `app/js/config.js` (`PUSH_VAPID`), rifai i passi 3 e 4 e ripubblica il sito. I camerieri dovranno toccare di nuovo «Attiva avvisi».
+Il modo più sicuro (niente copia-incolla della privata), dalla cartella del progetto:
+
+```
+node tools
+uove-chiavi-vapid.mjs
+```
+
+Salva la privata su Cloudflare e scrive la pubblica in `wrangler.toml` e `app/js/config.js`. Poi `npx.cmd wrangler deploy` (cartella `worker`), pubblicare il sito e su ogni telefono «Attiva avvisi» di nuovo (l'app riconosce le iscrizioni fatte con la chiave vecchia e lo chiede da sola).
+
+A mano: Se generi chiavi nuove: metti la nuova pubblica in `wrangler.toml` (`VAPID_PUBBLICA`) e in `app/js/config.js` (`PUSH_VAPID`), rifai i passi 3 e 4 e ripubblica il sito. I camerieri dovranno toccare di nuovo «Attiva avvisi».
 
 ## Costi
 

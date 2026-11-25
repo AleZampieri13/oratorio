@@ -11,6 +11,8 @@ const isIOS=()=>/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platfor
 const isStandalone=()=>navigator.standalone===true||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches);
 function vapidKey(b64){const s=(b64+"=".repeat((4-b64.length%4)%4)).replace(/-/g,"+").replace(/_/g,"/");
   const raw=atob(s),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);return out}
+/* impronta della chiave pubblica: un'iscrizione fatta con una chiave vecchia non vale più (va riattivata) */
+const pushKv=()=>String(PUSH_VAPID).slice(-16);
 const pushRef=(id,uid)=>fdb("push/"+id+(uid?"/"+uid:""));
 async function pushReg(){return Promise.race([navigator.serviceWorker.ready,sleep(8000).then(()=>{throw new Error("service worker non pronto")})])}
 
@@ -22,7 +24,7 @@ async function pushStato(){
   let st="off";
   try{const reg=await pushReg(),sub=await reg.pushManager.getSubscription();
     if(sub&&Notification.permission==="granted"){const v=(await pushRef(S.me.id,authUid()).once("value")).val();
-      if(v&&v.endpoint===sub.endpoint)st="on"}}
+      if(v&&v.endpoint===sub.endpoint&&v.kv===pushKv())st="on"}}
   catch(e){console.warn("avvisi:",e)}
   if(S.pushCheck===key)S.pushCheck=null;
   if(pushKeyNow()===key){S.push={key,st};renderPushBar()}
@@ -35,7 +37,7 @@ async function pushAttiva(){
   const old=await reg.pushManager.getSubscription();if(old){try{await old.unsubscribe()}catch(e){}}
   const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:vapidKey(PUSH_VAPID)});
   const j=sub.toJSON();
-  await pushRef(S.me.id,authUid()).set({endpoint:j.endpoint,keys:{p256dh:j.keys.p256dh,auth:j.keys.auth},t:Date.now(),ua:navigator.userAgent.slice(0,120)});
+  await pushRef(S.me.id,authUid()).set({endpoint:j.endpoint,keys:{p256dh:j.keys.p256dh,auth:j.keys.auth},t:Date.now(),ua:navigator.userAgent.slice(0,120),kv:pushKv()});
   pushSet("on");
 }
 async function pushDisattiva(){
@@ -131,7 +133,7 @@ async function pushManda(tipo,voci){
       const ps=[...g.piatti].map(([b,p])=>tipo==="pronto"&&p.part?(p.q>1?`Pronti ${p.q} ${piattoNome(b)}`:`1 ${piattoNome(b)}`):piattoNome(b));
       return ps.join(", ")+" · n. "+g.nums}).join(" — ").slice(0,200);
     const subs=(await pushRef(id).once("value")).val()||{};
-    const all=Object.entries(subs).filter(([,s])=>s&&s.endpoint&&s.keys);
+    const all=Object.entries(subs).filter(([,s])=>s&&s.endpoint&&s.keys&&s.kv===pushKv());
     if(!all.length)console.info("avvisi:",tipo,"il cameriere",nameOf(id,id),"non ha attivato gli avvisi");
     for(let i=0;i<all.length;i+=20){const part=all.slice(i,i+20);
       const r=await fetch(PUSH_WORKER.replace(/\/+$/,"")+"/invia",{method:"POST",headers:{"Content-Type":"application/json"},
