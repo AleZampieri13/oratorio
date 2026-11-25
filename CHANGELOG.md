@@ -1,5 +1,8 @@
 # Versioni
 
+## 41
+- **Prenotazione arrivata in parte:** dopo l'ordine la cassa chiede **Aspetta** o **Chiudi**. Una prenotazione chiusa è «Chiusa · 3 su 4», si può riaprire con **Riapri**; il contatore dice «gestite» e nell'Excel c'è «Chiusa» e la colonna «Quanti».
+
 ## 40
 - **Coperti in cassa:** sotto i menù la riga Coperti (− / + o scrivendo il numero). Parte dal numero dei menù, si può cambiare (anche più o meno dei menù); serve per le serate senza menù e per chi prende solo piatti da soli. Il numero va nella scheda del cameriere, nel riepilogo e nell'Excel. Dal file delle prenotazioni prende «Totale persone».
 - In Modifica e Rettifica la riga Coperti mostra quelli salvati e non cambia quando si cambiano i menù: si cambia solo a mano. Gli ordini delle serate passate (senza coperti scritti) contano i menù come prima.
