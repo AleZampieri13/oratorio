@@ -8,6 +8,9 @@ const pushConf=()=>typeof PUSH_WORKER==="string"&&!!PUSH_WORKER&&typeof PUSH_VAP
 function pushPronto(){
   return pushConf()&&location.protocol==="https:"&&"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window}
 const isIOS=()=>/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+/* Samsung Internet spesso non chiede il permesso e blocca gli avvisi da solo: meglio Chrome */
+const isSamsung=()=>/SamsungBrowser/.test(navigator.userAgent);
+const SAMSUNG_TXT=`Su questo telefono usa <b>Chrome</b>: con Samsung Internet gli avvisi spesso non funzionano. Apri il link (o il QR) dell'app con Chrome, poi menu ⋮ → <b>Aggiungi a schermata Home</b> → <b>Installa</b>. Se dice che è già installata, prima togli l'icona vecchia dalla schermata Home.`;
 const isStandalone=()=>navigator.standalone===true||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches);
 function vapidKey(b64){const s=(b64+"=".repeat((4-b64.length%4)%4)).replace(/-/g,"+").replace(/_/g,"/");
   const raw=atob(s),out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);return out}
@@ -93,12 +96,12 @@ function renderPushBar(){
   }
   else if(Notification.permission==="denied"){warn=true;
     h=isIOS()?`🔕 Avvisi bloccati su questo telefono. Per riattivarli: Impostazioni dell'iPhone → Notifiche → Ordini Oratorio → Consenti notifiche. Poi riapri l'app.`
-      :/SamsungBrowser/.test(navigator.userAgent)?`🔕 Avvisi bloccati per questo sito in Samsung Internet. Apri <b>Samsung Internet</b> (il browser) → menu ☰ → <b>Impostazioni</b> → <b>Siti e download</b> → <b>Notifiche</b>: tocca giovanichef.web.app e scegli <b>Consenti</b>. Poi chiudi e riapri l'app e tocca «Attiva avvisi».`
+      :isSamsung()?`🔕 Avvisi bloccati da Samsung Internet. ${SAMSUNG_TXT}`
       :`🔕 Avvisi bloccati per questo sito. Apri <b>Chrome</b> (il browser) → menu ⋮ → <b>Impostazioni</b> → <b>Impostazioni sito</b> → <b>Notifiche</b>: tocca giovanichef.web.app e scegli <b>Consenti</b>. Poi chiudi e riapri l'app e tocca «Attiva avvisi».`}
   else{
     if(!S.push||S.push.key!==pushKeyNow()){pushStato();el.hidden=true;return}
     if(S.push.st==="on"){ok=true;h=`🔔 Avvisi attivi: ti arrivano anche con l'app chiusa. <button class="btn small" data-push="prova">Prova</button><button class="btn small" data-push="off">Disattiva avvisi</button>${S.pushMsg?`<div>${esc(S.pushMsg)}</div>`:""}`}
-    else h=`<button class="btn primary" data-push="on">🔔 Attiva avvisi</button> <span>Ti avvisa quando un piatto è pronto, anche con l'app chiusa.</span>`;
+    else h=`<button class="btn primary" data-push="on">🔔 Attiva avvisi</button> <span>Ti avvisa quando un piatto è pronto, anche con l'app chiusa.</span>${isSamsung()?`<div>${SAMSUNG_TXT}</div>`:""}`;
   }
   if(el._h!==h){el.innerHTML=h;el._h=h}
   el.classList.toggle("ok",ok);el.classList.toggle("warn",warn);el.hidden=false;
