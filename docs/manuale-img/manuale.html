@@ -74,7 +74,7 @@
   <div class="band"><div class="row">
     <div><div class="k">Serata</div><div class="v">21 novembre 2026</div></div>
     <div><div class="k">App</div><div class="v">giovanichef.web.app</div></div>
-    <div><div class="k">Versione</div><div class="v">36</div></div>
+    <div><div class="k">Versione</div><div class="v">39</div></div>
   </div></div>
 </div>
 
@@ -162,11 +162,11 @@
         <li><span class="k g">Chiama</span> manda il piatto in cucina. <span class="k g">Chiama tutto</span> chiama insieme tutti i piatti del reparto.</li>
         <li>Solo una parte adesso? Abbassa il numero (per esempio 2 su 3) prima di chiamare: il resto resta da chiamare dopo.</li>
         <li><b>Scelte</b> (per esempio acqua Naturale o Frizzante): decidile prima di chiamare.</li>
-        <li>Chiamato per sbaglio? <span class="k">Annulla</span>, finché la cucina non l'ha ancora finito.</li>
+        <li>Chiamato per sbaglio? <span class="k">Annulla</span>, finché non è ancora pronto.</li>
       </ul>
       <h3>Portare i piatti</h3>
       <ul>
-        <li>Quando la cucina finisce il piatto diventa <b>pronto</b> e il telefono suona.</li>
+        <li>Quando il piatto arriva sul bancone l'uscita lo segna <b>pronto</b> e il telefono suona.</li>
         <li>Tocca <span class="k g">Porta…</span> quando lo porti al tavolo: diventa «portato ✓». Per sbaglio? <span class="k">Non portato</span>.</li>
         <li>Un piatto in ritardo ha il <b>bordo rosso</b> a sinistra.</li>
       </ul>
@@ -181,7 +181,7 @@
 
 <section class="page">
   <div class="head"><div class="n">4</div><h2>Cucina</h2><div class="who">Cuochi</div></div>
-  <p class="lead">La cucina vede le chiamate dei camerieri e segna «Pronto» quando il piatto è sul bancone. Un cuoco con un reparto vede solo i piatti del suo reparto.</p>
+  <p class="lead">La cucina vede le chiamate dei camerieri e prepara. Non tocca niente: il «Pronto» lo segna l'uscita quando il piatto arriva sul bancone. Un cuoco con un reparto vede solo i piatti del suo reparto.</p>
   <figure class="tall"><img src="cucina.png" alt=""><figcaption>In alto il riepilogo delle porzioni da fare, poi le schede da preparare e i piatti pronti.</figcaption></figure>
   <h3>La schermata</h3>
   <ul>
@@ -189,18 +189,17 @@
     <li><b>Da preparare:</b> una scheda per ordine, colorata come il reparto. In grande il nome del cameriere; sotto l'ora della chiamata con i minuti passati, il numero dell'ordine e il cliente; poi il piatto con la quantità.</li>
     <li>Le scelte (per esempio Naturale / Frizzante) sono su righe separate. Un piatto in ritardo ha il <b>bordo rosso</b>.</li>
   </ul>
-  <h3>Segnare pronto</h3>
+  <h3>Quando il piatto è fatto</h3>
   <ul>
-    <li><span class="k g">Pronto</span>: il piatto è pronto tutto.</li>
-    <li><b>Pronti in parte:</b> abbassa il numero (per esempio 3 su 5) e tocca «Pronto». Quelli fatti vanno al cameriere, il resto resta da preparare.</li>
-    <li>In «Pronti, in attesa del cameriere»: <span class="k g">Portato</span> se il piatto lo porta qualcuno dalla cucina; <span class="k">Annulla</span> se era sbagliato, e torna da preparare.</li>
+    <li>Metti il piatto sul bancone: la scheda sparisce quando l'<b>uscita</b> lo segna pronto (anche solo una parte: il resto resta da preparare).</li>
+    <li><b>Pronti, in attesa del cameriere:</b> solo da guardare, per sapere cosa aspetta sul bancone.</li>
     <li><b>Suono</b> per sentire le chiamate, <b>Porzioni</b> per vedere e correggere quelle rimaste, <b>Storico</b> in fondo.</li>
   </ul>
 </section>
 
 <section class="page">
   <div class="head"><div class="n">5</div><h2>Bar</h2><div class="who">Bar</div></div>
-  <p class="lead">Il bar prepara le bevande e gli extra del bar (acqua, caffè, vino…) chiamati dai camerieri; funziona come la cucina.</p>
+  <p class="lead">Il bar prepara le bevande e gli extra del bar (acqua, caffè, vino…) chiamati dai camerieri. A differenza della cucina, il «Pronto» lo segna il bar stesso.</p>
   <figure><img src="bar.png" alt=""><figcaption>In alto «Al banco» e il riepilogo, poi le bevande da preparare e quelle pronte.</figcaption></figure>
   <ul>
     <li><b>Al banco:</b> se il cliente viene al bancone, scrivi il <b>numero del biglietto</b>. L'app mostra cosa dargli: consegna e tocca <span class="k g">Dato</span>.</li>
@@ -212,13 +211,15 @@
 
 <section class="page">
   <div class="head"><div class="n">6</div><h2>Uscita piatti</h2><div class="who">Bancone</div></div>
-  <p class="lead">L'uscita controlla il bancone: vede i piatti pronti, fila per fila, e aiuta i camerieri a non dimenticarli.</p>
+  <p class="lead">L'uscita controlla il bancone: segna «Pronto» i piatti che arrivano dalla cucina, vede i piatti pronti fila per fila e aiuta i camerieri a non dimenticarli.</p>
   <figure><img src="uscita.png" alt=""><figcaption>I piatti pronti sul bancone, con cameriere, numero, fila e cliente.</figcaption></figure>
   <ul>
     <li>In alto puoi scegliere il <b>reparto</b> da guardare (Tutti o uno solo) e vedere quanti piatti sono pronti e in preparazione.</li>
     <li><b>Pronti da consegnare:</b> se il cameriere se ne dimentica e il piatto lo porta qualcun altro, tocca <span class="k g">Consegnato</span>.</li>
     <li><span class="k">Annulla</span> (due tocchi, «Non pronto?»): il piatto torna da preparare in cucina.</li>
-    <li><b>In preparazione:</b> cosa sta facendo la cucina.</li>
+    <li><b>In preparazione:</b> cosa sta facendo la cucina. Quando il piatto arriva sul bancone tocca <span class="k g">Pronto</span>: il cameriere lo vede pronto e il telefono suona.</li>
+    <li><b>Pronti in parte:</b> abbassa il numero (per esempio 3 su 5) e tocca «Pronti 3». Il resto resta da preparare. Con le scelte (Naturale / Frizzante) ogni scelta ha il suo numero.</li>
+    <li><b>Ordini uniti</b> («n. 12 + 13»): lo stesso piatto è una riga sola, sommato. Anche qui puoi segnarne pronta solo una parte: prima va l'ordine col numero più basso.</li>
     <li><b>Appena consegnati:</b> toccato «Consegnato» per sbaglio? <span class="k">Non consegnato</span> entro 3 minuti e il piatto torna pronto.</li>
   </ul>
 </section>
