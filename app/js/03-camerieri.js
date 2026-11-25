@@ -56,7 +56,7 @@ function previewOrder(){
   if(!canAct(o)){const ws=ownerId(o)?nameOf(ownerId(o),o.cameriere):filaWaiters(o.fila).map(u=>u.nome).join(", ");m.textContent=`Il ${n} è di ${ws||"un altro cameriere"}.`;return}
   S.prevNum=n;box.hidden=false;
   box.innerHTML=`<div class="prevcard"><span class="tav"><small>n.</small>${o.numero}</span><span class="tmid"><b>${esc(o.nome||"Senza nome")}</b>
-    <span class="sub">${cop(righe(o))} coperti</span>${o.note?`<span class="note">${esc(o.note)}</span>`:""}</span></div>
+    <span class="sub">${copOf(o)} coperti</span>${o.note?`<span class="note">${esc(o.note)}</span>`:""}</span></div>
     <div class="row"><button class="btn primary big" id="w-add" style="flex:1">Aggiungi</button><button class="btn" id="w-prev-x">No</button></div>`;
 }
 $("w-open").addEventListener("click",previewOrder);
@@ -275,7 +275,7 @@ function custCard(G){
   const canShare=own&&(mineOrder(o)||capoLike()),canMove=own&&seesAll(),canJoin=G.every(canAct)&&!G.every(orderDone)&&unibili(o).length>0;
   const pk=S.pick&&S.pick.n===o.numero?S.pick.mode:null;
   let pick="";
-  if(pk==="join"){pick=`<div class="wpick"><span class="label">Unisci con</span><div class="grp">${unibili(o).map(x=>`<button data-pkj="${x.numero}"><b>n. ${x.numero}</b>${x.nome?" "+esc(x.nome):""} <small>${cop(righe(x))} coperti</small></button>`).join("")}</div>
+  if(pk==="join"){pick=`<div class="wpick"><span class="label">Unisci con</span><div class="grp">${unibili(o).map(x=>`<button data-pkj="${x.numero}"><b>n. ${x.numero}</b>${x.nome?" "+esc(x.nome):""} <small>${copOf(x)} coperti</small></button>`).join("")}</div>
       <span class="sub">Una scheda sola qui, in cucina, al bar e all'uscita. In cassa restano ordini separati.</span><button class="btn small" data-pkclose="1">Chiudi</button></div>`}
   else if(pk){const mf=o.fila||myFila();
     const ws=waitersList().filter(u=>u.id!==own&&(pk==="move"||!S.me||u.id!==S.me.id||capoLike()))
@@ -286,7 +286,7 @@ function custCard(G){
     canShare?`<button class="btn small" data-share="${o.numero}">Condividi</button>`:"",canMove?`<button class="btn small" data-move="${o.numero}">Sposta</button>`:""].join("");
   const notes=G.filter(x=>x.note).map(x=>`<div class="note">${multi?`<b>n. ${x.numero}:</b> `:""}${esc(x.note)}</div>`).join("");
   return `<div class="ccard${G.every(orderDone)?" cdone":""}${multi?" cunito":""}" data-card="${o.numero}" data-cards=" ${G.map(x=>x.numero).join(" ")} "><div class="chead"><span class="tav${multi?" tg":""}"><small>n.</small>${G.map(x=>x.numero).join("<i>+</i>")}</span>
-    <span class="tmid"><b class="cname">${esc((multi?gNome(G):o.nome)||"Senza nome")}</b><span class="sub">${multi?"uniti · ":""}${G.reduce((a,x)=>a+cop(righe(x)),0)} coperti${who?" · "+esc(who):""}</span></span>
+    <span class="tmid"><b class="cname">${esc((multi?gNome(G):o.nome)||"Senza nome")}</b><span class="sub">${multi?"uniti · ":""}${G.reduce((a,x)=>a+copOf(x),0)} coperti${who?" · "+esc(who):""}</span></span>
     ${more?`<span class="cmore">${more}</span>`:""}</div>
     ${pick}
     ${notes}
@@ -368,10 +368,10 @@ function renderWHist(recent){
   const H=ordersArr().filter(o=>!o.asportoSubito&&(seesAll()?(ownerId(o)||o.fila):mineOrder(o))&&orderDone(o)).sort((a,b)=>recent(b)-recent(a));
   $("w-histbox").hidden=!H.length;if(!H.length){$("w-hist").innerHTML="";return}
   const show=!!S.wHistShow;$("w-histbtn").setAttribute("aria-expanded",String(show));$("w-hist").hidden=!show;
-  $("w-histbtn").innerHTML=`<span>Storico</span><small>${H.length} ${H.length===1?"cliente finito":"clienti finiti"} · ${H.reduce((a,o)=>a+cop(righe(o)),0)} coperti</small><span class="chev" aria-hidden="true">${show?"▴":"▾"}</span>`;
+  $("w-histbtn").innerHTML=`<span>Storico</span><small>${H.length} ${H.length===1?"cliente finito":"clienti finiti"} · ${H.reduce((a,o)=>a+copOf(o),0)} coperti</small><span class="chev" aria-hidden="true">${show?"▴":"▾"}</span>`;
   const open=S.wHistOpen||(S.wHistOpen=new Set());
   const html=H.map(o=>{const who=seesAll()?nameOf(ownerId(o),o.cameriere):"";
-    return `<details class="whist" data-h="${o.numero}" ${open.has(o.numero)?"open":""}><summary><span class="n">${o.numero}</span><span class="wh-main"><b>${esc(o.nome||"Senza nome")}</b><span class="sub">${cop(righe(o))} coperti${who?" · "+esc(who):""} · finito alle ${fmtTime(recent(o))}</span></span></summary>
+    return `<details class="whist" data-h="${o.numero}" ${open.has(o.numero)?"open":""}><summary><span class="n">${o.numero}</span><span class="wh-main"><b>${esc(o.nome||"Senza nome")}</b><span class="sub">${copOf(o)} coperti${who?" · "+esc(who):""} · finito alle ${fmtTime(recent(o))}</span></span></summary>
       <ul>${orderCourses(o).map(c=>`<li><b>${cop(righeFor(o,c.k))}</b> <span style="color:${portColor(c.k)}">${esc(c.l)}</span>${scTxt(c.p)?` <small>(${esc(scTxt(c.p))})</small>`:""}<span class="sub"> · portato alle ${fmtTime(c.p.t)}</span></li>`).join("")}</ul>
       ${o.note?`<div class="note">${esc(o.note)}</div>`:""}</details>`}).join("");
   if($("w-hist").dataset.h!==html){$("w-hist").innerHTML=html;$("w-hist").dataset.h=html}

@@ -48,7 +48,10 @@ function buildPren(row,map){
   if(base&&map.totale!==""&&map["v_"+base.id]===""){const tot=num(cell(row,map.totale));const others=Object.entries(qty).filter(([id])=>id!==base.id).reduce((a,[,q])=>a+q,0);qty[base.id]=Math.max(0,tot-others)}
   const rr=S.varianti.map(v=>({id:v.id,nome:v.nome,qta:qty[v.id]||0})).filter(r=>r.qta>0);
   const sg={};soloPiatti().forEach(p=>{const q=map["s_"+p.id]!==""?num(cell(row,map["s_"+p.id])):0;if(q)sg[p.id]=q});
-  const b={nome,righe:rr,singoli:sg,note:cell(row,map.note)};if(/asport/.test(norm(cell(row,map.tipo))))b.asporto=true;
+  const b={nome,righe:rr,singoli:sg,note:cell(row,map.note)};
+  /* «Totale persone» = coperti della prenotazione (cella vuota: contano i menù) */
+  if(map.totale!==""&&cell(row,map.totale)!=="")b.coperti=num(cell(row,map.totale));
+  if(/asport/.test(norm(cell(row,map.tipo))))b.asporto=true;
   const of=cell(row,map.offerto);if(of&&!/^(no|n|0|-|falso|false)$/i.test(norm(of)))b.offerto=truthy(of)?"Prenotazione offerta":of;return b;
 }
 /* chips di una prenotazione: menù, piatti da soli, asporto */
@@ -68,8 +71,8 @@ function planImport(built,prune){
   const upd={},stats={nuove:0,aggiornate:0,tolte:0},touched=new Set();
   built.forEach(b=>{
     const ex=(byName[norm(b.nome)]||[]).find(p=>!touched.has(p.id));
-    if(ex){touched.add(ex.id);stats.aggiornate++;upd[ex.id+"/nome"]=b.nome;upd[ex.id+"/righe"]=b.righe;upd[ex.id+"/singoli"]=b.singoli;upd[ex.id+"/asporto"]=b.asporto||null;upd[ex.id+"/offerto"]=b.offerto||null;upd[ex.id+"/note"]=b.note}
-    else{const id=rid("p");stats.nuove++;upd[id]={id,nome:b.nome,righe:b.righe,singoli:b.singoli,note:b.note,stato:"attesa",ordine:0,...(b.asporto?{asporto:true}:{}),...(b.offerto?{offerto:b.offerto}:{})}}
+    if(ex){touched.add(ex.id);stats.aggiornate++;upd[ex.id+"/nome"]=b.nome;upd[ex.id+"/righe"]=b.righe;upd[ex.id+"/singoli"]=b.singoli;upd[ex.id+"/asporto"]=b.asporto||null;upd[ex.id+"/offerto"]=b.offerto||null;upd[ex.id+"/note"]=b.note;upd[ex.id+"/coperti"]=b.coperti!=null?b.coperti:null}
+    else{const id=rid("p");stats.nuove++;upd[id]={id,nome:b.nome,righe:b.righe,singoli:b.singoli,note:b.note,stato:"attesa",ordine:0,...(b.coperti!=null?{coperti:b.coperti}:{}),...(b.asporto?{asporto:true}:{}),...(b.offerto?{offerto:b.offerto}:{})}}
   });
   if(prune)prensArr().forEach(p=>{if(!touched.has(p.id)&&p.stato!=="arrivata"&&p.stato!=="parziale"){upd[p.id]=null;stats.tolte++}});
   return {upd,stats};
@@ -90,7 +93,7 @@ function renderPreview(){
   const map=readMap();S.imp.map=map;
   const built=S.imp.rows.map(r=>buildPren(r,map)).filter(p=>p.nome&&!/^esempio\b/i.test(p.nome));
   S.imp.built=built;
-  const tot=built.reduce((a,p)=>a+cop(p.righe),0),zero=built.filter(p=>!cop(p.righe)&&!Object.keys(p.singoli).length).length;
+  const tot=built.reduce((a,p)=>a+copOf(p),0),zero=built.filter(p=>!cop(p.righe)&&!Object.keys(p.singoli).length).length;
   const nOff=built.filter(p=>p.offerto).length,nAsp=built.filter(p=>p.asporto).length,perV=S.varianti.map(v=>[v.nome,built.reduce((a,p)=>a+((p.righe.find(r=>r.id===v.id)||{}).qta||0),0)]).filter(x=>x[1]),
     perS=soloPiatti().map(x=>[x.nome,built.reduce((a,p)=>a+(p.singoli[x.id]||0),0)]).filter(x=>x[1]);
   const pl=planImport(built,$("i-prune").checked).stats;
@@ -158,12 +161,12 @@ function exportExcel(title){
   const XN=[...new Set([...S.extra.map(x=>x.nome),...O.flatMap(o=>extras(o).map(x=>x.nome))])];
   const xOf=(o,n)=>{const r=extras(o).find(x=>x.nome===n);return r?r.qta:0};
   const ord=[["Numero","Nominativo",...V.map(v=>v.nome),"Coperti","Piatti da soli","Cambi nel menù","Asporto",...XN,"Importo menù €","Importo piatti da soli €","Importo extra €","Importo totale €","Incassato in cassa €","Restituito con rettifiche €","Offerta €","Ricevuto €","Pagamenti","Pasto offerto €","Offerto da","Ora","Creato da","Fila","Dove","Note",...S.portate.map(p=>p.nome)]];
-  O.forEach(o=>ord.push([o.numero,o.nome||"",...V.map(v=>qtyOf(o,v)),cop(righe(o)),singoli(o).map(s=>`${s.qta} ${s.nome}`).join(", "),cambiTxt(cambi(o)),o.asporto?(o.asportoSubito?"Sì, subito":"Sì"):"No",...XN.map(n=>xOf(o,n)),o.importoMenu!=null?o.importoMenu:(o.importo||0),o.importoSingoli||0,o.importoExtra||0,o.importo||0,
+  O.forEach(o=>ord.push([o.numero,o.nome||"",...V.map(v=>qtyOf(o,v)),copOf(o),singoli(o).map(s=>`${s.qta} ${s.nome}`).join(", "),cambiTxt(cambi(o)),o.asporto?(o.asportoSubito?"Sì, subito":"Sì"):"No",...XN.map(n=>xOf(o,n)),o.importoMenu!=null?o.importoMenu:(o.importo||0),o.importoSingoli||0,o.importoExtra||0,o.importo||0,
     o.incassato||0,o.stornato||0,o.offerta||0,o.ricevuto||"",payDesc(o),o.offerto||0,o.offertoDa||"",fmtTime(o.creato),nameOf(o.creatoDaId,o.creatoDa),o.fila?filaNome(o.fila):"",o.dove||o.tavolo||"",o.note||"",
     ...S.portate.map(p=>o.portate&&o.portate[p.id]?(o.portate[p.id].stato||"attesa"):"—")]));
   const SP=S.portate.filter(p=>P.some(x=>(x.singoli||{})[p.id]));
   const pre=[["Nominativo",...V.map(v=>v.nome),...SP.map(p=>p.nome+" da solo"),"Coperti","Asporto","Offerto","Arrivati","Numero ordine","Note"]];
-  P.forEach(p=>pre.push([p.nome,...V.map(v=>qtyOf(p,v)),...SP.map(x=>(p.singoli||{})[x.id]||0),cop(righe(p)),p.asporto?"Sì":"No",p.offerto||"",p.stato==="arrivata"?"Sì":p.stato==="parziale"?"In parte":"No",prenNums(p).join(", ")||p.ordine||"",p.note||""]));
+  P.forEach(p=>pre.push([p.nome,...V.map(v=>qtyOf(p,v)),...SP.map(x=>(p.singoli||{})[x.id]||0),copOf(p),p.asporto?"Sì":"No",p.offerto||"",p.stato==="arrivata"?"Sì":p.stato==="parziale"?"In parte":"No",prenNums(p).join(", ")||p.ordine||"",p.note||""]));
   const per={};O.forEach(o=>righe(o).forEach(r=>{per[r.nome]=(per[r.nome]||0)+r.qta}));
   const rie=[["Voce","Valore"],["Ordini",T.n],["Coperti",T.cop],...S.portate.map(p=>[p.nome+" (porzioni)",usedFor(p.id)]),
     ...XN.map(n=>["Venduti "+n,O.reduce((a,o)=>a+xOf(o,n),0)]),

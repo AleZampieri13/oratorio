@@ -1,5 +1,9 @@
 # Versioni
 
+## 40
+- **Coperti in cassa:** sotto i menù la riga Coperti (− / + o scrivendo il numero). Parte dal numero dei menù, si può cambiare (anche più o meno dei menù); serve per le serate senza menù e per chi prende solo piatti da soli. Il numero va nella scheda del cameriere, nel riepilogo e nell'Excel. Dal file delle prenotazioni prende «Totale persone».
+- In Modifica e Rettifica la riga Coperti mostra quelli salvati e non cambia quando si cambiano i menù: si cambia solo a mano. Gli ordini delle serate passate (senza coperti scritti) contano i menù come prima.
+
 ## 39
 - **Cucina: niente più tasti Pronto / Portato / Annulla: il pronto lo segna l'uscita (anche in parte).** La cucina vede le schede da preparare (con le quantità, senza campi), le porzioni «30 / 80» con «+ Aggiungi», il filtro per reparto e la lista dei pronti, solo da leggere. Una scheda resta in cucina finché l'uscita non segna il piatto pronto. Il bar non cambia e tiene tutti i suoi tasti.
 - **Uscita: ordini uniti in una riga sola, anche per i pronti in parte.** In «In preparazione» lo stesso piatto degli ordini uniti è una riga sola («6 Pizzoccheri · n. 12 + 13») con il campo per segnarne pronta solo una parte («Pronti 4»): prima l'ordine col numero più basso, il resto resta da preparare in una riga sua.

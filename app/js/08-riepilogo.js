@@ -2,7 +2,7 @@
 /* ---------- EVENTO: riepilogo ---------- */
 function totals(){
   const O=ordersArr();
-  return {n:O.length,cop:O.reduce((a,o)=>a+cop(righe(o)),0),cassa:O.reduce((a,o)=>a+(o.incassato||0),0),
+  return {n:O.length,cop:O.reduce((a,o)=>a+copOf(o),0),cassa:O.reduce((a,o)=>a+(o.incassato||0),0),
     valore:O.reduce((a,o)=>a+(o.importo||0),0),offerti:r2(O.reduce((a,o)=>a+(o.offerto||0),0))};
 }
 function postIds(){
@@ -74,7 +74,7 @@ function renderTimes(){
 function renderEvent(){
   const O=ordersArr(),P=prensArr(),T=totals();
   const perVar={};O.forEach(o=>righe(o).forEach(r=>{perVar[r.nome]=(perVar[r.nome]||0)+r.qta}));
-  const pc=P.reduce((a,p)=>a+cop(righe(p)),0);
+  const pc=P.reduce((a,p)=>a+copOf(p),0);
   const perX={};O.forEach(o=>extras(o).forEach(r=>{perX[r.nome]=(perX[r.nome]||0)+r.qta}));
   $("e-stats").innerHTML=`<div><span class="label">Ordini</span><b>${T.n}</b></div><div><span class="label">Coperti</span><b>${T.cop}</b></div>`+
     S.portate.map(p=>`<div><span class="label">${esc(p.nome)}</span><b>${usedFor(p.id)}</b></div>`).join("")+

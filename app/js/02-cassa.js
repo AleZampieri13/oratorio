@@ -253,7 +253,7 @@ function renderSearch(){
   box.hidden=false;
   box.innerHTML=hits.length?hits.map(p=>`<button data-pren="${esc(p.id)}" ${p.stato==="arrivata"?"disabled":""}>
     <span><b>${esc(p.nome)}</b><div class="chips" style="margin-top:4px">${prenChips(p)}</div></span>
-    ${prenPill(p)||`<span class="pill wait">${cop(righe(p))} coperti</span>`}</button>`).join("")
+    ${prenPill(p)||`<span class="pill wait">${copOf(p)} coperti</span>`}</button>`).join("")
     :'<div class="empty" style="padding:10px 12px">Nessuna prenotazione trovata. Puoi creare l\'ordine lo stesso.</div>';
 }
 $("c-search").addEventListener("input",renderSearch);
