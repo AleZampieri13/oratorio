@@ -282,15 +282,28 @@ function renderTicket(){
   $("c-last").innerHTML=`<div class="done-top"><span class="done-n"><small>Biglietto</small>${o.numero}</span>
     ${resto>0?`<span class="done-resto"><small>Resto</small>${money(resto)}</span>`:""}</div>
     <span class="sub">${o.nome?esc(o.nome)+" · ":""}${esc(payDesc(o))}${o.offerta>0?` (offerta ${money(o.offerta)})`:""}${o.asportoSubito?" · asporto mandato in cucina":""}</span>${parts}
-    ${canUndo(o)?`<button class="btn danger small" id="c-undo" style="align-self:flex-start">Annulla ordine</button>`:""}`;
+    ${canUndo(o)?`<button class="btn danger small" id="c-undo" style="align-self:flex-start">Annulla ordine</button>`:""}${askPrenHtml()}`;
 }
+/* dopo un arrivo in parte: «Aspetta» (resta parziale) o «Chiudi» (stato chiusa). Senza risposta vale Aspetta. */
+function askPrenHtml(){const a=S.askPren;if(!a)return "";const p=S.prenMap[a.id];
+  /* finché la scrittura dell'arrivo non è tornata, la prenotazione può non essere ancora «parziale» */
+  if(!p||(prenArr(p)["n"+a.n]&&p.stato!=="parziale")){S.askPren=null;return ""}
+  return `<div class="row" style="margin-top:6px"><span class="sub"><b>${esc(a.nome)}</b>: ${esc(a.txt)}</span>
+    <button class="btn small" data-pask="aspetta">Aspetta</button><button class="btn small" data-pask="chiudi">Chiudi</button></div>`}
+$("c-last").addEventListener("click",async e=>{
+  const b=e.target.closest("button[data-pask]");if(!b||!S.askPren)return;const a=S.askPren;S.askPren=null;
+  if(b.dataset.pask==="chiudi"){
+    try{await R("prenotazioni/"+a.id).update({stato:"chiusa",chiusaT:Date.now(),chiusaDa:myName()});logChange(`Prenotazione ${a.nome}: chiusa (${a.txt})`)}
+    catch(err){showBanner(errText(err))}}
+  renderTicket();
+});
 $("c-last").addEventListener("click",async e=>{
   const b=e.target.closest("#c-undo");if(!b)return;const n=S.lastNum,o=orderByNum(n);
   if(!canUndo(o)){$("c-msg").className="msg err";$("c-msg").textContent=`L'ordine ${n} è già partito: non si può più annullare.`;renderTicket();return}
   if(!armed(b,"Sicuro? Tocca di nuovo"))return;
   if(!canUndo(orderByNum(n))){renderTicket();return}
   const back=r2((o.incassato||0)+(o.offerta||0));
-  try{await burnOrder(n,o,back,"subito dopo la creazione");
+  try{await burnOrder(n,o,back,"subito dopo la creazione");S.askPren=null;
     S.undoMsg=`Ordine ${n} annullato.`+(back>0?` Restituisci ${money(back)}.`:"");S.numDirty=false;prefillNum();renderTicket()}
   catch(err){$("c-msg").className="msg err";$("c-msg").textContent=errText(err)}
 });
@@ -382,20 +395,20 @@ async function createOrder(){
     }
     clearTimeout(slow);
     if(!done){msg.className="msg err";msg.textContent="Non riesco a trovare un numero libero: riprova.";return}
-    let prenMsg="";
+    S.askPren=null;
     if(pren){const p=S.prenMap[pren];
       if(p){const L=prenLeft(p),v={},s={};
         L.rr.forEach(r=>{const g=Math.min(r.qta,(b.rr.find(x=>x.id===r.id)||{}).qta||0);if(g)v[r.id]=g});
         L.ss.forEach(x=>{const g=Math.min(x.q,(b.ss.find(y=>y.pid===x.id&&y.k==="a")||{}).qta||0);if(g)s[x.id]=g});
         const a={t:Date.now(),...(Object.keys(v).length?{v}:{}),...(Object.keys(s).length?{s}:{})},arr={...prenArr(p),["n"+n]:a},st=prenStato(p,arr);
-        if(st==="parziale")prenMsg=` Prenotazione ${p.nome}: ${prenRestTxt({...p,arr})}. Quando arrivano gli altri, cercala di nuovo.`;
+        if(st==="parziale")S.askPren={id:pren,n,nome:p.nome,txt:prenMancaTxt({...p,arr})};
         R("prenotazioni/"+pren).update({stato:st,ordine:n,["arr/n"+n]:a}).catch(()=>{})}
       else R("prenotazioni/"+pren).update({stato:"arrivata",ordine:n}).catch(()=>{})}
     const pay=S.pay,split=S.split;S.lastNum=n;S.undoMsg="";S.numDirty=false;resetForm();$("c-last-wrap").hidden=false;
     setTimeout(()=>{if(S.lastNum===n)renderTicket()},61000);
     const resto=ric>0?r2(ric-toPay):0;
     if(plan.offerto>0)logChange(`Ordine ${n}${base.nome?" ("+base.nome+")":""}: pasto offerto ${money(plan.offerto)} da ${plan.offertoDa}`);
-    msg.className="msg ok";msg.textContent=`Ordine ${n} creato${base.asportoSubito?" e mandato in cucina":""}.`+(split?" Conto diviso: vedi le parti sul biglietto.":plan.money>0?` Incassa ${money(toPay)} (${PAY_LBL[pay]}).`:plan.offerto>0?" Pasto offerto.":"")+(resto>0?` Resto ${money(resto)}.`:"")+prenMsg;
+    msg.className="msg ok";msg.textContent=`Ordine ${n} creato${base.asportoSubito?" e mandato in cucina":""}.`+(split?" Conto diviso: vedi le parti sul biglietto.":plan.money>0?` Incassa ${money(toPay)} (${PAY_LBL[pay]}).`:plan.offerto>0?" Pasto offerto.":"")+(resto>0?` Resto ${money(resto)}.`:"");
     renderTicket();prefillNum();$("c-msg").textContent="";
     const w=$("c-last-wrap");w.classList.remove("flash");void w.offsetWidth;w.classList.add("flash");
   }catch(e){clearTimeout(slow);msg.className="msg err";msg.textContent=errText(e)}

@@ -63,6 +63,7 @@ function prenUsed(p){const v={},s={};Object.values(prenArr(p)).forEach(a=>{Objec
 function prenLeft(p){const u=prenUsed(p);return {rr:righe(p).map(r=>({...r,qta:Math.max(0,r.qta-(u.v[r.id]||0))})).filter(r=>r.qta>0),ss:prenSing(p).map(x=>({...x,q:Math.max(0,x.q-(u.s[x.id]||0))})).filter(x=>x.q>0)}}
 function prenStato(p,arr){if(!Object.keys(arr).length)return "attesa";const L=prenLeft({...p,arr});return L.rr.length||L.ss.length?"parziale":"arrivata"}
 function prenRestTxt(p){const L=prenLeft(p),c=cop(L.rr);return c?`restano ${c} ${c===1?"coperto":"coperti"}`:"restano piatti da soli"}
+function prenMancaTxt(p){const c=cop(prenLeft(p).rr);return c?(c===1?"manca 1 coperto":`mancano ${c} coperti`):"mancano piatti da soli"}
 function prenPill(p){if(p.stato==="arrivata")return `<span class="pill ready">Arrivati · n. ${esc(prenNums(p).join(", ")||p.ordine)}</span>`;
   if(p.stato==="parziale")return `<span class="pill call">Arrivati in parte · n. ${esc(prenNums(p).join(", "))} · ${prenRestTxt(p)}</span>`;return ""}
 function prenChips(p){return (p.asporto?'<span class="pill asp">Asporto</span>':"")+(p.offerto?`<span class="pill ok">Offerto · ${esc(p.offerto)}</span>`:"")+righeChips(righe(p))+prenSing(p).map(x=>`<span class="chip">${x.q} ${esc(x.nome)} (da solo)</span>`).join("")}
