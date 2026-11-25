@@ -6,8 +6,8 @@ function breakdown(items){
   const tot=Object.values(by).reduce((a,b)=>a+b,0);delete by[""];
   return {tot,txt:Object.entries(by).map(([n,q])=>`${q} ${esc(n)}`).join(" · ")};
 }
-/* porzioni mancanti / totale della serata: totale = ordinate; fatte = pronte o portate (nei reparti: il pezzo del reparto pronto) */
-function missTot(pid,sc){const tot=usedFor(pid);let done=0;
+/* porzioni mancanti / totali: totali = le porzioni caricate (scorte), se non c'è limite quelle ordinate; mancanti = totali − fatte (pronte o portate; nei reparti: il pezzo del reparto pronto) */
+function missTot(pid,sc){const lim=S.scorte[pid],tot=(lim==null||lim==="")?usedFor(pid):Number(lim)||0;let done=0;
   ordersArr().forEach(o=>orderCourses(o).forEach(c=>{if(kBase(c.k)!==pid)return;const st=c.p.stato;
     let ok=st==="pronta"||st==="servita";
     if(!ok&&sc&&st==="chiamata"){const rp=Object.entries(c.p.rep||{}).filter(([r])=>sc.includes(r));ok=rp.length>0&&rp.every(([,v])=>v&&v.s==="pronta")}
