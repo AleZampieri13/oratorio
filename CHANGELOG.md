@@ -1,5 +1,8 @@
 # Versioni
 
+## 44
+- **Avvisi:** nella barra in alto del telefono l'icona dell'app (forchetta, piatto e coltello) invece del quadratino bianco.
+
 ## 43
 - **Avvisi: tasto «Prova».** Con gli avvisi attivi, nella striscia della pagina Camerieri c'è «Prova»: manda un avviso vero a quel telefono (deve arrivare anche con l'app chiusa). Appena si attivano, il telefono mostra subito «Avvisi attivi». Se un avviso arriva ma il telefono non riesce a mostrarlo, l'app lo scrive in alto.
 - Avvisi su Samsung Internet: spesso non chiede il permesso e non mostra gli avvisi. La striscia consiglia di aprire e installare l'app con Chrome (provato: con Chrome funziona).

@@ -1,6 +1,6 @@
 /* Ordini Oratorio: fa aprire l'app anche senza rete. I dati restano su Firebase. */
-const CACHE = "ordini-oratorio-v43";
-const CORE = ["./", "index.html", "css/app.css", "js/01-base.js", "js/02-cassa.js", "js/03-camerieri.js", "js/04-cucina.js", "js/05-bar.js", "js/06-avvisi.js", "js/07-persone.js", "js/08-riepilogo.js", "js/09-listino.js", "js/10-evento.js", "js/11-avvio.js", "js/12-notifiche.js", "js/config.js", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png"];
+const CACHE = "ordini-oratorio-v44";
+const CORE = ["./", "index.html", "css/app.css", "js/01-base.js", "js/02-cassa.js", "js/03-camerieri.js", "js/04-cucina.js", "js/05-bar.js", "js/06-avvisi.js", "js/07-persone.js", "js/08-riepilogo.js", "js/09-listino.js", "js/10-evento.js", "js/11-avvio.js", "js/12-notifiche.js", "js/config.js", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png", "badge-96.png"];
 const CDN = [
   "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js",
   "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js",
@@ -92,13 +92,13 @@ self.addEventListener("push", e => {
     try {
       await self.registration.showNotification(titolo, {
         body: d.testo || "", tag, renotify: true,
-        icon: "icon-192.png", badge: "icon-192.png", data: { url: "./" }
+        icon: "icon-192.png", badge: "badge-96.png", data: { url: "./" }
       });
       await dillo({ mostrato: true });
     } catch (err) {
       await dillo({ errore: String(err && err.message || err) });
       /* senza opzioni particolari: almeno il titolo */
-      try { await self.registration.showNotification(titolo, { body: d.testo || "" }); } catch (err2) {}
+      try { await self.registration.showNotification(titolo, { body: d.testo || "", badge: "badge-96.png" }); } catch (err2) {}
     }
   })());
 });

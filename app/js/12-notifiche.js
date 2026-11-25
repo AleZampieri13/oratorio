@@ -43,7 +43,7 @@ async function pushAttiva(){
   await pushRef(S.me.id,authUid()).set({endpoint:j.endpoint,keys:{p256dh:j.keys.p256dh,auth:j.keys.auth},t:Date.now(),ua:navigator.userAgent.slice(0,120),kv:pushKv()});
   pushSet("on");
   /* prova subito che il telefono sa mostrare le notifiche (senza passare da internet) */
-  try{await reg.showNotification("Avvisi attivi",{body:"Così ti arriva l'avviso quando un piatto è pronto. Tocca «Prova» per provarli con l'app chiusa.",tag:"avvisi-attivi",icon:"icon-192.png",badge:"icon-192.png"})}
+  try{await reg.showNotification("Avvisi attivi",{body:"Così ti arriva l'avviso quando un piatto è pronto. Tocca «Prova» per provarli con l'app chiusa.",tag:"avvisi-attivi",icon:"icon-192.png",badge:"badge-96.png"})}
   catch(e){showBanner("Avvisi attivati, ma il telefono non riesce a mostrare le notifiche: "+(e&&e.message||e))}
 }
 /* «Prova»: manda un avviso vero (dal Worker) a questo telefono; con l'app chiusa deve arrivare entro pochi secondi */
