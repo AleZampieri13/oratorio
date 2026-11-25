@@ -1,5 +1,8 @@
 # Versioni
 
+## 48
+- **Avvisi:** quando un cameriere (o il capo camerieri) entra, il telefono chiede subito «Consentire le notifiche?»: se tocca Consenti gli avvisi sono già attivi, senza passare dalla striscia. Se il consenso c'era già (per esempio dopo Esci e rientro), si riattivano da soli. Su iPhone solo con l'app aperta dalla schermata Home.
+
 ## 47
 - **Avvisi:** tolta la striscia verde «Avvisi attivi» con Prova e Disattiva; per provare gli avvisi c'è un tastino 📲 in alto accanto a quello del suono (solo per i camerieri con gli avvisi attivi). La striscia resta per attivarli o se c'è un problema.
 

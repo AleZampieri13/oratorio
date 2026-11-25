@@ -191,11 +191,13 @@ function renderLogin(){
 $("l-names").addEventListener("click",e=>{const b=e.target.closest("button[data-uid]");if(!b)return;S.loginPick=b.dataset.uid;$("l-msg").textContent="";$("l-pin").value="";renderLogin();$("l-pin").focus()});
 async function doLogin(){
   const u=S.users.find(x=>x.id===S.loginPick);if(!u)return;
+  const pp=typeof pushChiedi==="function"?pushChiedi(u):null;   /* subito, dentro il tocco */
   const h=await hashPin(u.salt,$("l-pin").value),b=$("l-go");b.disabled=true;$("l-msg").textContent="";
   const ok=await openSess(u.id,{h});b.disabled=false;
   if(ok===false){$("l-msg").textContent="PIN sbagliato. Riprova.";$("l-pin").value="";return}
   if(ok===null){$("l-msg").textContent="Rete lenta: non riesco a controllare il PIN. Riprova.";return}
   $("l-pin").value="";S.loginPick=null;startSession(u,h);
+  if(typeof pushAuto==="function")pushAuto(u,pp);
 }
 $("l-go").addEventListener("click",doLogin);
 $("l-pin").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin()});
@@ -221,11 +223,13 @@ $("j-list").addEventListener("click",async e=>{
   const b=e.target.closest("button[data-juid]");if(!b||b.disabled)return;const m=$("j-msg");m.textContent="";
   if(S.ingressiChiusi||S.joinCode!==S.invite){renderGate();return}
   const u=S.users.find(x=>x.id===b.dataset.juid);if(!u)return;
-  if(myTok(u)){await openSess(u.id,{t:u.token});S.joinCode=null;startSession(u,u.token);return}
+  const pp=typeof pushChiedi==="function"?pushChiedi(u):null;   /* subito, dentro il tocco */
+  const auto=()=>{if(typeof pushAuto==="function")pushAuto(u,pp)};
+  if(myTok(u)){await openSess(u.id,{t:u.token});S.joinCode=null;startSession(u,u.token);auto();return}
   const tok=newCode();b.disabled=true;
   try{const r=await R("config/utenti/"+u.id+"/token").transaction(cur=>cur?undefined:tok);
     if(!r.committed){m.textContent=`${u.nome} è già in uso su un altro telefono. Chiedi al capo camerieri.`;renderJoin();return}
-    lsSet("wtok:"+u.id,tok);await openSess(u.id,{t:tok});S.joinCode=null;const me={...u,token:tok};S.users=S.users.map(x=>x.id===u.id?me:x);startSession(me,tok)}
+    lsSet("wtok:"+u.id,tok);await openSess(u.id,{t:tok});S.joinCode=null;const me={...u,token:tok};S.users=S.users.map(x=>x.id===u.id?me:x);startSession(me,tok);auto()}
   catch(err){m.textContent=errText(err);b.disabled=false}
 });
 

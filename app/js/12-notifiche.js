@@ -40,6 +40,28 @@ const pushSet=st=>{S.push={key:pushKeyNow(),st};renderPushBar()};
 async function pushAttiva(){
   const perm=await Notification.requestPermission();   /* dentro il tocco: su iPhone è obbligatorio */
   if(perm!=="granted"){pushSet("off");return}
+  await pushIscrivi();
+}
+/* all'ingresso di un cameriere (o capo camerieri): pushChiedi va chiamata nel tocco, PRIMA di ogni attesa,
+   perché il telefono mostra «Consentire le notifiche?» solo subito dopo un tocco; pushAuto, a ingresso riuscito,
+   completa l'iscrizione (anche senza domanda, se il consenso c'era già: per esempio dopo «Esci» e rientro) */
+const pushPerChi=u=>!!u&&(hasRole(u,"cameriere")||hasRole(u,"capo"));
+function pushChiedi(u){
+  if(!pushPerChi(u)||!pushPronto()||Notification.permission!=="default")return null;
+  try{return Notification.requestPermission()}catch(e){console.warn("avvisi:",e);return null}
+}
+async function pushAuto(u,p){
+  if(!pushPerChi(u)||!pushPronto())return;
+  try{
+    const perm=p?await p:Notification.permission;
+    if(perm!=="granted"||!S.me||S.me.id!==u.id)return;
+    const reg=await pushReg(),sub=await reg.pushManager.getSubscription();
+    const v=sub&&(await pushRef(u.id,authUid()).once("value")).val();
+    if(v&&v.endpoint===sub.endpoint&&v.kv===pushKv()){pushSet("on");return}
+    await pushIscrivi();
+  }catch(e){console.warn("avvisi:",e)}
+}
+async function pushIscrivi(){
   const reg=await pushReg();
   const old=await reg.pushManager.getSubscription();if(old){try{await old.unsubscribe()}catch(e){}}
   const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:vapidKey(PUSH_VAPID)});
