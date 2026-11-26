@@ -169,8 +169,9 @@ $("c-form").addEventListener("click",e=>{const b=e.target.closest("button[data-m
   if(moreOpen(k)&&moreVal(k)){$(MORE_FIELD[k]).focus();return}
   S.more[k]=!moreOpen(k);repaintC();if(S.more[k])$(MORE_FIELD[k]).focus()});
 function repaintC(){paintTotal("c",bill(S.qty,{},$("c-paid").checked,S.sqty,ccC()),$("c-paid").checked,S.pay)}
-$("c-off").addEventListener("input",repaintC);
-$("c-note").addEventListener("input",paintMore);
+/* chi scrive nel campo lo tiene aperto, anche se lo svuota (note o offerta arrivate da prenotazione o dal resto) */
+$("c-off").addEventListener("input",()=>{S.more.off=true;repaintC()});
+$("c-note").addEventListener("input",()=>{S.more.note=true;paintMore()});
 $("c-ric").addEventListener("input",repaintC);
 $("c-ric").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();createOrder()}});
 function hideDone(){$("c-last-wrap").hidden=true}
