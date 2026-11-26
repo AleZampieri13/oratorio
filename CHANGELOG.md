@@ -1,5 +1,8 @@
 # Versioni
 
+## 49
+- **Testi:** nel Listino la spiegazione dei piatti è divisa in tre righe (Reparto, Prezzo da solo, Pronto entro) e quella dei reparti Bar è più chiara. Il pulsante del suono dei camerieri si chiama «Suono» come in cucina, al bar e all'uscita.
+
 ## 48
 - **Avvisi:** quando un cameriere (o il capo camerieri) entra, il telefono chiede subito «Consentire le notifiche?»: se tocca Consenti gli avvisi sono già attivi, senza passare dalla striscia. Se il consenso c'era già (per esempio dopo Esci e rientro), si riattivano da soli. Su iPhone solo con l'app aperta dalla schermata Home.
 

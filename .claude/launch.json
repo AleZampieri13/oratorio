@@ -6,6 +6,12 @@
       "runtimeExecutable": "py",
       "runtimeArgs": ["test/server.py", "5520"],
       "port": 5520
+    },
+    {
+      "name": "app-statica",
+      "runtimeExecutable": "py",
+      "runtimeArgs": ["-m", "http.server", "5530", "--directory", "app"],
+      "port": 5530
     }
   ]
 }

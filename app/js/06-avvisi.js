@@ -2,7 +2,7 @@
 /* ---------- avvisi ---------- */
 function setSoundBtns(){
   $("k-sound").textContent="Suono: "+(S.sound?"acceso":"spento");$("k-sound").setAttribute("aria-pressed",String(S.sound));
-  $("w-sound").textContent="Avviso sonoro: "+(S.sound?"acceso":"spento");
+  $("w-sound").textContent="Suono: "+(S.sound?"acceso":"spento");
   $("b-sound").textContent="Suono: "+(S.sound?"acceso":"spento");$("o-sound").textContent="Suono: "+(S.sound?"acceso":"spento");$("o-sound").setAttribute("aria-pressed",String(S.sound));$("b-sound").setAttribute("aria-pressed",String(S.sound));$("w-sound").setAttribute("aria-pressed",String(S.sound));
 }
 function toggleSound(){
