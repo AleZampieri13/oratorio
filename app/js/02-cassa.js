@@ -159,7 +159,8 @@ function paintCash(toPay,pay){
 S.more={note:false,asp:false,off:false};
 function moreVal(k){return k==="note"?!!$("c-note").value.trim():k==="asp"?$("c-asp").checked:k==="off"?!!$("c-off").value.trim():false}
 function moreOpen(k){return k==="split"?!!S.split:!!S.more[k]||moreVal(k)}
-function paintMore(){document.querySelectorAll("#c-form [data-more]").forEach(b=>b.setAttribute("aria-expanded",String(moreOpen(b.dataset.more))));
+function paintMore(){document.querySelectorAll("#c-form [data-more]").forEach(b=>{const k=b.dataset.more;b.setAttribute("aria-expanded",String(moreOpen(k)));
+    if(moreVal(k)||(k==="split"&&S.split))b.setAttribute("data-on","1");else b.removeAttribute("data-on")});
   $("c-note").hidden=!moreOpen("note");$("c-asp-lbl").hidden=!moreOpen("asp")}
 const MORE_FIELD={note:"c-note",asp:"c-asp",off:"c-off"};
 $("c-form").addEventListener("click",e=>{const b=e.target.closest("button[data-more]");if(!b)return;const k=b.dataset.more;
@@ -169,6 +170,7 @@ $("c-form").addEventListener("click",e=>{const b=e.target.closest("button[data-m
   S.more[k]=!moreOpen(k);repaintC();if(S.more[k])$(MORE_FIELD[k]).focus()});
 function repaintC(){paintTotal("c",bill(S.qty,{},$("c-paid").checked,S.sqty,ccC()),$("c-paid").checked,S.pay)}
 $("c-off").addEventListener("input",repaintC);
+$("c-note").addEventListener("input",paintMore);
 $("c-ric").addEventListener("input",repaintC);
 $("c-ric").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();createOrder()}});
 function hideDone(){$("c-last-wrap").hidden=true}
@@ -491,6 +493,8 @@ function openEdit(n){
   const o=orderByNum(n);const m=$(S.editOrder!=null?"x-msg":"c-msg");/* con la modifica aperta #c-form è nascosto */
   if(!o){m.className="msg err";m.textContent=S.annMap[n]?`L'ordine ${n} è già stato annullato.`:`L'ordine ${n||""} non esiste.`;return}
   const locked=isLocked(o),boss=isBoss();S.cf=null;
+  /* dopo un giro in Modifica «Crea ordine» rifà il primo tocco con la spiegazione (asporto diretto, porzioni) */
+  S.aspConfirm=null;S.stockWarn=null;repaintC();
   /* messaggio e «Annulla ordine»: nello scontrino in Modifica, in fondo al pannello in Rettifica (lì lo scontrino è nascosto) */
   if(locked)$("x-panel").append($("x-msg"),$("x-del-row"),$("x-confirm-row"));else{$("x-foot").prepend($("x-msg"));$("x-right").append($("x-del-row"),$("x-confirm-row"))}
   m.textContent="";S.editLocked=locked;$("x-body").hidden=locked;$("x-lockmsg").hidden=!locked;$("x-fix").hidden=!locked;

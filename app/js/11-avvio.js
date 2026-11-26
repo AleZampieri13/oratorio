@@ -129,5 +129,6 @@ $("na-go").addEventListener("click",()=>{const v=$("na-code").value.trim(),m=/[#
   if(k.length<20){$("na-msg").textContent="Codice non valido: incolla il link intero che ti hanno dato.";return}
   lsSet("acc",k);location.reload()});
 $("na-code").addEventListener("keydown",e=>{if(e.key==="Enter")$("na-go").click()});
+{const hd=document.querySelector("header.top");if(hd&&window.ResizeObserver)new ResizeObserver(setHh).observe(hd);setHh()}
 start();
 if("serviceWorker" in navigator&&location.protocol==="https:"){window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{})})}

@@ -1,5 +1,8 @@
 # Versioni
 
+## 50
+- **Cassa:** menù e piatti sono tasti grandi (un tocco = uno in più); a destra lo scontrino con «−», totale, pagamento e «Crea ordine» sempre in vista. Anche Modifica ordine funziona così. La prenotazione si cerca scrivendo nel campo del nominativo.
+
 ## 49
 - **Testi:** nel Listino la spiegazione dei piatti è divisa in tre righe (Reparto, Prezzo da solo, Pronto entro) e quella dei reparti Bar è più chiara. Il pulsante del suono dei camerieri si chiama «Suono» come in cucina, al bar e all'uscita.
 

@@ -138,7 +138,11 @@ async function keepAwake(){
 }
 document.addEventListener("visibilitychange",keepAwake);
 document.addEventListener("click",keepAwake,{passive:true});
+/* --hh = altezza vera dell'intestazione (per il master è più alta): lo scontrino sticky della cassa parte da lì; 0 = nascosta, non si scrive */
+function setHh(){const hd=document.querySelector("header.top"),h=hd?Math.round(hd.getBoundingClientRect().height):0;if(h>0)document.documentElement.style.setProperty("--hh",h+"px")}
+window.addEventListener("resize",setHh);window.addEventListener("orientationchange",setHh);
 function renderGate(){
+  requestAnimationFrame(setHh);/* dopo che schede e nome sono stati mostrati o nascosti, in tutti i rami */
   if(S.noAccess){showOnly("v-noaccess");$("tabs").hidden=true;$("who").hidden=true;return}
   if(!S.root){showOnly(S.cfg?null:"v-config");$("tabs").hidden=true;$("who").hidden=true;return}
   if(!S.usersLoaded){showOnly(null);$("tabs").hidden=true;$("who").hidden=true;return}

@@ -578,7 +578,7 @@ ul.kitems li:has(.kscq) .kbtn{grid-column:2}
 .whist summary .n{color:var(--ink)}
 
 /* cassa a tasti grandi */
-#p-cassa{--hh:116px}
+:root{--hh:116px}
 .cgrid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,.65fr);gap:20px;align-items:start}
 /* Modifica e Rettifica prendono il posto del nuovo ordine (#c-form nascosto) */
 #x-foot{margin-bottom:0}
@@ -630,7 +630,8 @@ ul.kitems li:has(.kscq) .kbtn{grid-column:2}
 /* tastini «+ …» a scomparsa, col bordo tratteggiato */
 .cmrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .cmore{min-height:48px;padding:8px 14px;border:2px dashed var(--muted);border-radius:999px;background:transparent;color:var(--ink);font:inherit;font-weight:700;text-transform:inherit;cursor:pointer;touch-action:manipulation}
-.cmore[aria-expanded="true"]{border-style:solid;border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.cmore[aria-expanded="true"]{border-style:solid;border-color:var(--accent)}
+.cmore[data-on="1"]{background:var(--accent);color:var(--accent-ink)}
 .cmrow .coprow{margin-left:auto;display:flex;align-items:center;gap:10px;padding:0;border:0}
 #c-right .cmrow .cmore,#x-right .cmrow .cmore{flex:1 1 auto;padding:8px 10px;font-size:1rem}
 /* Contanti, POS, Offerto a tutta larghezza: ci stanno anche nello scontrino stretto (1024 px) */

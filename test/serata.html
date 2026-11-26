@@ -83,7 +83,18 @@ async function joinW(n,code,nome){await waitFor(()=>!D(n).getElementById("v-logi
   if(D(n).getElementById("v-join").hidden){await type(n,"#l-code",code);await click(n,"#l-code-go")}
   await clickText(n,"#j-list button",nome);await waitFor(()=>!D(n).getElementById("who").hidden,3000,"ingresso "+nome)}
 const U=nome=>vals(db().config&&db().config.utenti).find(u=>u.nome===nome);
-const stepVal=(n,box,name)=>{const b=q(n,`${box} button[aria-label="Aggiungi ${name}"]`);return b?+b.parentNode.querySelector("output").textContent:0};
+/* cassa a tasti grandi: «Aggiungi NOME» è un tasto .ctile (aria-label «Aggiungi NOME» o «Aggiungi NOME, esaurito / ne restano N / manca X»); il «−» sta nello scontrino */
+const tileBtn=(n,box,name)=>qa(n,`${box} .ctile`).find(b=>{const a=b.getAttribute("aria-label");return a==="Aggiungi "+name||a.startsWith("Aggiungi "+name+", ")});
+/* un piatto finito è un tasto spento per il cassiere: non si clicca, e conta come blocco per le porzioni (prima scattava a «Crea ordine») */
+async function addTile(n,box,name){const b=await waitFor(()=>tileBtn(n,box,name),3000,`[${n}] tasto «${name}» in ${box}`);
+  if(b.disabled){check(b.classList.contains("out")&&/esaurito/.test(b.getAttribute("aria-label")),`In cassa il tasto «${name}» esaurito è spento per il cassiere`,b.getAttribute("aria-label"));STAT.bloccatiPorzioni++;return}
+  await click(n,b)}
+const lines=box=>box==="#x-sing"||box==="#x-steppers"?"#x-lines":"#c-lines";
+const rmBtn=(n,box,name)=>q(n,`${lines(box)} .rminus[aria-label="Togli ${name}"]`);
+async function rmTile(n,box,name){await click(n,await waitFor(()=>rmBtn(n,box,name),3000,`[${n}] «Togli ${name}» nello scontrino`))}
+const stepVal=(n,box,name)=>{const b=rmBtn(n,box,name);return b?+b.closest(".rline").querySelector(".rn b").textContent.replace(/\D/g,""):0};
+/* apre il tastino «+ …» (note, asp, off, split) se è chiuso */
+async function openMore(n,k){const b=q(n,`#c-form .cmore[data-more="${k}"]`);if(b&&b.getAttribute("aria-expanded")==="false")await click(n,b)}
 
 /* ---------------- chi lavora stasera ---------------- */
 const CASSE=Array.from({length:NCASSE},(_,i)=>({dev:"cassa"+(i+1),nome:"Cassa "+(i+1),pin:String(2001+i)}));
@@ -242,29 +253,29 @@ async function ensureNoDessert(){
   await tab("master",prev);
 }
 async function fixStock(n,msg){
-  if(/Torta/.test(msg)){await ensureNoDessert();await waitFor(()=>q(n,'#c-steppers button[aria-label="Aggiungi Standard senza dolce"]'),3000,"menù senza dolce in cassa");
-    for(const m of ["Standard","Bambini"]){const k=stepVal(n,"#c-steppers",m);for(let i=0;i<k;i++){await click(n,`#c-steppers button[aria-label="Togli ${m}"]`);await click(n,`#c-steppers button[aria-label="Aggiungi ${m} senza dolce"]`)}}
-    const d=stepVal(n,"#c-sing","Torta");for(let i=0;i<d;i++)await click(n,'#c-sing button[aria-label="Togli Torta"]')}
-  if(/Vino/.test(msg)){const v=stepVal(n,"#c-sing","Vino");for(let i=0;i<v;i++)await click(n,'#c-sing button[aria-label="Togli Vino"]')}
+  if(/Torta/.test(msg)){await ensureNoDessert();await waitFor(()=>tileBtn(n,"#c-steppers","Standard senza dolce"),3000,"menù senza dolce in cassa");
+    for(const m of ["Standard","Bambini"]){const k=stepVal(n,"#c-steppers",m);for(let i=0;i<k;i++){await rmTile(n,"#c-steppers",m);await addTile(n,"#c-steppers",m+" senza dolce")}}
+    const d=stepVal(n,"#c-sing","Torta");for(let i=0;i<d;i++)await rmTile(n,"#c-sing","Torta")}
+  if(/Vino/.test(msg)){const v=stepVal(n,"#c-sing","Vino");for(let i=0;i<v;i++)await rmTile(n,"#c-sing","Vino")}
 }
 async function createOrder(o){
   const n=o.cassa,menuName=m=>noDessert?m+" senza dolce":m;
-  if(o.pren){await type(n,"#c-search",o.pren.replace("Famiglia ",""));await click(n,await waitFor(()=>qa(n,"#c-results button[data-pren]:not([disabled])").find(b=>b.querySelector("b").textContent===o.pren),3000,"prenotazione "+o.pren));
-    if(o.parz){await click(n,`#c-steppers button[aria-label="Togli ${noDessert?"Standard senza dolce":"Standard"}"]`);STAT.parz++;PARZ.noD=noDessert}
+  if(o.pren){await type(n,"#c-nome",o.pren.replace("Famiglia ",""));await click(n,await waitFor(()=>qa(n,"#c-results button[data-pren]:not([disabled])").find(b=>b.querySelector("b").textContent===o.pren),3000,"prenotazione "+o.pren));
+    if(o.parz){await rmTile(n,"#c-steppers",noDessert?"Standard senza dolce":"Standard");STAT.parz++;PARZ.noD=noDessert}
     if(o.rest&&!PARZ.noD){check(W(n).eval("Object.values(S.qty).reduce((a,b)=>a+b,0)")===1&&/in parte/.test(txt(n,"#c-sel")),`Prenotazione «${o.pren}» arrivata in parte: in cassa la ritrovo con solo quello che manca`);STAT.parz++}}
   else await type(n,"#c-nome",o.nome);
-  for(const [k,v] of Object.entries(o.menu))for(let i=0;i<v;i++)await click(n,`#c-steppers button[aria-label="Aggiungi ${menuName(k)}"]`);
-  for(const [k,v] of Object.entries(o.single)){if(noDessert&&k==="Torta")continue;for(let i=0;i<v;i++)await click(n,`#c-sing button[aria-label="Aggiungi ${k}"]`)}
-  for(const cb of (o.cambi||[])){if(!q(n,"#c-cambi button[data-cadd]"))break;await click(n,"#c-cambi button[data-cadd]");
-    const selT=async(f,t)=>{const e=q(n,`#c-cambi select[data-cf="${f}"]`);if(!e)return;const op=[...e.options].find(x=>x.textContent.startsWith(t));if(!op)return;e.value=op.value;e.dispatchEvent(new Event("change",{bubbles:true}));await sleep(STEP)};
-    await selT("m","Standard");await selT("da",cb.da);await selT("a",cb.a);for(let i=1;i<cb.q;i++)await click(n,'#c-cambi button[data-cfq="1"]');if(cb.scala){await click(n,'#c-cambi button[data-cfp="1"]');STAT.scalati++}
-    await click(n,'#c-cambi button[data-cfok]');STAT.cambi++}
-  if(o.asp){const c=q(n,"#c-asp");c.checked=true;c.dispatchEvent(new Event("change"));await sleep(STEP);if(o.asp==="cameriere")await click(n,'#c-aspmode button[data-m="cameriere"]')}
+  for(const [k,v] of Object.entries(o.menu))for(let i=0;i<v;i++)await addTile(n,"#c-steppers",menuName(k));
+  for(const [k,v] of Object.entries(o.single)){if(noDessert&&k==="Torta")continue;for(let i=0;i<v;i++)await addTile(n,"#c-sing",k)}
+  for(const cb of (o.cambi||[])){if(!q(n,"#c-lines button[data-cadd]"))break;await click(n,"#c-lines button[data-cadd]");
+    const selT=async(f,t)=>{const e=q(n,`#c-lines select[data-cf="${f}"]`);if(!e)return;const op=[...e.options].find(x=>x.textContent.startsWith(t));if(!op)return;e.value=op.value;e.dispatchEvent(new Event("change",{bubbles:true}));await sleep(STEP)};
+    await selT("m","Standard");await selT("da",cb.da);await selT("a",cb.a);for(let i=1;i<cb.q;i++)await click(n,'#c-lines button[data-cfq="1"]');if(cb.scala){await click(n,'#c-lines button[data-cfp="1"]');STAT.scalati++}
+    await click(n,'#c-lines button[data-cfok]');STAT.cambi++}
+  if(o.asp){await openMore(n,"asp");const c=q(n,"#c-asp");c.checked=true;c.dispatchEvent(new Event("change"));await sleep(STEP);if(o.asp==="cameriere")await click(n,'#c-aspmode button[data-m="cameriere"]')}
   if(o.offer){if(!o.prenOffer){await click(n,'#c-pay button[data-pay="offerto"]');await type(n,"#c-offby","Parrocchia")}
     else check(q(n,'#c-pay button[data-pay="offerto"]').getAttribute("aria-pressed")==="true"&&q(n,"#c-offby").value==="Parrocchia",`Prenotazione «${o.pren}» offerta: in cassa è già «Offerto da Parrocchia»`)}
   else await click(n,`#c-pay button[data-pay="${o.pay}"]`);
-  if(o.off)await type(n,"#c-off",String(o.off));
-  if(o.split&&!q(n,"#c-paybox").hidden){await click(n,'#c-split button[data-split="1"]');
+  if(o.off){await openMore(n,"off");await type(n,"#c-off",String(o.off))}
+  if(o.split&&!q(n,"#c-paybox").hidden){await openMore(n,"split");
     /* per piatti serve almeno due cose nell'ordine: con un piatto solo si divide a importi */
     const nItems=W(n).eval("splitLines().reduce((a,l)=>a+l.qta,0)");
     if(STAT.contiDivisi%2===0||nItems<2){await click(n,'#c-smode button[data-smode="importi"]');await type(n,"#c-nparts","2");await click(n,"#c-equal");o.splitMode="importi"}
@@ -277,7 +288,7 @@ async function createOrder(o){
   for(let i=0;i<6;i++){
     const due=q(n,"#c-paybox").hidden?0:eur(txt(n,"#c-total"));o.due=due;
     if(due>0&&o.pay==="contanti"&&!o.offer&&!o.split&&eur(q(n,"#c-ric").value.replace(".",","))<due)await type(n,"#c-ric",String(Math.ceil(due/10)*10));
-    if(qa(n,"#c-steppers output,#c-sing output").every(x=>+x.textContent===0)){o.vuoto=true;break}
+    if(!qa(n,"#c-lines .rminus").length){o.vuoto=true;break}
     await click(n,"#c-create");const m=txt(n,"#c-msg");
     if(/esaurito|ne restano solo/.test(m)){STAT.bloccatiPorzioni++;o.bloccato=m;await fixStock(n,m);continue}
     if(/Asporto diretto/.test(m)){STAT.confermeAsporto++;continue}
@@ -443,13 +454,13 @@ async function specialAfterCreate(o,S){
   /* caos: cambi nel menù casuali aggiunti con «Modifica» prima che il cameriere prenda l'ordine (menù, piatto, al posto di, quanti, Scala) */
   if(CAOS&&k>=4&&!o.asp&&!o.pren&&o.waiter&&!o.split&&!o.offer&&rnd()<.8){const n=o.cassa;
     queueFor[o.waiter]=queueFor[o.waiter].filter(x=>x!==o.n);
-    await click(n,`#c-recent button[data-open="${o.n}"]`);await waitFor(()=>q(n,"#x-cambi button[data-cadd]"),3000,"cambi in modifica").catch(()=>null);
-    const selR=async f=>{const e=q(n,`#x-cambi select[data-cf="${f}"]`);if(!e)return "";const ops=[...e.options].filter(x=>x.value!==""&&!x.disabled);if(!ops.length)return "";const op=pick(ops);e.value=op.value;e.dispatchEvent(new Event("change",{bubbles:true}));await sleep(STEP);return op.textContent};
+    await click(n,`#c-recent button[data-open="${o.n}"]`);await waitFor(()=>q(n,"#x-lines button[data-cadd]"),3000,"cambi in modifica").catch(()=>null);
+    const selR=async f=>{const e=q(n,`#x-lines select[data-cf="${f}"]`);if(!e)return "";const ops=[...e.options].filter(x=>x.value!==""&&!x.disabled);if(!ops.length)return "";const op=pick(ops);e.value=op.value;e.dispatchEvent(new Event("change",{bubbles:true}));await sleep(STEP);return op.textContent};
     let added=0;const nC=1+(rnd()<.4?1:0)+(ESTREMO&&rnd()<.5?1:0);
-    for(let c=0;c<nC;c++){const add=q(n,"#x-cambi button[data-cadd]");if(!add)break;await click(n,add);
-      await selR("m");await selR("da");const a=await selR("a");const qn=Math.floor(rnd()*3);for(let i=0;i<qn;i++){const b=q(n,'#x-cambi button[data-cfq="1"]:not([disabled])');if(b)await click(n,b)}
-      if(/^Niente/.test(a)&&rnd()<.5){const sc=q(n,'#x-cambi button[data-cfp="1"]');if(sc){await click(n,sc);STAT.scalati++}}
-      const ok=q(n,'#x-cambi button[data-cfok]:not([disabled])');if(ok){await click(n,ok);added++}else{const no=q(n,'#x-cambi button[data-cfno]');if(no)await click(n,no)}}
+    for(let c=0;c<nC;c++){const add=q(n,"#x-lines button[data-cadd]");if(!add)break;await click(n,add);
+      await selR("m");await selR("da");const a=await selR("a");const qn=Math.floor(rnd()*3);for(let i=0;i<qn;i++){const b=q(n,'#x-lines button[data-cfq="1"]:not([disabled])');if(b)await click(n,b)}
+      if(/^Niente/.test(a)&&rnd()<.5){const sc=q(n,'#x-lines button[data-cfp="1"]');if(sc){await click(n,sc);STAT.scalati++}}
+      const ok=q(n,'#x-lines button[data-cfok]:not([disabled])');if(ok){await click(n,ok);added++}else{const no=q(n,'#x-lines button[data-cfno]');if(no)await click(n,no)}}
     if(added){await click(n,"#x-save");const m=await waitFor(()=>/Incassa|Restituisci|Modifiche salvate|non|rifiut/i.test(txt(n,"#x-msg"))&&txt(n,"#x-msg"),3000,"esito modifica").catch(()=>txt(n,"#x-msg"));
       const eu=x=>parseFloat(x.replace(/\./g,"").replace(",","."));
       if(/Incassa altri ([\d.,]+)/.test(m))L[o.cassa][o.pay]=r2(L[o.cassa][o.pay]+eu(m.match(/Incassa altri ([\d.,]+)/)[1]));
@@ -459,7 +470,7 @@ async function specialAfterCreate(o,S){
   if(S.checkNext){S.checkNext=false;check(o.n===S.burned+1,`Dopo l'annullo il numero ${S.burned} non viene riusato (nuovo: ${o.n})`)}
   if(k>=3&&!S.edited&&!o.asp&&o.waiter&&!o.split&&!o.offer){S.edited=true;
     queueFor[o.waiter]=queueFor[o.waiter].filter(x=>x!==o.n);
-    await click(o.cassa,`#c-recent button[data-open="${o.n}"]`);await click(o.cassa,'#x-sing button[aria-label="Aggiungi Bibita"]');await click(o.cassa,"#x-save");
+    await click(o.cassa,`#c-recent button[data-open="${o.n}"]`);await addTile(o.cassa,"#x-sing","Bibita");await click(o.cassa,"#x-save");
     const m=await waitFor(()=>/Incassa|Modifiche|non|Operazione/.test(txt(o.cassa,"#x-msg"))&&txt(o.cassa,"#x-msg"),3000,"esito modifica").catch(()=>txt(o.cassa,"#x-msg"));check(/Incassa altri 2,00/.test(m),`Modifica prima che il cameriere lo prenda: +1 Bibita sul n. ${o.n} → «Incassa altri 2,00 €»`,m);
     if(/Incassa altri/.test(m)){L[o.cassa][o.pay]=r2(L[o.cassa][o.pay]+2)}
     await click(o.cassa,"#x-close");queueFor[o.waiter].push(o.n)}
