@@ -139,7 +139,8 @@ function paintTotal(prefix,b,paid,pay){
   const offAll=!S.split&&pay==="offerto";
   el.className="totline";el.innerHTML=offAll?`<span class="label">Offerto</span><b>${money(b.due)}</b>`:`<span class="label">Da incassare</span><b>${money(toPay)}</b>`;
   $("c-split").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String((x.dataset.split==="1")===!!S.split)));
-  $("c-one").hidden=!!S.split;$("c-parts").hidden=!S.split;$("c-offby-row").hidden=!offAll;$("c-off-row").hidden=offAll;
+  $("c-one").hidden=!!S.split;$("c-parts").hidden=!S.split;$("c-offby-row").hidden=!offAll;$("c-off-row").hidden=offAll||!moreOpen("off");
+  document.querySelector('#c-right [data-more="off"]').hidden=offAll;paintMore();
   $("c-pay").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.pay===pay)));
   if(S.split){const sig=JSON.stringify([S.smode,S.smode==="piatti"?splitLines():0,S.parts.map(p=>[p.m,p.sel]),S.smode==="piatti"?$("c-off").value:0]);
     if(sig!==S.partSig||$("c-partlist").childElementCount!==S.parts.length){S.partSig=sig;renderParts()}else paintParts();$("c-cash").hidden=true}else paintCash(toPay,pay);
@@ -154,6 +155,18 @@ function paintCash(toPay,pay){
   if(resto<0){el.className="resto err";el.innerHTML=`<small>Mancano</small>${money(-resto)}`}
   else{el.className="resto ok";el.innerHTML=`<small>Resto</small>${money(resto)}`;btn.hidden=resto<=0}
 }
+/* tastini «+ …»: aprono e chiudono note, asporto, offerta e conto diviso; restano aperti finché il campo ha un valore */
+S.more={note:false,asp:false,off:false};
+function moreVal(k){return k==="note"?!!$("c-note").value.trim():k==="asp"?$("c-asp").checked:k==="off"?!!$("c-off").value.trim():false}
+function moreOpen(k){return k==="split"?!!S.split:!!S.more[k]||moreVal(k)}
+function paintMore(){document.querySelectorAll("#c-form [data-more]").forEach(b=>b.setAttribute("aria-expanded",String(moreOpen(b.dataset.more))));
+  $("c-note").hidden=!moreOpen("note");$("c-asp-lbl").hidden=!moreOpen("asp")}
+const MORE_FIELD={note:"c-note",asp:"c-asp",off:"c-off"};
+$("c-form").addEventListener("click",e=>{const b=e.target.closest("button[data-more]");if(!b)return;const k=b.dataset.more;
+  if(k==="split"){$("c-split").querySelector(`button[data-split="${S.split?0:1}"]`).click();return}
+  /* col campo pieno non si chiude (le note o l'offerta partirebbero senza vederle): si va sul campo */
+  if(moreOpen(k)&&moreVal(k)){$(MORE_FIELD[k]).focus();return}
+  S.more[k]=!moreOpen(k);repaintC();if(S.more[k])$(MORE_FIELD[k]).focus()});
 function repaintC(){paintTotal("c",bill(S.qty,{},$("c-paid").checked,S.sqty,ccC()),$("c-paid").checked,S.pay)}
 $("c-off").addEventListener("input",repaintC);
 $("c-ric").addEventListener("input",repaintC);
@@ -221,10 +234,21 @@ function cambiHtml(pre,qty,cc){
     ${form||(can?`<button type="button" class="btn small" data-cadd="1" style="align-self:flex-start">+ Cambia o togli un piatto del menù</button>`:"")}</div>`;
 }
 function cambiState(pre){return pre==="c"?{qty:S.qty,get:()=>S.cambi,set:v=>{S.cambi=v},render:renderSteppers}:{qty:S.eqty,get:()=>S.ecambi,set:v=>{S.ecambi=v},render:renderEditSteppers}}
-["c","x"].forEach(pre=>{const box=$(pre+"-cambi");
+/* scontrino: una riga per ogni menù e piatto da solo, col «−»; sotto i menù «Cambia piatto» e i cambi fatti */
+function receiptHtml(pre,qty,sqty,cc){
+  const rr=buildRighe(qty),ss=buildSingoli(sqty||{}),paid=$(pre+"-paid").checked,open=S.cf&&S.cf.pre===pre;
+  if(!rr.length&&!ss.length)return `<p class="rempty">Tocca un piatto per aggiungerlo</p>`;
+  const line=(k,q,nome,amt)=>`<div class="rline"><span class="rn"><b>${q} ×</b> ${esc(nome)}</span><span class="ra">${amt}</span><button type="button" class="rminus" data-rm="${esc(k)}" aria-label="Togli ${esc(nome)}">−</button></div>`;
+  const can=m=>menuPiatti(m).some(p=>cambiFree(qty,cc,m,p.id)>0);
+  return rr.map(r=>line("m:"+r.id,r.qta,r.nome,paid?"già pagato":money(r2(r.qta*(r.prezzo||0))))+(!open&&can(r.id)?`<button type="button" class="btn small rcambia" data-cadd="1" data-m="${esc(r.id)}">Cambia piatto</button>`:"")).join("")
+    +(rr.length?cambiHtml(pre,qty,cc):"")
+    +ss.map(x=>line("s:"+x.pid+"|"+x.k,x.qta,x.nome,money(r2(x.qta*(x.prezzo||0))))).join("");
+}
+/* i cambi del nuovo ordine stanno nello scontrino (#c-lines); quelli della modifica ancora in #x-cambi */
+["c","x"].forEach(pre=>{const box=$(pre==="c"?"c-lines":"x-cambi");
   box.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const st=cambiState(pre);if(pre==="c")hideDone();
     if(b.dataset.cx!=null){const cc=st.get().slice();cc.splice(+b.dataset.cx,1);st.set(cc);st.render();return}
-    if(b.dataset.cadd){S.cf={pre};st.render();return}
+    if(b.dataset.cadd){S.cf={pre,...(b.dataset.m?{m:b.dataset.m}:{})};st.render();return}
     if(b.dataset.cfno){S.cf=null;st.render();return}
     if(b.dataset.cfq){S.cf.q=(S.cf.q||1)+Number(b.dataset.cfq);st.render();return}
     if(b.dataset.cfp){S.cf.sc=b.dataset.cfp==="1";if(S.cf.sc&&S.cf.s==null)S.cf.s=(portataCfg(S.cf.da)||{}).prezzo||0;st.render();if(S.cf.sc){const i=box.querySelector("input[data-cfs]");if(i&&!(S.cf.s>0))i.focus()}return}
@@ -238,7 +262,7 @@ function cambiState(pre){return pre==="c"?{qty:S.qty,get:()=>S.cambi,set:v=>{S.c
   box.addEventListener("change",e=>{const f=e.target.dataset.cf;if(!f||!S.cf)return;S.cf[f]=e.target.value;if(f==="m"||f==="da"){S.cf.s=null;S.cf.sc=false}if(f==="m")S.cf.da=null;if(f!=="a"){S.cf.a=null;S.cf.q=1}cambiState(pre).render()})});
 function renderSteppers(){
   S.aspConfirm=null;$("c-create").textContent="Crea ordine";
-  S.cambi=clampCambi(S.cambi,S.qty);$("c-cambi").innerHTML=cambiHtml("c",S.qty,S.cambi);
+  S.cambi=clampCambi(S.cambi,S.qty);$("c-lines").innerHTML=receiptHtml("c",S.qty,S.sqty,S.cambi);
   const sl=singlesList();$("c-sing-box").hidden=!sl.length;refreshStepLabels();
   paintTotal("c",bill(S.qty,{},$("c-paid").checked,S.sqty,ccC()),$("c-paid").checked,S.pay);
   $("c-asp-row").hidden=!$("c-asp").checked;$("c-aspmode").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.m===S.aspMode)));
@@ -256,6 +280,10 @@ $("c-cop").addEventListener("blur",paintCop);
 $("c-sing").addEventListener("click",e=>{const b=e.target.closest("button[data-sstep]");if(!b||b.disabled)return;
   const id=b.dataset.sstep;S.sqty[id]=Math.max(0,(S.sqty[id]||0)+Number(b.dataset.d||1));S.stockWarn=null;renderSteppers();$("c-msg").textContent=""});
 $("c-asp").addEventListener("change",renderSteppers);
+/* «−» sulle righe dello scontrino: toglie uno; a zero la riga sparisce */
+$("c-lines").addEventListener("click",e=>{const b=e.target.closest("button[data-rm]");if(!b)return;
+  const k=b.dataset.rm,q=k[0]==="m"?S.qty:S.sqty,id=k.slice(2),f=document.activeElement===b;q[id]=Math.max(0,(q[id]||0)-1);S.stockWarn=null;renderSteppers();$("c-msg").textContent="";
+  if(f){const nb=[...$("c-lines").querySelectorAll("button[data-rm]")].find(x=>x.dataset.rm===k);if(nb)nb.focus()}});
 $("c-aspmode").addEventListener("click",e=>{const b=e.target.closest("button[data-m]");if(!b)return;S.aspMode=b.dataset.m;renderSteppers()});
 $("c-steppers").addEventListener("click",e=>{const b=e.target.closest("button[data-step]");if(!b||b.disabled)return;
   const id=b.dataset.step;S.qty[id]=Math.max(0,(S.qty[id]||0)+Number(b.dataset.d||1));S.stockWarn=null;renderSteppers();$("c-msg").textContent=""});
@@ -299,7 +327,7 @@ function selectPren(id){
   renderSearch();renderSteppers();renderSel();$("c-msg").textContent="";
 }
 function renderSel(){const p=S.selPren&&S.prenMap[S.selPren];$("c-sel").hidden=!p;if(p)$("c-sel-t").textContent="Prenotazione: "+p.nome+(p.stato==="parziale"?` (arrivati in parte: qui c'è solo quello che manca)`:"")}
-function resetForm(){S.cop=0;S.copHand=false;S.smode="piatti";S.cambi=[];S.cf=null;S.selPren=null;S.qty={};S.sqty={};S.split=false;S.parts=[];$("c-offby").value="";$("c-partlist").innerHTML="";$("c-asp").checked=false;S.aspMode="subito";S.pay="contanti";S.stockWarn=null;$("c-off").value="";$("c-ric").value="";$("c-nome").value="";$("c-note").value="";$("c-paid").checked=false;renderSel();renderSteppers()}
+function resetForm(){S.more={note:false,asp:false,off:false};S.cop=0;S.copHand=false;S.smode="piatti";S.cambi=[];S.cf=null;S.selPren=null;S.qty={};S.sqty={};S.split=false;S.parts=[];$("c-offby").value="";$("c-partlist").innerHTML="";$("c-asp").checked=false;S.aspMode="subito";S.pay="contanti";S.stockWarn=null;$("c-off").value="";$("c-ric").value="";$("c-nome").value="";$("c-note").value="";$("c-paid").checked=false;renderSel();renderSteppers()}
 $("c-sel-x").addEventListener("click",resetForm);
 function canUndo(o){return !!o&&!o.asportoSubito&&Date.now()-(o.creato||0)<60000&&!isLocked(o)}
 function renderTicket(){

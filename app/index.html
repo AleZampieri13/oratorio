@@ -138,24 +138,29 @@
         <div class="stack" id="c-sing-box" hidden><div class="csec">Piatti da soli</div><div id="c-sing"></div></div>
         <div class="stock" id="c-stock" hidden></div>
         <div class="cextra">
-        <textarea id="c-note" placeholder="Note per la cucina (allergie, intolleranze…)" aria-label="Note per la cucina"></textarea>
-        <label class="check"><input type="checkbox" id="c-asp"> Da asporto</label>
+        <div class="cmrow">
+          <button type="button" class="cmore" data-more="note" aria-expanded="false" aria-controls="c-note">+ Note cucina</button>
+          <button type="button" class="cmore" data-more="asp" aria-expanded="false" aria-controls="c-asp-lbl">+ Asporto</button>
+          <div class="stepper coprow" id="c-coprow"><label class="name" for="c-cop">Coperti</label><span class="ctl"><button type="button" data-cop="-1" aria-label="Un coperto in meno">−</button><input type="text" id="c-cop" class="copin" inputmode="numeric" pattern="[0-9]*" autocomplete="off"><button type="button" data-cop="1" aria-label="Un coperto in più">+</button></span></div>
+        </div>
+        <textarea id="c-note" placeholder="Note per la cucina (allergie, intolleranze…)" aria-label="Note per la cucina" hidden></textarea>
+        <label class="check" id="c-asp-lbl" hidden><input type="checkbox" id="c-asp"> Da asporto</label>
         <div class="payrow" id="c-asp-row" hidden><span class="label">In cucina</span><span class="seg big" id="c-aspmode"><button data-m="subito">Subito</button><button data-m="cameriere">Lo chiama un cameriere</button></span></div>
-        <div class="stepper coprow" id="c-coprow"><label class="name" for="c-cop">Coperti</label><span class="ctl"><button type="button" data-cop="-1" aria-label="Un coperto in meno">−</button><input type="text" id="c-cop" class="copin" inputmode="numeric" pattern="[0-9]*" autocomplete="off"><button type="button" data-cop="1" aria-label="Un coperto in più">+</button></span></div>
         </div>
       </div>
       <div class="panel creceipt" id="c-right">
+        <div id="c-lines"></div>
         <div class="donebox" id="c-last-wrap" hidden><div id="c-last"></div></div>
-        <div id="c-cambi"></div>
         <label class="check" id="c-paid-row" hidden><input type="checkbox" id="c-paid"></label>
         <div class="paybox" id="c-paybox" hidden>
           <div class="totline" id="c-total"></div>
-          <div class="payrow"><span class="seg" id="c-split"><button data-split="0">Un pagamento</button><button data-split="1">Dividi il conto</button></span></div>
+          <div class="payrow" id="c-split-row" hidden><span class="seg" id="c-split"><button data-split="0">Un pagamento</button><button data-split="1">Dividi il conto</button></span></div>
           <div class="stack" id="c-one">
           <div class="payrow" id="c-pay-row"><span class="seg big" id="c-pay"><button data-pay="contanti">Contanti</button><button data-pay="pos">POS</button><button data-pay="offerto">Offerto</button></span></div>
           <div class="payrow" id="c-offby-row" hidden><label class="label" for="c-offby">Offerto da</label><input type="text" id="c-offby" placeholder="Es. Parrocchia – don Paolo"></div>
           <div class="payrow" id="c-cash"><label class="label" for="c-ric">Ricevuto</label>
-            <span class="row" style="flex-wrap:nowrap"><input type="text" id="c-ric" inputmode="decimal" class="pricein" placeholder="0,00 €"><span class="resto" id="c-resto"></span></span></div>
+            <span class="row" style="flex-wrap:nowrap"><input type="text" id="c-ric" inputmode="decimal" class="pricein" placeholder="0,00 €"><span class="resto" id="c-resto"></span></span>
+            <button class="btn small" id="c-off-resto" hidden>Il resto è un'offerta</button></div>
           </div>
           <div class="stack" id="c-parts" hidden>
             <div class="payrow"><span class="label">Come dividere</span><span class="seg" id="c-smode"><button type="button" data-smode="piatti">Per piatti</button><button type="button" data-smode="importi">A importi</button></span></div>
@@ -164,11 +169,11 @@
             <div class="stack" id="c-partlist"></div>
             <div class="sub" id="c-partsum"></div>
           </div>
-          <div class="payrow" id="c-off-row"><label class="label" for="c-off">Offerta</label>
-            <span class="row" style="flex-wrap:nowrap"><button class="btn small" id="c-off-resto" hidden>Il resto è un'offerta</button><input type="text" id="c-off" inputmode="decimal" class="pricein" placeholder="0,00 €"></span></div>
+          <div class="payrow" id="c-off-row" hidden><label class="label" for="c-off">Offerta</label>
+            <input type="text" id="c-off" inputmode="decimal" class="pricein" placeholder="0,00 €"></div>
+          <div class="cmrow"><button type="button" class="cmore" data-more="off" aria-expanded="false" aria-controls="c-off-row">+ Offerta</button><button type="button" class="cmore" data-more="split" aria-expanded="false" aria-controls="c-parts">+ Dividi conto</button></div>
         </div>
-        <button class="btn primary big" id="c-create">Crea ordine</button>
-        <div class="msg" id="c-msg"></div>
+        <div class="cfoot"><div class="msg" id="c-msg"></div><button class="btn primary big" id="c-create">Crea ordine</button></div>
       </div>
     </div>
         <div class="panel edit-panel" id="x-panel" hidden>
