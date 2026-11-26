@@ -576,3 +576,16 @@ ul.kitems li:has(.kscq) .kbtn{grid-column:2}
 .histbtn{border-color:var(--line)}
 .whist{border-left-color:var(--line)}
 .whist summary .n{color:var(--ink)}
+
+/* cassa a tasti grandi */
+#p-cassa{--hh:116px}
+.cgrid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,.65fr);gap:20px;align-items:start}
+.cmain>#x-panel{margin-top:20px}
+.creceipt{position:sticky;top:calc(var(--hh) + env(safe-area-inset-top,0px) + 4px);max-height:calc(100dvh - var(--hh) - 16px);overflow:auto}
+.cextra{display:flex;flex-direction:column;gap:10px}
+.cbelow{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px;align-items:start;margin-top:20px}
+@media (max-width:760px){
+  .cgrid{grid-template-columns:1fr}
+  .creceipt{position:static;max-height:none;overflow:visible}
+  .cbelow{grid-template-columns:1fr}
+}
