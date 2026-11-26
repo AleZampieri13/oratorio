@@ -178,27 +178,30 @@
           <div class="panel-head"><h2 id="x-title">Modifica ordine</h2><button class="btn small" id="x-close">Chiudi</button></div>
           <div class="note" id="x-lockmsg" hidden></div>
           <div class="stack" id="x-fix" hidden></div>
-          <div class="stack" id="x-body">
-          <div class="stack"><label class="label" for="x-nome">Nominativo</label><input type="text" id="x-nome"></div>
-          <div class="csec">Menù</div>
-          <div id="x-steppers"></div>
-          <div id="x-cambi"></div>
-          <div class="stepper coprow" id="x-coprow"><label class="name" for="x-cop">Coperti</label><span class="ctl"><button type="button" data-xcop="-1" aria-label="Un coperto in meno">−</button><input type="text" id="x-cop" class="copin" inputmode="numeric" pattern="[0-9]*" autocomplete="off"><button type="button" data-xcop="1" aria-label="Un coperto in più">+</button></span></div>
-          <div class="stack" id="x-sing-box" hidden><div class="csec">Piatti da soli</div><div id="x-sing"></div></div>
-          <label class="check"><input type="checkbox" id="x-paid"> Menù già pagato in anticipo</label>
-          <div class="totline" id="x-total" hidden></div>
-          <div class="payrow"><label class="label" for="x-off">Offerta</label><input type="text" id="x-off" inputmode="decimal" class="pricein" placeholder="0,00 €"></div>
-          <div class="payrow" id="x-pay-row" hidden><span class="label">Pagamento</span><span class="seg big" id="x-pay"><button data-pay="contanti">Contanti</button><button data-pay="pos">POS</button></span></div>
-          <div class="stack"><label class="label" for="x-note">Note per la cucina</label><textarea id="x-note"></textarea></div>
-          <button class="btn primary big" id="x-save">Salva modifiche</button>
+          <div class="cgrid" id="x-body">
+            <div class="stack" id="x-left">
+              <div class="csec" id="x-menu-h">Menù</div>
+              <div id="x-steppers"></div>
+              <div class="stack" id="x-sing-box" hidden><div class="csec">Piatti da soli</div><div id="x-sing"></div></div>
+              <div class="cmrow"><div class="stepper coprow" id="x-coprow"><label class="name" for="x-cop">Coperti</label><span class="ctl"><button type="button" data-xcop="-1" aria-label="Un coperto in meno">−</button><input type="text" id="x-cop" class="copin" inputmode="numeric" pattern="[0-9]*" autocomplete="off"><button type="button" data-xcop="1" aria-label="Un coperto in più">+</button></span></div></div>
+              <div class="stack"><label class="label" for="x-nome">Nominativo</label><input type="text" id="x-nome"></div>
+              <div class="stack"><label class="label" for="x-note">Note per la cucina</label><textarea id="x-note"></textarea></div>
+            </div>
+            <div class="panel creceipt" id="x-right">
+              <div id="x-lines"></div>
+              <label class="check"><input type="checkbox" id="x-paid"> Menù già pagato in anticipo</label>
+              <div class="totline" id="x-total" hidden></div>
+              <div class="payrow"><label class="label" for="x-off">Offerta</label><input type="text" id="x-off" inputmode="decimal" class="pricein" placeholder="0,00 €"></div>
+              <div class="payrow" id="x-pay-row" hidden><span class="label">Pagamento</span><span class="seg big" id="x-pay"><button data-pay="contanti">Contanti</button><button data-pay="pos">POS</button></span></div>
+              <div class="cfoot" id="x-foot"><div class="msg" id="x-msg"></div><button class="btn primary big" id="x-save">Salva modifiche</button></div>
+              <div class="row" id="x-del-row"><button class="btn danger" id="x-del">Annulla ordine</button></div>
+              <div class="row" id="x-confirm-row" hidden>
+                <span style="font-weight:700">Annullare l'ordine?</span>
+                <button class="btn danger solid" id="x-del-yes">Sì, annulla</button>
+                <button class="btn" id="x-del-no">No</button>
+              </div>
+            </div>
           </div>
-          <div class="row" id="x-del-row"><button class="btn danger" id="x-del">Annulla ordine</button></div>
-          <div class="row" id="x-confirm-row" hidden>
-            <span style="font-weight:700">Annullare l'ordine?</span>
-            <button class="btn danger solid" id="x-del-yes">Sì, annulla</button>
-            <button class="btn" id="x-del-no">No</button>
-          </div>
-          <div class="msg" id="x-msg"></div>
         </div>
     </div>
     <div class="cbelow">

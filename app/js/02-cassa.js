@@ -244,8 +244,8 @@ function receiptHtml(pre,qty,sqty,cc){
     +(rr.length?cambiHtml(pre,qty,cc):"")
     +ss.map(x=>line("s:"+x.pid+"|"+x.k,x.qta,x.nome,money(r2(x.qta*(x.prezzo||0))))).join("");
 }
-/* i cambi del nuovo ordine stanno nello scontrino (#c-lines); quelli della modifica ancora in #x-cambi */
-["c","x"].forEach(pre=>{const box=$(pre==="c"?"c-lines":"x-cambi");
+/* i cambi stanno nello scontrino: #c-lines per il nuovo ordine, #x-lines per la modifica */
+["c","x"].forEach(pre=>{const box=$(pre+"-lines");
   box.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const st=cambiState(pre);if(pre==="c")hideDone();
     if(b.dataset.cx!=null){const cc=st.get().slice();cc.splice(+b.dataset.cx,1);st.set(cc);st.render();return}
     if(b.dataset.cadd){S.cf={pre,...(b.dataset.m?{m:b.dataset.m}:{})};st.render();return}
@@ -488,19 +488,26 @@ $("d-go").addEventListener("click",async()=>{
 
 /* modifica / annulla ordine */
 function openEdit(n){
-  const o=orderByNum(n);const m=$("c-msg");
+  const o=orderByNum(n);const m=$(S.editOrder!=null?"x-msg":"c-msg");/* con la modifica aperta #c-form è nascosto */
   if(!o){m.className="msg err";m.textContent=S.annMap[n]?`L'ordine ${n} è già stato annullato.`:`L'ordine ${n||""} non esiste.`;return}
-  const locked=isLocked(o),boss=isBoss();
+  const locked=isLocked(o),boss=isBoss();S.cf=null;
+  /* messaggio e «Annulla ordine»: nello scontrino in Modifica, in fondo al pannello in Rettifica (lì lo scontrino è nascosto) */
+  if(locked)$("x-panel").append($("x-msg"),$("x-del-row"),$("x-confirm-row"));else{$("x-foot").prepend($("x-msg"));$("x-right").append($("x-del-row"),$("x-confirm-row"))}
   m.textContent="";S.editLocked=locked;$("x-body").hidden=locked;$("x-lockmsg").hidden=!locked;$("x-fix").hidden=!locked;
   if(locked){const w=o.cameriereId?nameOf(o.cameriereId,o.cameriere):"";
     $("x-lockmsg").textContent=`Ordine già partito${w?` (l'ha preso ${w})`:""}: non si modifica più, ma puoi togliere quello che non è ancora stato chiamato e restituire i soldi.${boss?" Sei master: puoi anche annullarlo del tutto (cucina e cameriere vedranno sparire le schede).":""}`;
     S.fix={rm:{},q:{},sq:{},xq:{},amt:null,sig:""}}
-  S.editOrder=n;S.xCop=copOf(o);S.ecambi=cambi(o).map(c=>({...c}));S.cf=null;S.eqty={};righe(o).forEach(r=>{S.eqty[r.id]=r.qta});S.esqty={};singoli(o).forEach(s=>{S.esqty[s.pid+"|"+s.k]=s.qta});S.xpay=o.metodo||"contanti";
+  S.editOrder=n;S.xCop=copOf(o);S.ecambi=cambi(o).map(c=>({...c}));S.eqty={};righe(o).forEach(r=>{S.eqty[r.id]=r.qta});S.esqty={};singoli(o).forEach(s=>{S.esqty[s.pid+"|"+s.k]=s.qta});S.xpay=o.metodo||"contanti";
   $("x-off").value=o.offerta?o.offerta.toFixed(2).replace(".",","):"";$("x-title").textContent=(locked?"Rettifica ordine ":"Modifica ordine ")+n+(o.nome?" · "+o.nome:"")+(o.asporto?" · asporto":"");$("x-nome").value=o.nome||"";$("x-note").value=o.note||"";$("x-paid").checked=!!o.pagatoPrima;
-  $("x-msg").textContent="";$("x-del-row").hidden=locked&&!boss;$("x-confirm-row").hidden=true;$("x-panel").hidden=false;$("c-last-wrap").hidden=true;
-  renderEditSteppers();if(locked)renderFix(true);$("x-panel").scrollIntoView({behavior:"smooth",block:"start"});
+  $("x-msg").textContent="";$("x-del-row").hidden=locked&&!boss;$("x-confirm-row").hidden=true;$("c-form").hidden=true;$("x-panel").hidden=false;$("c-last-wrap").hidden=true;
+  renderEditSteppers();if(locked)renderFix(true);
+  /* aperto dalla lista sotto: il pannello finisce sopra lo schermo; si scorre solo se il titolo non si vede (sotto la testata fissa) */
+  const hd=document.querySelector("header.top"),hb=hd?hd.getBoundingClientRect().bottom:0,r=$("x-title").getBoundingClientRect();
+  if(r.top<hb||r.bottom>innerHeight)scrollBy({top:$("x-panel").getBoundingClientRect().top-hb-8,behavior:"smooth"});
 }
-function closeEdit(){S.editOrder=null;S.fix=null;$("x-panel").hidden=true}
+/* la modifica prende il posto del nuovo ordine, che torna com'era: quantità, campi e pagamento non si toccano */
+function closeEdit(){S.editOrder=null;S.fix=null;S.cf=null;$("x-panel").hidden=true;$("c-form").hidden=false;
+  $("c-lines").innerHTML=receiptHtml("c",S.qty,S.sqty,S.cambi)}
 
 /* ---------- rettifica di un ordine già partito ---------- */
 function fixCalc(o){
@@ -590,10 +597,15 @@ async function saveFix(){
     S.fix={rm:{},q:{},sq:{},xq:{},amt:null,sig:"",m:F.m};renderFix(true)}
   catch(e){m.textContent=errText(e)}
 }
+/* Modifica: stessi tasti e scontrino del nuovo ordine; «ne restano» conta solo le porzioni in più rispetto all'ordine salvato */
 function renderEditSteppers(){
-  $("x-steppers").innerHTML=stepperHtml(S.varianti,S.eqty,"data-estep");
-  S.ecambi=clampCambi(S.ecambi,S.eqty);$("x-cambi").innerHTML=cambiHtml("x",S.eqty,S.ecambi);
-  const sl=singlesList();$("x-sing-box").hidden=!sl.length;$("x-sing").innerHTML=singlesHtml(S.esqty,"data-esstep");
+  S.ecambi=clampCambi(S.ecambi,S.eqty);
+  const f={righe:buildRighe(S.eqty),singoli:buildSingoli(S.esqty),cambi:ccX()},base=orderByNum(S.editOrder),noMenu=!S.varianti.length;
+  $("x-steppers").hidden=noMenu;$("x-menu-h").hidden=noMenu;
+  [["x-steppers",S.varianti,S.eqty,"data-estep"],["x-sing","s",S.esqty,"data-esstep"]].forEach(([id,l,q,a])=>{
+    const h=l==="s"?singleTilesHtml(q,a,f,base):tilesHtml(l,q,a,f,base);if($(id).dataset.h!==h){$(id).innerHTML=h;$(id).dataset.h=h}});
+  $("x-lines").innerHTML=receiptHtml("x",S.eqty,S.esqty,S.ecambi);
+  const sl=singlesList();$("x-sing-box").hidden=!sl.length;
   paintTotal("x",bill(S.eqty,{},$("x-paid").checked,S.esqty,ccX()),$("x-paid").checked,S.xpay);
   paintXCop();
 }
@@ -603,10 +615,14 @@ $("x-coprow").addEventListener("click",e=>{const b=e.target.closest("button[data
 $("x-cop").addEventListener("input",e=>{const v=copParse(e.target.value),o=orderByNum(S.editOrder);S.xCop=v==null?copOf(o):v});
 $("x-cop").addEventListener("blur",paintXCop);
 function fixCopRow(){return `<div class="stepper coprow"><label class="name" for="x-fcop">Coperti</label><span class="ctl"><button type="button" data-fcop="-1" ${S.xCop>0?"":"disabled"} aria-label="Un coperto in meno">−</button><input type="text" id="x-fcop" class="copin" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="${S.xCop}"><button type="button" data-fcop="1" aria-label="Un coperto in più">+</button></span></div>`}
-$("x-steppers").addEventListener("click",e=>{const b=e.target.closest("button[data-estep]");if(!b)return;
-  const id=b.dataset.estep;S.eqty[id]=Math.max(0,(S.eqty[id]||0)+Number(b.dataset.d));renderEditSteppers()});
-$("x-sing").addEventListener("click",e=>{const b=e.target.closest("button[data-esstep]");if(!b)return;
-  const id=b.dataset.esstep;S.esqty[id]=Math.max(0,(S.esqty[id]||0)+Number(b.dataset.d));renderEditSteppers()});
+/* tasto = +1; «−» nello scontrino = −1 (a zero la riga sparisce) */
+$("x-steppers").addEventListener("click",e=>{const b=e.target.closest("button[data-estep]");if(!b||b.disabled)return;
+  const id=b.dataset.estep;S.eqty[id]=(S.eqty[id]||0)+1;renderEditSteppers();$("x-msg").textContent=""});
+$("x-sing").addEventListener("click",e=>{const b=e.target.closest("button[data-esstep]");if(!b||b.disabled)return;
+  const id=b.dataset.esstep;S.esqty[id]=(S.esqty[id]||0)+1;renderEditSteppers();$("x-msg").textContent=""});
+$("x-lines").addEventListener("click",e=>{const b=e.target.closest("button[data-rm]");if(!b)return;
+  const k=b.dataset.rm,q=k[0]==="m"?S.eqty:S.esqty,id=k.slice(2),f=document.activeElement===b;q[id]=Math.max(0,(q[id]||0)-1);renderEditSteppers();$("x-msg").textContent="";
+  if(f){const nb=[...$("x-lines").querySelectorAll("button[data-rm]")].find(x=>x.dataset.rm===k);if(nb)nb.focus()}});
 $("x-pay").addEventListener("click",e=>{const b=e.target.closest("button[data-pay]");if(!b)return;S.xpay=b.dataset.pay;renderEditSteppers()});
 $("x-paid").addEventListener("change",renderEditSteppers);
 $("x-off").addEventListener("input",renderEditSteppers);
