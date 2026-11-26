@@ -584,7 +584,29 @@ ul.kitems li:has(.kscq) .kbtn{grid-column:2}
 .creceipt{position:sticky;top:calc(var(--hh) + env(safe-area-inset-top,0px) + 4px);max-height:calc(100dvh - var(--hh) - 16px);overflow:auto}
 .cextra{display:flex;flex-direction:column;gap:10px}
 .cbelow{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px;align-items:start;margin-top:20px}
+/* tasti dei menù e dei piatti da soli: un tocco = +1 */
+.ctiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:6px}
+.ctile{--c:var(--line);position:relative;min-height:64px;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:2px;
+  padding:5px 6px 5px 10px;text-align:left;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-left:6px solid var(--c);border-radius:var(--r);cursor:pointer;
+  font:inherit;text-transform:inherit;touch-action:manipulation}
+.ctile:active{background:var(--wait-bg)}
+.ctn{max-width:100%;padding-right:24px;font-family:var(--f-display);font-weight:700;font-size:.94rem;line-height:1.1;overflow-wrap:break-word}
+.ctm{display:flex;flex-wrap:wrap;gap:0 8px;font-size:.86rem;font-weight:700;color:var(--muted);line-height:1.15}
+.ctm .no{color:var(--danger)} .ctm .few{color:var(--call)}
+/* numerino in alto a destra: il nome ha il suo spazio (padding-right), così non ci passa sotto */
+.ctq{position:absolute;top:5px;right:5px;min-width:22px;height:22px;padding:0 5px;border-radius:11px;display:flex;align-items:center;justify-content:center;
+  background:var(--accent);color:var(--accent-ink);font-weight:800;font-size:.9rem}
+.ctile.out{background:var(--wait-bg);color:var(--done)}
+.ctile.out .ctn{color:var(--done)}
+.ctile:disabled{cursor:not-allowed}
+/* colonna dei tasti più compatta: meno spazio tra blocchi, titoli e reparti */
+#c-left{gap:10px}
+#c-sing-box>.csec{margin:0 0 2px}
+#c-sing .xgroup{margin-top:4px}
+#c-sing .xgroup>.cgrp{margin:0;padding-bottom:2px}
+#c-sing .ctiles{margin-top:6px}
 @media (max-width:760px){
+  .ctiles{grid-template-columns:repeat(2,minmax(0,1fr))}
   .cgrid{grid-template-columns:1fr}
   .creceipt{position:static;max-height:none;overflow:visible}
   .cbelow{grid-template-columns:1fr}

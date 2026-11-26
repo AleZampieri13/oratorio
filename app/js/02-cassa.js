@@ -18,6 +18,26 @@ function singlesHtml(qty,attr){
   groups.sort((a,b)=>(a==="")-(b===""));
   return groups.map(g=>`<div class="xgroup"><span class="label cgrp" style="--c:${g?repColor(g):"var(--line)"}">${esc(repNome(g)||"Altro")}</span>${stepperHtml(sl.filter(i=>key(i)===g),qty,attr)}</div>`).join("");
 }
+/* tasti grandi: porzioni che restano tolto quello che usa già l'ordine (in modifica solo quelle in più); null = senza limite */
+function tileLeft(pid,f,base){const l=stockLeft(pid);if(l==null)return null;
+  const had=base&&base.portate&&base.portate[pid]?cop(righeFor(base,pid)):0;return l-(cop(righeFor(f,pid))-had)}
+function tilesHtml(list,qty,attr,f,base){
+  const anyP=S.varianti.some(x=>x.prezzo>0)||S.portate.some(x=>x.prezzo>0||x.prezzoBimbi>0),sing=attr==="data-sstep"||attr==="data-esstep",boss=isBoss();
+  return `<div class="ctiles">${list.map(v=>{let st="",cls="",out=false;
+    if(sing){const l=tileLeft(v.pid,f,base);if(l!=null){if(l<=0){out=true;st="esaurito";cls="no"}else{st="ne restano "+l;cls="few"}}}
+    else{const miss=S.portate.filter(p=>applies(p,v.id)&&stockLeft(p.id)!=null&&stockLeft(p.id)<=0).map(p=>"manca "+p.nome);if(miss.length){st=miss.join(", ");cls="no"}}
+    const p=sing?S.portate.find(x=>x.id===v.pid)||{}:null,n=qty[v.id]||0;
+    const pr=v.prezzo>0?`<span>${money(v.prezzo)}</span>`:anyP?`<span class="no">prezzo non impostato</span>`:"";
+    return `<button type="button" class="ctile${out?" out":""}" ${attr}="${esc(v.id)}"${p&&p.rep?` style="--c:${repColor(p.rep)}"`:""}${out?` aria-disabled="true"${boss?"":" disabled"}`:""} aria-label="Aggiungi ${esc(v.nome)}${st?", "+esc(st):""}">
+      <span class="ctn">${esc(v.nome)}</span>${pr||st?`<span class="ctm">${pr}${st?`<span class="${cls}">${esc(st)}</span>`:""}</span>`:""}${n>0?`<span class="ctq">${n}</span>`:""}</button>`}).join("")}</div>`;
+}
+function singleTilesHtml(qty,attr,f,base){
+  const sl=singlesList(),pOf=i=>S.portate.find(x=>x.id===i.pid)||{};
+  const key=i=>pOf(i).rep||"",groups=[...new Set(sl.map(key))];
+  if(groups.length<2)return tilesHtml(sl,qty,attr,f,base);
+  groups.sort((a,b)=>(a==="")-(b===""));
+  return groups.map(g=>`<div class="xgroup"><span class="label cgrp" style="--c:${g?repColor(g):"var(--line)"}">${esc(repNome(g)||"Altro")}</span>${tilesHtml(sl.filter(i=>key(i)===g),qty,attr,f,base)}</div>`).join("");
+}
 /* ---------- pagamenti: uno solo, diviso in parti, offerto ---------- */
 const PAY_LBL={contanti:"contanti",pos:"POS",offerto:"offerto",misto:"contanti e POS"};
 const eurIn=v=>v>0?v.toFixed(2).replace(".",","):"";
@@ -148,18 +168,19 @@ $("c-off-resto").addEventListener("click",()=>{
   const resto=r2(ric-(b.due+off));if(resto>0){$("c-off").value=r2(off+resto).toFixed(2).replace(".",",");repaintC()}
 });
 function renderStock(){
-  const box=$("c-stock"),lim=S.portate.filter(p=>stockLeft(p.id)!=null);
-  box.hidden=!lim.length;
-  box.innerHTML=lim.map(p=>{const l=stockLeft(p.id);return `<span class="pill ${stockCls(l)||"wait"}">${esc(p.nome)}: ${leftTxt(l)}</span>`}).join("");
+  /* le porzioni ora sono scritte sui tasti */
+  const box=$("c-stock");box.hidden=true;box.innerHTML="";
 }
 function stockProblems(rr,ss,xx,cc){const f={righe:rr,singoli:ss||[],cambi:cc||[]};
   return S.portate.map(p=>{const l=stockLeft(p.id);if(l==null)return null;const need=cop(righeFor(f,p.id));return need>l?{p,l,need,what:"porzioni"}:null}).filter(Boolean);
 }
 const isBoss=()=>!!S.me&&hasRole(S.me,"master");
-/* aggiorna le scritte «esaurito» quando altri ordini consumano le porzioni, senza toccare il resto del modulo */
+/* aggiorna i tasti (porzioni, «esaurito») quando altri ordini consumano le porzioni, senza toccare il resto del modulo */
 function refreshStepLabels(){
+  const f={righe:buildRighe(S.qty),singoli:buildSingoli(S.sqty),cambi:ccC()},noMenu=!S.varianti.length,ms=$("c-steppers"),hd=ms.previousElementSibling;
+  ms.hidden=noMenu;if(hd&&hd.classList.contains("csec"))hd.hidden=noMenu;
   [["c-steppers",S.varianti,S.qty,"data-step"],["c-sing","s",S.sqty,"data-sstep"]].forEach(([id,l,q,a])=>{
-    const h=l==="s"?singlesHtml(q,a):stepperHtml(l,q,a);if($(id).dataset.h!==h){$(id).innerHTML=h;$(id).dataset.h=h}});
+    const h=l==="s"?singleTilesHtml(q,a,f):tilesHtml(l,q,a,f);if($(id).dataset.h!==h){$(id).innerHTML=h;$(id).dataset.h=h}});
 }
 function stockTxt(probs){return probs.map(x=>x.l<=0?`${x.p.nome}: esaurito`:`${x.p.nome}: ne restano solo ${x.l} (ne servono ${x.need})`).join(". ")}
 function stockBlockMsg(probs){
@@ -217,9 +238,8 @@ function cambiState(pre){return pre==="c"?{qty:S.qty,get:()=>S.cambi,set:v=>{S.c
   box.addEventListener("change",e=>{const f=e.target.dataset.cf;if(!f||!S.cf)return;S.cf[f]=e.target.value;if(f==="m"||f==="da"){S.cf.s=null;S.cf.sc=false}if(f==="m")S.cf.da=null;if(f!=="a"){S.cf.a=null;S.cf.q=1}cambiState(pre).render()})});
 function renderSteppers(){
   S.aspConfirm=null;$("c-create").textContent="Crea ordine";
-  $("c-steppers").innerHTML=stepperHtml(S.varianti,S.qty,"data-step");
   S.cambi=clampCambi(S.cambi,S.qty);$("c-cambi").innerHTML=cambiHtml("c",S.qty,S.cambi);
-  const sl=singlesList();$("c-sing-box").hidden=!sl.length;$("c-sing").innerHTML=singlesHtml(S.sqty,"data-sstep");
+  const sl=singlesList();$("c-sing-box").hidden=!sl.length;refreshStepLabels();
   paintTotal("c",bill(S.qty,{},$("c-paid").checked,S.sqty,ccC()),$("c-paid").checked,S.pay);
   $("c-asp-row").hidden=!$("c-asp").checked;$("c-aspmode").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.m===S.aspMode)));
   renderStock();paintCop();
@@ -233,12 +253,12 @@ $("c-coprow").addEventListener("click",e=>{const b=e.target.closest("button[data
   S.cop=Math.max(0,copNow()+Number(b.dataset.cop));S.copHand=true;hideDone();$("c-cop").value=S.cop;paintCop()});
 $("c-cop").addEventListener("input",e=>{const v=copParse(e.target.value);if(v==null)S.copHand=false;else{S.cop=v;S.copHand=true}hideDone()});
 $("c-cop").addEventListener("blur",paintCop);
-$("c-sing").addEventListener("click",e=>{const b=e.target.closest("button[data-sstep]");if(!b)return;
-  const id=b.dataset.sstep;S.sqty[id]=Math.max(0,(S.sqty[id]||0)+Number(b.dataset.d));S.stockWarn=null;renderSteppers();$("c-msg").textContent=""});
+$("c-sing").addEventListener("click",e=>{const b=e.target.closest("button[data-sstep]");if(!b||b.disabled)return;
+  const id=b.dataset.sstep;S.sqty[id]=Math.max(0,(S.sqty[id]||0)+Number(b.dataset.d||1));S.stockWarn=null;renderSteppers();$("c-msg").textContent=""});
 $("c-asp").addEventListener("change",renderSteppers);
 $("c-aspmode").addEventListener("click",e=>{const b=e.target.closest("button[data-m]");if(!b)return;S.aspMode=b.dataset.m;renderSteppers()});
-$("c-steppers").addEventListener("click",e=>{const b=e.target.closest("button[data-step]");if(!b)return;
-  const id=b.dataset.step;S.qty[id]=Math.max(0,(S.qty[id]||0)+Number(b.dataset.d));S.stockWarn=null;renderSteppers();$("c-msg").textContent=""});
+$("c-steppers").addEventListener("click",e=>{const b=e.target.closest("button[data-step]");if(!b||b.disabled)return;
+  const id=b.dataset.step;S.qty[id]=Math.max(0,(S.qty[id]||0)+Number(b.dataset.d||1));S.stockWarn=null;renderSteppers();$("c-msg").textContent=""});
 $("c-pay").addEventListener("click",e=>{const b=e.target.closest("button[data-pay]");if(!b)return;S.pay=b.dataset.pay;renderSteppers();if(S.pay==="offerto")$("c-offby").focus()});
 $("c-paid").addEventListener("change",renderSteppers);
 $("c-num").addEventListener("input",()=>{S.numDirty=true;S.aspConfirm=null;$("c-create").textContent="Crea ordine"});
