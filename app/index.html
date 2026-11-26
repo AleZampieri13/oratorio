@@ -127,12 +127,10 @@
     <div class="cgrid" id="c-form">
       <div class="panel" id="c-left">
         <div class="cbig"><label class="label" for="c-num">Biglietto</label><input type="number" id="c-num" inputmode="numeric" min="1" class="ticketnum"><span class="label" id="c-prencount"></span></div>
-        <div class="stack" id="c-searchbox">
-          <input type="search" id="c-search" placeholder="Cerca prenotazione" autocomplete="off" aria-label="Cerca prenotazione">
-          <div class="results" id="c-results" hidden></div>
-        </div>
         <div class="sel" id="c-sel" hidden><span id="c-sel-t"></span><button class="btn small" id="c-sel-x">Togli</button></div>
-        <input type="text" id="c-nome" placeholder="Nominativo *" aria-label="Nominativo (obbligatorio)" required>
+        <input type="text" id="c-nome" placeholder="Nominativo *" aria-label="Nominativo (obbligatorio)" autocomplete="off" required>
+        <div class="results" id="c-results" hidden></div>
+        <input type="search" id="c-search" hidden tabindex="-1" aria-hidden="true">
         <div class="csec">Menù</div>
         <div id="c-steppers"></div>
         <div class="stack" id="c-sing-box" hidden><div class="csec">Piatti da soli</div><div id="c-sing"></div></div>

@@ -292,8 +292,9 @@ $("c-paid").addEventListener("change",renderSteppers);
 $("c-num").addEventListener("input",()=>{S.numDirty=true;S.aspConfirm=null;$("c-create").textContent="Crea ordine"});
 function prefillNum(){if(!S.numDirty&&document.activeElement!==$("c-num"))$("c-num").value=S.ordLoaded?nextNum():""}
 function renderSearch(){
-  const q=norm($("c-search").value),box=$("c-results"),P=prensArr();
-  $("c-searchbox").hidden=!P.length;
+  const P=prensArr(),box=$("c-results"),q=(!S.selPren&&P.length)?norm($("c-nome").value):"";
+  $("c-nome").placeholder=P.length?"Nominativo o prenotazione *":"Nominativo *";
+  $("c-nome").setAttribute("aria-label",P.length?"Nominativo o prenotazione (obbligatorio)":"Nominativo (obbligatorio)");
   const par=P.filter(p=>p.stato==="parziale").length;
   $("c-prencount").textContent=P.length?`${prenGestite(P)} gestite su ${P.length}${par?` · ${par} in parte`:""}`:"";
   if(!q){box.hidden=true;return}
@@ -305,7 +306,7 @@ function renderSearch(){
     (p.stato==="chiusa"&&S.prenOpen===p.id?`<div class="pren-riapri"><span class="sub">Chiusa: riaprila per caricare quello che manca</span><button data-prenriapri="${esc(p.id)}">Riapri</button></div>`:"")).join("")
     :'<div class="empty" style="padding:10px 12px">Nessuna prenotazione trovata. Puoi creare l\'ordine lo stesso.</div>';
 }
-$("c-search").addEventListener("input",renderSearch);
+$("c-nome").addEventListener("input",renderSearch);
 $("c-results").addEventListener("click",async e=>{
   const r=e.target.closest("button[data-prenriapri]");
   if(r){const id=r.dataset.prenriapri,p=S.prenMap[id];if(!p)return;r.disabled=true;
@@ -323,11 +324,11 @@ function selectPren(id){
   S.split=false;S.parts=[];S.cambi=[];S.cf=null;if(p.offerto){S.pay="offerto";$("c-offby").value=p.offerto}
   /* «Totale persone» del file: il campo parte da lì; se sono già arrivati in parte, parte dai menù rimasti */
   const part=Object.keys(prenArr(p)).length>0;if(!part&&typeof p.coperti==="number"&&p.coperti>=0){S.cop=p.coperti;S.copHand=true}else{S.cop=0;S.copHand=false}
-  $("c-nome").value=p.nome||"";$("c-note").value=p.note||"";$("c-search").value="";$("c-paid").checked=false;S.stockWarn=null;
+  $("c-nome").value=p.nome||"";$("c-note").value=p.note||"";$("c-paid").checked=false;S.stockWarn=null;
   renderSearch();renderSteppers();renderSel();$("c-msg").textContent="";
 }
 function renderSel(){const p=S.selPren&&S.prenMap[S.selPren];$("c-sel").hidden=!p;if(p)$("c-sel-t").textContent="Prenotazione: "+p.nome+(p.stato==="parziale"?` (arrivati in parte: qui c'è solo quello che manca)`:"")}
-function resetForm(){S.more={note:false,asp:false,off:false};S.cop=0;S.copHand=false;S.smode="piatti";S.cambi=[];S.cf=null;S.selPren=null;S.qty={};S.sqty={};S.split=false;S.parts=[];$("c-offby").value="";$("c-partlist").innerHTML="";$("c-asp").checked=false;S.aspMode="subito";S.pay="contanti";S.stockWarn=null;$("c-off").value="";$("c-ric").value="";$("c-nome").value="";$("c-note").value="";$("c-paid").checked=false;renderSel();renderSteppers()}
+function resetForm(){S.more={note:false,asp:false,off:false};S.cop=0;S.copHand=false;S.smode="piatti";S.cambi=[];S.cf=null;S.selPren=null;S.qty={};S.sqty={};S.split=false;S.parts=[];$("c-offby").value="";$("c-partlist").innerHTML="";$("c-asp").checked=false;S.aspMode="subito";S.pay="contanti";S.stockWarn=null;$("c-off").value="";$("c-ric").value="";$("c-nome").value="";$("c-note").value="";$("c-paid").checked=false;renderSel();renderSearch();renderSteppers()}
 $("c-sel-x").addEventListener("click",resetForm);
 function canUndo(o){return !!o&&!o.asportoSubito&&Date.now()-(o.creato||0)<60000&&!isLocked(o)}
 function renderTicket(){
